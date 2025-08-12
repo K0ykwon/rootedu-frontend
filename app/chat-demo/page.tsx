@@ -488,7 +488,7 @@ export default function ChatDemoPage() {
               >
                 {tab.label}
                 <Badge 
-                  variant={activeTab === tab.id ? "secondary" : "outline"} 
+                  variant={activeTab === tab.id ? "primary" : "default"} 
                   className="text-xs"
                 >
                   {tab.badge}

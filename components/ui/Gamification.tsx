@@ -135,7 +135,7 @@ export const StreakCounter: React.FC<StreakCounterProps> = ({
     <div className={`bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl p-4 text-white ${className}`}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold">🔥 Study Streak</h3>
-        <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+        <Badge variant="info" className="bg-white/20 text-white border-white/30">
           {isStreakAlive ? 'Active' : 'Broken'}
         </Badge>
       </div>

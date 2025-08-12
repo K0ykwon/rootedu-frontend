@@ -276,11 +276,11 @@ const TemplateCard: React.FC<{
 
   if (viewMode === 'list') {
     return (
-      <Card 
-        className={`p-4 ${!template.isActive ? 'opacity-60' : ''}`}
+      <div
         onMouseEnter={() => setShowActions(true)}
         onMouseLeave={() => setShowActions(false)}
       >
+        <Card className={`p-4 ${!template.isActive ? 'opacity-60' : ''}`}>
         <div className="flex items-center gap-4">
           {/* Status Indicator */}
           <div className={`w-3 h-3 rounded-full ${template.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
@@ -310,11 +310,11 @@ const TemplateCard: React.FC<{
               </div>
               
               <div className="flex items-center gap-2 ml-4">
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="default" className="text-xs">
                   {template.category}
                 </Badge>
                 {template.variables && template.variables.length > 0 && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="info" className="text-xs">
                     Variables
                   </Badge>
                 )}
@@ -340,27 +340,28 @@ const TemplateCard: React.FC<{
             </div>
           )}
         </div>
-      </Card>
+        </Card>
+      </div>
     );
   }
 
   // Grid view
   return (
-    <Card 
-      className={`p-4 ${!template.isActive ? 'opacity-60' : ''} group hover:shadow-lg transition-all duration-200`}
+    <div
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
+      <Card className={`p-4 ${!template.isActive ? 'opacity-60' : ''} group hover:shadow-lg transition-all duration-200`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${template.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="default" className="text-xs">
             {template.category}
           </Badge>
         </div>
         {template.variables && template.variables.length > 0 && (
-          <Badge variant="secondary" className="text-xs">
+          <Badge variant="info" className="text-xs">
             Variables
           </Badge>
         )}
@@ -417,7 +418,8 @@ const TemplateCard: React.FC<{
           {template.isActive ? '⏸️' : '▶️'}
         </Button>
       </div>
-    </Card>
+      </Card>
+    </div>
   );
 };
 
@@ -487,7 +489,7 @@ const TemplateEditor: React.FC<{
   };
 
   return (
-    <Modal onClose={onClose} className="max-w-2xl">
+    <Modal isOpen={true} onClose={onClose} className="max-w-2xl">
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
@@ -594,7 +596,7 @@ const TemplateEditor: React.FC<{
               {formData.targetAudience.map(audience => (
                 <Badge
                   key={audience}
-                  variant="secondary"
+                  variant="info"
                   className="flex items-center gap-1"
                 >
                   {audience}
@@ -675,7 +677,7 @@ const TemplateUseModal: React.FC<{
   ) ?? true;
 
   return (
-    <Modal onClose={onClose} className="max-w-lg">
+    <Modal isOpen={true} onClose={onClose} className="max-w-lg">
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">

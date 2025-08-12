@@ -185,12 +185,12 @@ export const InstructorCard: React.FC<InstructorCardProps> = ({
             {/* Specialties */}
             <div className="flex flex-wrap gap-1 mb-3">
               {specialties.slice(0, 3).map((specialty, index) => (
-                <Badge key={index} variant="secondary" className="text-xs">
+                <Badge key={index} variant="info" className="text-xs">
                   {specialty}
                 </Badge>
               ))}
               {specialties.length > 3 && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="default" className="text-xs">
                   +{specialties.length - 3} more
                 </Badge>
               )}

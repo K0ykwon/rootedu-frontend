@@ -106,10 +106,10 @@ export const InfluencerMessageValidation: React.FC<InfluencerMessageValidationPr
 
   const getPriorityBadgeVariant = (priority: PendingMessage['priority']) => {
     switch (priority) {
-      case 'urgent': return 'destructive' as const;
+      case 'urgent': return 'error' as const;
       case 'high': return 'warning' as const;
-      case 'medium': return 'outline' as const;
-      case 'low': return 'secondary' as const;
+      case 'medium': return 'default' as const;
+      case 'low': return 'success' as const;
     }
   };
 
@@ -127,7 +127,7 @@ export const InfluencerMessageValidation: React.FC<InfluencerMessageValidationPr
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline">
+            <Badge variant="default">
               {selectedMessages.length} selected
             </Badge>
             {selectedMessages.length > 0 && (
@@ -200,7 +200,7 @@ export const InfluencerMessageValidation: React.FC<InfluencerMessageValidationPr
                 ✓ Approve All
               </Button>
               <Button
-                variant="destructive"
+                variant="danger"
                 size="sm"
                 onClick={() => handleBulkAction({ type: 'reject', message: 'Bulk rejection' })}
               >
@@ -273,10 +273,10 @@ const PendingMessageCard: React.FC<{
 
   const getPriorityBadgeVariant = (priority: PendingMessage['priority']) => {
     switch (priority) {
-      case 'urgent': return 'destructive' as const;
+      case 'urgent': return 'error' as const;
       case 'high': return 'warning' as const;
-      case 'medium': return 'outline' as const;
-      case 'low': return 'secondary' as const;
+      case 'medium': return 'default' as const;
+      case 'low': return 'success' as const;
     }
   };
 
@@ -299,11 +299,11 @@ const PendingMessageCard: React.FC<{
                 <Badge variant={getPriorityBadgeVariant(message.priority)} className="text-xs">
                   {message.priority.toUpperCase()}
                 </Badge>
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="default" className="text-xs">
                   {message.category}
                 </Badge>
                 {message.templateTitle && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="info" className="text-xs">
                     Template: {message.templateTitle}
                   </Badge>
                 )}
@@ -413,7 +413,7 @@ const PendingMessageCard: React.FC<{
                   ✏️ Edit
                 </Button>
                 <Button
-                  variant="destructive"
+                  variant="danger"
                   size="sm"
                   onClick={() => setShowQuickReject(true)}
                 >
@@ -525,7 +525,7 @@ const MessagePreviewModal: React.FC<{
   const priorities: PendingMessage['priority'][] = ['low', 'medium', 'high', 'urgent'];
 
   return (
-    <Modal onClose={onClose} className="max-w-4xl">
+    <Modal isOpen={true} onClose={onClose} className="max-w-4xl">
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
@@ -659,7 +659,7 @@ const MessagePreviewModal: React.FC<{
                     {editedTargetAudience.map(audience => (
                       <Badge
                         key={audience}
-                        variant="secondary"
+                        variant="info"
                         className="text-xs flex items-center gap-1"
                       >
                         {audience}
@@ -706,7 +706,7 @@ const MessagePreviewModal: React.FC<{
                 <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-1">
                   Priority
                 </h4>
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="default" className="text-xs">
                   {message.priority.toUpperCase()}
                 </Badge>
               </div>
@@ -714,7 +714,7 @@ const MessagePreviewModal: React.FC<{
                 <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-1">
                   Category
                 </h4>
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="default" className="text-xs">
                   {message.category}
                 </Badge>
               </div>
@@ -743,7 +743,7 @@ const MessagePreviewModal: React.FC<{
               </h4>
               <div className="flex flex-wrap gap-1">
                 {message.targetAudience.map(audience => (
-                  <Badge key={audience} variant="secondary" className="text-xs">
+                  <Badge key={audience} variant="info" className="text-xs">
                     {audience}
                   </Badge>
                 ))}
@@ -899,7 +899,7 @@ const MessagePreviewModal: React.FC<{
                   Cancel
                 </Button>
                 <Button 
-                  variant="destructive" 
+                  variant="danger" 
                   onClick={handleReject}
                   disabled={!rejectionReason.trim()}
                 >
@@ -911,7 +911,7 @@ const MessagePreviewModal: React.FC<{
             {!showEdit && !showReject && (
               <>
                 <Button
-                  variant="destructive"
+                  variant="danger"
                   onClick={() => setShowReject(true)}
                 >
                   ✕ Reject

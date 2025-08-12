@@ -78,7 +78,7 @@ export const StudyBuddy: React.FC<StudyBuddyProps> = ({
           </div>
           <div className="flex items-center justify-center gap-2 mt-2">
             <h3 className="font-bold text-lg">{name}</h3>
-            <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+            <Badge variant="info" className="bg-white/20 text-white border-white/30">
               Lv.{level}
             </Badge>
           </div>

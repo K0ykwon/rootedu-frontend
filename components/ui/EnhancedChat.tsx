@@ -86,7 +86,7 @@ export const EnhancedChat: React.FC<EnhancedChatProps> = ({
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -276,7 +276,7 @@ const ChatHeader: React.FC<{
       </div>
       
       <div className="flex items-center gap-2">
-        <Badge variant="outline" className="text-xs">
+        <Badge variant="default" className="text-xs">
           Active
         </Badge>
       </div>
@@ -346,7 +346,7 @@ const EnhancedChatMessage: React.FC<{
           {/* Template Badge */}
           {message.isTemplate && (
             <Badge 
-              variant="outline" 
+              variant="default" 
               className="absolute -top-2 -left-2 text-xs bg-[var(--color-bg-primary)]"
             >
               Template
@@ -483,7 +483,7 @@ const MessageTemplatesModal: React.FC<{
     : templates.filter(t => t.category === selectedCategory);
 
   return (
-    <Modal onClose={onClose} className="max-w-2xl">
+    <Modal isOpen={true} onClose={onClose} className="max-w-2xl">
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
@@ -519,7 +519,7 @@ const MessageTemplatesModal: React.FC<{
                 <h3 className="font-medium text-[var(--color-text-primary)]">
                   {template.title}
                 </h3>
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="default" className="text-xs">
                   {template.category}
                 </Badge>
               </div>

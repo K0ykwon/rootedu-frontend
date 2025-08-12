@@ -367,6 +367,13 @@ function ArchiveContent() {
                   <div>
                     <label className="block text-sm font-medium mb-2">Default Style</label>
                     <CountrySelector
+                      countries={[
+                        { code: 'KR', name: 'South Korea', flag: '🇰🇷' },
+                        { code: 'US', name: 'United States', flag: '🇺🇸' },
+                        { code: 'JP', name: 'Japan', flag: '🇯🇵' },
+                        { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
+                        { code: 'DE', name: 'Germany', flag: '🇩🇪' },
+                      ]}
                       selectedCountry={selectedCountry}
                       onCountryChange={setSelectedCountry}
                       showFlag={true}
@@ -376,6 +383,13 @@ function ArchiveContent() {
                   <div>
                     <label className="block text-sm font-medium mb-2">Compact Style</label>
                     <CountrySelector
+                      countries={[
+                        { code: 'KR', name: 'South Korea', flag: '🇰🇷' },
+                        { code: 'US', name: 'United States', flag: '🇺🇸' },
+                        { code: 'JP', name: 'Japan', flag: '🇯🇵' },
+                        { code: 'GB', name: 'United Kingdom', flag: '🇬🇧' },
+                        { code: 'DE', name: 'Germany', flag: '🇩🇪' },
+                      ]}
                       selectedCountry={selectedCountry}
                       onCountryChange={setSelectedCountry}
                       compact={true}
@@ -1257,37 +1271,20 @@ function ArchiveContent() {
                       {
                         id: 'demo-template-1',
                         title: 'Ask for Help',
-                        content: 'Hi! I need help understanding {topic}. Could you please explain it in more detail? Thanks! 🙋‍♂️',
+                        content: 'Hi! I need help understanding this topic. Could you please explain it in more detail? Thanks! 🙋‍♂️',
                         category: 'help',
                         tags: ['help', 'question'],
                         usageCount: 42,
-                        createdBy: 'system',
-                        createdAt: new Date(),
-                        lastUsed: new Date(),
-                        isActive: true,
-                        targetAudience: ['Students'],
-                        estimatedEngagement: 85,
-                        variables: [
-                          {
-                            name: 'topic',
-                            type: 'text',
-                            required: true,
-                            placeholder: 'e.g. linear algebra'
-                          }
-                        ]
+                        createdBy: 'system'
                       },
                       {
                         id: 'demo-template-2',
                         title: 'Share Progress',
-                        content: 'Great news! I just completed {milestone} in my studies. Feeling accomplished! 🎉',
+                        content: 'Great news! I just completed a milestone in my studies. Feeling accomplished! 🎉',
                         category: 'progress',
                         tags: ['progress', 'achievement'],
                         usageCount: 28,
-                        createdBy: 'system',
-                        createdAt: new Date(),
-                        isActive: true,
-                        targetAudience: ['Students'],
-                        estimatedEngagement: 92
+                        createdBy: 'system'
                       }
                     ]}
                     onSendMessage={(content, type, templateId) => {
