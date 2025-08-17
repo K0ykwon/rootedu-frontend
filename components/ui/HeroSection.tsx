@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Button } from './Button';
+import Button from './Button';
+import Link from 'next/link';
 
 export interface HeroSectionProps {
   title: string;
@@ -14,12 +15,12 @@ export interface HeroSectionProps {
   ctaButtons?: {
     primary?: {
       text: string;
-      onClick: () => void;
+      onClick?: () => void;
       href?: string;
     };
     secondary?: {
       text: string;
-      onClick: () => void;
+      onClick?: () => void;
       href?: string;
     };
   };
@@ -184,30 +185,60 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           {ctaButtons && (
             <div className={`flex flex-col sm:flex-row gap-4 mb-12 ${textAlign === 'center' ? 'justify-center' : textAlign === 'right' ? 'justify-end' : 'justify-start'}`}>
               {ctaButtons.primary && (
-                <Button
-                  size="lg"
-                  variant="primary"
-                  onClick={ctaButtons.primary.onClick}
-                  className="px-8 py-4 text-lg font-semibold"
-                >
-                  {ctaButtons.primary.text}
-                </Button>
+                ctaButtons.primary.href ? (
+                  <Link href={ctaButtons.primary.href}>
+                    <Button
+                      size="lg"
+                      variant="primary"
+                      className="px-8 py-4 text-lg font-semibold"
+                    >
+                      {ctaButtons.primary.text}
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button
+                    size="lg"
+                    variant="primary"
+                    onClick={ctaButtons.primary.onClick}
+                    className="px-8 py-4 text-lg font-semibold"
+                  >
+                    {ctaButtons.primary.text}
+                  </Button>
+                )
               )}
               {ctaButtons.secondary && (
-                <Button
-                  size="lg"
-                  variant={backgroundImage || backgroundVideo ? "outline" : "secondary"}
-                  onClick={ctaButtons.secondary.onClick}
-                  className={`
-                    px-8 py-4 text-lg font-semibold
-                    ${backgroundImage || backgroundVideo 
-                      ? 'border-white text-white hover:bg-white hover:text-gray-900' 
-                      : ''
-                    }
-                  `}
-                >
-                  {ctaButtons.secondary.text}
-                </Button>
+                ctaButtons.secondary.href ? (
+                  <Link href={ctaButtons.secondary.href}>
+                    <Button
+                      size="lg"
+                      variant={backgroundImage || backgroundVideo ? "outline" : "secondary"}
+                      className={`
+                        px-8 py-4 text-lg font-semibold
+                        ${backgroundImage || backgroundVideo 
+                          ? 'border-white text-white hover:bg-white hover:text-gray-900' 
+                          : ''
+                        }
+                      `}
+                    >
+                      {ctaButtons.secondary.text}
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button
+                    size="lg"
+                    variant={backgroundImage || backgroundVideo ? "outline" : "secondary"}
+                    onClick={ctaButtons.secondary.onClick}
+                    className={`
+                      px-8 py-4 text-lg font-semibold
+                      ${backgroundImage || backgroundVideo 
+                        ? 'border-white text-white hover:bg-white hover:text-gray-900' 
+                        : ''
+                      }
+                    `}
+                  >
+                    {ctaButtons.secondary.text}
+                  </Button>
+                )
               )}
             </div>
           )}

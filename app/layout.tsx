@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
+import AuthProvider from "../components/AuthProvider";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import BottomNav from "../components/ui/BottomNav";
+import ToastProvider from "../components/ui/Toast";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "RootEdu Platform",
-  description: "AI-powered EdTech platform with Linear-inspired design",
+  title: "RootEdu - SKY 학생들이 만드는 교육 플랫폼",
+  description: "전문적이고 양심적인 학습·진로 인사이트를 제공하는 교육 플랫폼",
 };
 
 export default function RootLayout({
@@ -23,12 +23,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="ko" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
-        {children}
+        <AuthProvider>
+          <ToastProvider>
+            <div className="min-h-screen flex flex-col">
+              <Header />
+              <main className="flex-1 pb-16 md:pb-0">
+                {children}
+              </main>
+              <Footer />
+              <BottomNav />
+            </div>
+          </ToastProvider>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -14,7 +14,7 @@ interface TabsProps {
   className?: string;
 }
 
-export const Tabs: React.FC<TabsProps> = ({
+const Tabs: React.FC<TabsProps> = ({
   tabs,
   defaultTab,
   onChange,
@@ -70,3 +70,5 @@ interface TabPanelProps {
 export const TabPanel: React.FC<TabPanelProps> = ({ children, className = '' }) => {
   return <div className={className}>{children}</div>;
 };
+
+export default Tabs;

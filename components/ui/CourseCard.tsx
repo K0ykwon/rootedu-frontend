@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Badge } from './Badge';
-import { Avatar } from './Avatar';
+import Badge from './Badge';
+import Avatar from './Avatar';
 
 export interface CourseCardProps {
   id: string;

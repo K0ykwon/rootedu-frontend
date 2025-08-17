@@ -1,6 +1,6 @@
 import React from 'react';
-import { Badge } from './Badge';
-import { Button } from './Button';
+import Badge from './Badge';
+import Button from './Button';
 
 interface InfluencerCardProps {
   name: string;
@@ -20,7 +20,7 @@ interface InfluencerCardProps {
   className?: string;
 }
 
-export const InfluencerCard: React.FC<InfluencerCardProps> = ({
+const InfluencerCard: React.FC<InfluencerCardProps> = ({
   name,
   username,
   avatar,
@@ -37,10 +37,19 @@ export const InfluencerCard: React.FC<InfluencerCardProps> = ({
   onClick,
   className = ''
 }) => {
-  const formatNumber = (num: number): string => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    return num.toString();
+  const formatNumber = (num: number | undefined): string => {
+    // 더 강력한 안전 검사
+    if (num === undefined || num === null || isNaN(Number(num))) return '0';
+    const safeNum = Number(num);
+    if (!isFinite(safeNum) || safeNum < 0) return '0';
+    
+    try {
+      if (safeNum >= 1000000) return `${(safeNum / 1000000).toFixed(1)}M`;
+      if (safeNum >= 1000) return `${(safeNum / 1000).toFixed(1)}K`;
+      return Math.floor(safeNum).toString();
+    } catch (error) {
+      return '0';
+    }
   };
 
   return (
@@ -145,9 +154,9 @@ export const InfluencerCard: React.FC<InfluencerCardProps> = ({
               <svg width="14" height="14" viewBox="0 0 14 14" fill="var(--color-warning)">
                 <path d="M7 0L9.1 4.3L14 5L10.5 8.4L11.3 13.3L7 11.1L2.7 13.3L3.5 8.4L0 5L4.9 4.3L7 0Z"/>
               </svg>
-              {rating.toFixed(1)}
+              {(rating || 0).toFixed(1)}
             </div>
-            <div className="text-xs text-[var(--color-text-tertiary)]">{courses} Courses</div>
+            <div className="text-xs text-[var(--color-text-tertiary)]">{courses || 0} Courses</div>
           </div>
         </div>
       </div>
@@ -181,10 +190,19 @@ export const InfluencerCardCompact: React.FC<InfluencerCardCompactProps> = ({
   onClick,
   className = ''
 }) => {
-  const formatNumber = (num: number): string => {
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    return num.toString();
+  const formatNumber = (num: number | undefined): string => {
+    // 더 강력한 안전 검사
+    if (num === undefined || num === null || isNaN(Number(num))) return '0';
+    const safeNum = Number(num);
+    if (!isFinite(safeNum) || safeNum < 0) return '0';
+    
+    try {
+      if (safeNum >= 1000000) return `${(safeNum / 1000000).toFixed(1)}M`;
+      if (safeNum >= 1000) return `${(safeNum / 1000).toFixed(1)}K`;
+      return Math.floor(safeNum).toString();
+    } catch (error) {
+      return '0';
+    }
   };
 
   return (
@@ -295,3 +313,5 @@ export const InfluencerCardMini: React.FC<InfluencerCardMiniProps> = ({
     </div>
   );
 };
+
+export default InfluencerCard;

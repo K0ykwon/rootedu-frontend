@@ -10,7 +10,7 @@ interface DrawerProps {
   className?: string;
 }
 
-export const Drawer: React.FC<DrawerProps> = ({
+const Drawer: React.FC<DrawerProps> = ({
   isOpen,
   onClose,
   title,
@@ -124,3 +124,5 @@ export const Drawer: React.FC<DrawerProps> = ({
     </>
   );
 };
+
+export default Drawer;

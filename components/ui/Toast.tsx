@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useCallback } from 'react';
 
 interface Toast {
@@ -23,7 +25,7 @@ export const useToast = () => {
   return context;
 };
 
-export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const showToast = useCallback((message: string, type: Toast['type'] = 'info', duration = 3000) => {
@@ -141,3 +143,5 @@ const toastAnimationCSS = `
   animation: slide-up 0.3s ease-out;
 }
 `;
+
+export default ToastProvider;

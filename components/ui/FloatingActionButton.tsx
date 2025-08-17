@@ -9,7 +9,7 @@ interface FABProps {
   children?: React.ReactNode; // For extended FAB with label
 }
 
-export const FloatingActionButton: React.FC<FABProps> = ({
+const FloatingActionButton: React.FC<FABProps> = ({
   icon,
   onClick,
   position = 'bottom-right',
@@ -143,3 +143,5 @@ export const SpeedDialFAB: React.FC<SpeedDialFABProps> = ({
     </>
   );
 };
+
+export default FloatingActionButton;

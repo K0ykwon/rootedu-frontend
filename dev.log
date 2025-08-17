@@ -1,0 +1,651 @@
+
+> rootedu-platform@0.1.0 dev
+> next dev --turbopack
+
+ ⚠ Port 3000 is in use by process 736
+5101, using available port 3003 instead.
+   ▲ Next.js 15.4.6 (Turbopack)
+   - Local:        http://localhost:3003
+   - Network:      http://192.168.200.114:3003
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 742ms
+ ○ Compiling /influencers ...
+ ✓ Compiled /influencers in 1180ms
+ ⨯ TypeError: Cannot read properties of undefined (reading '0')
+    at Tabs (components/ui/Tabs.tsx:23:64)
+  21 |   className = ''
+  22 | }) => {
+> 23 |   const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id);
+     |                                                                ^
+  24 |
+  25 |   const handleTabChange = (tabId: string) => {
+  26 |     setActiveTab(tabId); {
+  digest: '3129588101'
+}
+ GET /influencers 500 in 1367ms
+ GET /influencers 200 in 137ms
+ ✓ Compiled /_not-found/page in 159ms
+ GET /influencers/jane-doe 404 in 218ms
+ ✓ Compiled /influencers/[slug] in 135ms
+ ⨯ ./components/ui/InfluencerProfile.tsx:3:1
+Export Badge doesn't exist in target module
+[0m [90m 1 |[39m [36mimport[39m [33mReact[39m [36mfrom[39m [32m'react'[39m[33m;[39m
+ [90m 2 |[39m [36mimport[39m { [33mButton[39m } [36mfrom[39m [32m'./Button'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mBadge[39m } [36mfrom[39m [32m'./Badge'[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 4 |[39m [36mimport[39m { [33mTabs[39m } [36mfrom[39m [32m'./Tabs'[39m[33m;[39m
+ [90m 5 |[39m
+ [90m 6 |[39m [36minterface[39m [33mInfluencerProfileHeaderProps[39m {[0m
+
+The export Badge was not found in module [project]/components/ui/Badge.tsx [app-client] (ecmascript).
+Did you mean to import default?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/ui/InfluencerProfile.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ui/InfluencerProfile.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+
+./components/ui/InfluencerProfile.tsx:3:1
+Export Badge doesn't exist in target module
+[0m [90m 1 |[39m [36mimport[39m [33mReact[39m [36mfrom[39m [32m'react'[39m[33m;[39m
+ [90m 2 |[39m [36mimport[39m { [33mButton[39m } [36mfrom[39m [32m'./Button'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mBadge[39m } [36mfrom[39m [32m'./Badge'[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 4 |[39m [36mimport[39m { [33mTabs[39m } [36mfrom[39m [32m'./Tabs'[39m[33m;[39m
+ [90m 5 |[39m
+ [90m 6 |[39m [36minterface[39m [33mInfluencerProfileHeaderProps[39m {[0m
+
+The export Badge was not found in module [project]/components/ui/Badge.tsx [app-ssr] (ecmascript).
+Did you mean to import default?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/ui/InfluencerProfile.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ui/InfluencerProfile.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+
+./components/ui/InfluencerProfile.tsx:2:1
+Export Button doesn't exist in target module
+[0m [90m 1 |[39m [36mimport[39m [33mReact[39m [36mfrom[39m [32m'react'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 2 |[39m [36mimport[39m { [33mButton[39m } [36mfrom[39m [32m'./Button'[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 3 |[39m [36mimport[39m { [33mBadge[39m } [36mfrom[39m [32m'./Badge'[39m[33m;[39m
+ [90m 4 |[39m [36mimport[39m { [33mTabs[39m } [36mfrom[39m [32m'./Tabs'[39m[33m;[39m
+ [90m 5 |[39m[0m
+
+The export Button was not found in module [project]/components/ui/Button.tsx [app-client] (ecmascript).
+Did you mean to import default?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/ui/InfluencerProfile.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ui/InfluencerProfile.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+
+./components/ui/InfluencerProfile.tsx:2:1
+Export Button doesn't exist in target module
+[0m [90m 1 |[39m [36mimport[39m [33mReact[39m [36mfrom[39m [32m'react'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 2 |[39m [36mimport[39m { [33mButton[39m } [36mfrom[39m [32m'./Button'[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 3 |[39m [36mimport[39m { [33mBadge[39m } [36mfrom[39m [32m'./Badge'[39m[33m;[39m
+ [90m 4 |[39m [36mimport[39m { [33mTabs[39m } [36mfrom[39m [32m'./Tabs'[39m[33m;[39m
+ [90m 5 |[39m[0m
+
+The export Button was not found in module [project]/components/ui/Button.tsx [app-ssr] (ecmascript).
+Did you mean to import default?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/ui/InfluencerProfile.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ui/InfluencerProfile.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+
+./app/influencers/[slug]/page.tsx:5:1
+Export default doesn't exist in target module
+[0m [90m 3 |[39m [36mimport[39m { useState[33m,[39m useEffect } [36mfrom[39m [32m'react'[39m[33m;[39m
+ [90m 4 |[39m [36mimport[39m { useParams } [36mfrom[39m [32m'next/navigation'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m [33mInfluencerProfile[39m [36mfrom[39m [32m'../../../components/ui/InfluencerProfile'[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 6 |[39m [36mimport[39m [33mCard[39m [36mfrom[39m [32m'../../../components/ui/Card'[39m[33m;[39m
+ [90m 7 |[39m [36mimport[39m [33mButton[39m [36mfrom[39m [32m'../../../components/ui/Button'[39m[33m;[39m
+ [90m 8 |[39m [36mimport[39m [33mBadge[39m [36mfrom[39m [32m'../../../components/ui/Badge'[39m[33m;[39m[0m
+
+The export default was not found in module [project]/components/ui/InfluencerProfile.tsx [app-client] (ecmascript).
+Did you mean to import InfluencerStats?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+
+./app/influencers/[slug]/page.tsx:5:1
+Export default doesn't exist in target module
+[0m [90m 3 |[39m [36mimport[39m { useState[33m,[39m useEffect } [36mfrom[39m [32m'react'[39m[33m;[39m
+ [90m 4 |[39m [36mimport[39m { useParams } [36mfrom[39m [32m'next/navigation'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m [33mInfluencerProfile[39m [36mfrom[39m [32m'../../../components/ui/InfluencerProfile'[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 6 |[39m [36mimport[39m [33mCard[39m [36mfrom[39m [32m'../../../components/ui/Card'[39m[33m;[39m
+ [90m 7 |[39m [36mimport[39m [33mButton[39m [36mfrom[39m [32m'../../../components/ui/Button'[39m[33m;[39m
+ [90m 8 |[39m [36mimport[39m [33mBadge[39m [36mfrom[39m [32m'../../../components/ui/Badge'[39m[33m;[39m[0m
+
+The export default was not found in module [project]/components/ui/InfluencerProfile.tsx [app-ssr] (ecmascript).
+Did you mean to import InfluencerStats?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+
+./app/influencers/[slug]/page.tsx:11:1
+Export default doesn't exist in target module
+[0m [90m  9 |[39m [36mimport[39m [33mAvatar[39m [36mfrom[39m [32m'../../../components/ui/Avatar'[39m[33m;[39m
+ [90m 10 |[39m [36mimport[39m [33mModal[39m [36mfrom[39m [32m'../../../components/ui/Modal'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 11 |[39m [36mimport[39m [33mToast[39m [36mfrom[39m [32m'../../../components/ui/Toast'[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 12 |[39m [36mimport[39m [33mSkeleton[39m [36mfrom[39m [32m'../../../components/ui/Skeleton'[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m [33mCourseCard[39m [36mfrom[39m [32m'../../../components/ui/CourseCard'[39m[33m;[39m
+ [90m 14 |[39m[0m
+
+The export default was not found in module [project]/components/ui/Toast.tsx [app-client] (ecmascript).
+Did you mean to import useToast?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+
+./app/influencers/[slug]/page.tsx:11:1
+Export default doesn't exist in target module
+[0m [90m  9 |[39m [36mimport[39m [33mAvatar[39m [36mfrom[39m [32m'../../../components/ui/Avatar'[39m[33m;[39m
+ [90m 10 |[39m [36mimport[39m [33mModal[39m [36mfrom[39m [32m'../../../components/ui/Modal'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 11 |[39m [36mimport[39m [33mToast[39m [36mfrom[39m [32m'../../../components/ui/Toast'[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 12 |[39m [36mimport[39m [33mSkeleton[39m [36mfrom[39m [32m'../../../components/ui/Skeleton'[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m [33mCourseCard[39m [36mfrom[39m [32m'../../../components/ui/CourseCard'[39m[33m;[39m
+ [90m 14 |[39m[0m
+
+The export default was not found in module [project]/components/ui/Toast.tsx [app-ssr] (ecmascript).
+Did you mean to import useToast?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+ ✓ Compiled /_error in 392ms
+ GET /influencers/jane-doe 500 in 609ms
+ ⨯ ./components/ui/InfluencerProfile.tsx:3:1
+Export Badge doesn't exist in target module
+[0m [90m 1 |[39m [36mimport[39m [33mReact[39m [36mfrom[39m [32m'react'[39m[33m;[39m
+ [90m 2 |[39m [36mimport[39m { [33mButton[39m } [36mfrom[39m [32m'./Button'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mBadge[39m } [36mfrom[39m [32m'./Badge'[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 4 |[39m [36mimport[39m { [33mTabs[39m } [36mfrom[39m [32m'./Tabs'[39m[33m;[39m
+ [90m 5 |[39m
+ [90m 6 |[39m [36minterface[39m [33mInfluencerProfileHeaderProps[39m {[0m
+
+The export Badge was not found in module [project]/components/ui/Badge.tsx [app-client] (ecmascript).
+Did you mean to import default?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/ui/InfluencerProfile.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ui/InfluencerProfile.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+
+./components/ui/InfluencerProfile.tsx:3:1
+Export Badge doesn't exist in target module
+[0m [90m 1 |[39m [36mimport[39m [33mReact[39m [36mfrom[39m [32m'react'[39m[33m;[39m
+ [90m 2 |[39m [36mimport[39m { [33mButton[39m } [36mfrom[39m [32m'./Button'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m { [33mBadge[39m } [36mfrom[39m [32m'./Badge'[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 4 |[39m [36mimport[39m { [33mTabs[39m } [36mfrom[39m [32m'./Tabs'[39m[33m;[39m
+ [90m 5 |[39m
+ [90m 6 |[39m [36minterface[39m [33mInfluencerProfileHeaderProps[39m {[0m
+
+The export Badge was not found in module [project]/components/ui/Badge.tsx [app-ssr] (ecmascript).
+Did you mean to import default?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/ui/InfluencerProfile.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ui/InfluencerProfile.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+
+./components/ui/InfluencerProfile.tsx:2:1
+Export Button doesn't exist in target module
+[0m [90m 1 |[39m [36mimport[39m [33mReact[39m [36mfrom[39m [32m'react'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 2 |[39m [36mimport[39m { [33mButton[39m } [36mfrom[39m [32m'./Button'[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 3 |[39m [36mimport[39m { [33mBadge[39m } [36mfrom[39m [32m'./Badge'[39m[33m;[39m
+ [90m 4 |[39m [36mimport[39m { [33mTabs[39m } [36mfrom[39m [32m'./Tabs'[39m[33m;[39m
+ [90m 5 |[39m[0m
+
+The export Button was not found in module [project]/components/ui/Button.tsx [app-client] (ecmascript).
+Did you mean to import default?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/ui/InfluencerProfile.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ui/InfluencerProfile.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+
+./components/ui/InfluencerProfile.tsx:2:1
+Export Button doesn't exist in target module
+[0m [90m 1 |[39m [36mimport[39m [33mReact[39m [36mfrom[39m [32m'react'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 2 |[39m [36mimport[39m { [33mButton[39m } [36mfrom[39m [32m'./Button'[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 3 |[39m [36mimport[39m { [33mBadge[39m } [36mfrom[39m [32m'./Badge'[39m[33m;[39m
+ [90m 4 |[39m [36mimport[39m { [33mTabs[39m } [36mfrom[39m [32m'./Tabs'[39m[33m;[39m
+ [90m 5 |[39m[0m
+
+The export Button was not found in module [project]/components/ui/Button.tsx [app-ssr] (ecmascript).
+Did you mean to import default?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/ui/InfluencerProfile.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ui/InfluencerProfile.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+
+./app/influencers/[slug]/page.tsx:10:1
+Export Modal doesn't exist in target module
+[0m [90m  8 |[39m [36mimport[39m [33mBadge[39m [36mfrom[39m [32m'../../../components/ui/Badge'[39m[33m;[39m
+ [90m  9 |[39m [36mimport[39m [33mAvatar[39m [36mfrom[39m [32m'../../../components/ui/Avatar'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 10 |[39m [36mimport[39m { [33mModal[39m } [36mfrom[39m [32m'../../../components/ui/Modal'[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 11 |[39m [36mimport[39m { useToast } [36mfrom[39m [32m'../../../components/ui/Toast'[39m[33m;[39m
+ [90m 12 |[39m [36mimport[39m [33mSkeleton[39m [36mfrom[39m [32m'../../../components/ui/Skeleton'[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m [33mCourseCard[39m [36mfrom[39m [32m'../../../components/ui/CourseCard'[39m[33m;[39m[0m
+
+The export Modal was not found in module [project]/components/ui/Modal.tsx [app-client] (ecmascript).
+Did you mean to import default?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+
+./app/influencers/[slug]/page.tsx:10:1
+Export Modal doesn't exist in target module
+[0m [90m  8 |[39m [36mimport[39m [33mBadge[39m [36mfrom[39m [32m'../../../components/ui/Badge'[39m[33m;[39m
+ [90m  9 |[39m [36mimport[39m [33mAvatar[39m [36mfrom[39m [32m'../../../components/ui/Avatar'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 10 |[39m [36mimport[39m { [33mModal[39m } [36mfrom[39m [32m'../../../components/ui/Modal'[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 11 |[39m [36mimport[39m { useToast } [36mfrom[39m [32m'../../../components/ui/Toast'[39m[33m;[39m
+ [90m 12 |[39m [36mimport[39m [33mSkeleton[39m [36mfrom[39m [32m'../../../components/ui/Skeleton'[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m [33mCourseCard[39m [36mfrom[39m [32m'../../../components/ui/CourseCard'[39m[33m;[39m[0m
+
+The export Modal was not found in module [project]/components/ui/Modal.tsx [app-ssr] (ecmascript).
+Did you mean to import default?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+ GET /influencers/jane-doe 500 in 28ms
+ ⨯ ./app/influencers/[slug]/page.tsx:10:1
+Export Modal doesn't exist in target module
+[0m [90m  8 |[39m [36mimport[39m [33mBadge[39m [36mfrom[39m [32m'../../../components/ui/Badge'[39m[33m;[39m
+ [90m  9 |[39m [36mimport[39m [33mAvatar[39m [36mfrom[39m [32m'../../../components/ui/Avatar'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 10 |[39m [36mimport[39m { [33mModal[39m } [36mfrom[39m [32m'../../../components/ui/Modal'[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 11 |[39m [36mimport[39m { useToast } [36mfrom[39m [32m'../../../components/ui/Toast'[39m[33m;[39m
+ [90m 12 |[39m [36mimport[39m [33mSkeleton[39m [36mfrom[39m [32m'../../../components/ui/Skeleton'[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m [33mCourseCard[39m [36mfrom[39m [32m'../../../components/ui/CourseCard'[39m[33m;[39m[0m
+
+The export Modal was not found in module [project]/components/ui/Modal.tsx [app-client] (ecmascript).
+Did you mean to import default?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+
+./app/influencers/[slug]/page.tsx:10:1
+Export Modal doesn't exist in target module
+[0m [90m  8 |[39m [36mimport[39m [33mBadge[39m [36mfrom[39m [32m'../../../components/ui/Badge'[39m[33m;[39m
+ [90m  9 |[39m [36mimport[39m [33mAvatar[39m [36mfrom[39m [32m'../../../components/ui/Avatar'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 10 |[39m [36mimport[39m { [33mModal[39m } [36mfrom[39m [32m'../../../components/ui/Modal'[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 11 |[39m [36mimport[39m { useToast } [36mfrom[39m [32m'../../../components/ui/Toast'[39m[33m;[39m
+ [90m 12 |[39m [36mimport[39m [33mSkeleton[39m [36mfrom[39m [32m'../../../components/ui/Skeleton'[39m[33m;[39m
+ [90m 13 |[39m [36mimport[39m [33mCourseCard[39m [36mfrom[39m [32m'../../../components/ui/CourseCard'[39m[33m;[39m[0m
+
+The export Modal was not found in module [project]/components/ui/Modal.tsx [app-ssr] (ecmascript).
+Did you mean to import default?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+ GET /influencers/jane-doe 500 in 24ms
+ ✓ Compiled in 35ms
+ ✓ Compiled /influencers/[slug] in 10ms
+ ⨯ Error: useToast must be used within ToastProvider
+    at useToast (components/ui/Toast.tsx:21:10)
+    at InfluencerDetailPage (app/influencers/[slug]/page.tsx:56:31)
+  19 |   const context = useContext(ToastContext);
+  20 |   if (!context) {
+> 21 |     throw new Error('useToast must be used within ToastProvider');
+     |          ^
+  22 |   }
+  23 |   return context;
+  24 | }; {
+  digest: '2516456901'
+}
+ GET /influencers/jane-doe 500 in 401ms
+ ✓ Compiled in 48ms
+ ✓ Compiled /influencers/[slug] in 8ms
+ ⨯ ./components/ui/Toast.tsx:1:17
+Ecmascript file had an error
+[0m[31m[1m>[22m[39m[90m 1 |[39m [36mimport[39m [33mReact[39m[33m,[39m { createContext[33m,[39m useContext[33m,[39m useState[33m,[39m useCallback } [36mfrom[39m [32m'react'[39m[33m;[39m
+ [90m   |[39m                 [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 2 |[39m
+ [90m 3 |[39m [36minterface[39m [33mToast[39m {
+ [90m 4 |[39m   id[33m:[39m string[33m;[39m[0m
+
+You're importing a component that needs `createContext`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+
+ Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+
+
+
+Import traces:
+  Server Component:
+    ./components/ui/Toast.tsx
+    ./app/layout.tsx
+
+  Client Component Browser:
+    ./components/ui/Toast.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ui/Toast.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+
+./components/ui/Toast.tsx:1:44
+Ecmascript file had an error
+[0m[31m[1m>[22m[39m[90m 1 |[39m [36mimport[39m [33mReact[39m[33m,[39m { createContext[33m,[39m useContext[33m,[39m useState[33m,[39m useCallback } [36mfrom[39m [32m'react'[39m[33m;[39m
+ [90m   |[39m                                            [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 2 |[39m
+ [90m 3 |[39m [36minterface[39m [33mToast[39m {
+ [90m 4 |[39m   id[33m:[39m string[33m;[39m[0m
+
+You're importing a component that needs `useState`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+
+ Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+
+
+
+Import traces:
+  Server Component:
+    ./components/ui/Toast.tsx
+    ./app/layout.tsx
+
+  Client Component Browser:
+    ./components/ui/Toast.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Client Component Browser]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ui/Toast.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Client Component SSR]
+    ./app/influencers/[slug]/page.tsx [Server Component]
+
+
+ GET /influencers/jane-doe 500 in 19ms
+ ✓ Compiled in 84ms
+ ✓ Compiled /influencers/[slug] in 8ms
+ GET /influencers/jane-doe 200 in 131ms
+ ✓ Compiled /community in 123ms
+ ⨯ TypeError: Cannot read properties of undefined (reading '0')
+    at Tabs (components/ui/Tabs.tsx:23:64)
+  21 |   className = ''
+  22 | }) => {
+> 23 |   const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id);
+     |                                                                ^
+  24 |
+  25 |   const handleTabChange = (tabId: string) => {
+  26 |     setActiveTab(tabId); {
+  digest: '2278010994'
+}
+ GET /community 500 in 167ms
+ GET /community 200 in 118ms
+ ✓ Compiled /tools in 112ms
+ ⨯ ./components/ui/AIChat.tsx:2:1
+Export Button doesn't exist in target module
+[0m [90m 1 |[39m [36mimport[39m [33mReact[39m[33m,[39m { useState } [36mfrom[39m [32m'react'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 2 |[39m [36mimport[39m { [33mButton[39m } [36mfrom[39m [32m'./Button'[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 3 |[39m
+ [90m 4 |[39m [36minterface[39m [33mMessage[39m {
+ [90m 5 |[39m   id[33m:[39m string[33m;[39m[0m
+
+The export Button was not found in module [project]/components/ui/Button.tsx [app-client] (ecmascript).
+Did you mean to import default?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/ui/AIChat.tsx [Client Component Browser]
+    ./app/tools/page.tsx [Client Component Browser]
+    ./app/tools/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ui/AIChat.tsx [Client Component SSR]
+    ./app/tools/page.tsx [Client Component SSR]
+    ./app/tools/page.tsx [Server Component]
+
+
+
+./components/ui/AIChat.tsx:2:1
+Export Button doesn't exist in target module
+[0m [90m 1 |[39m [36mimport[39m [33mReact[39m[33m,[39m { useState } [36mfrom[39m [32m'react'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 2 |[39m [36mimport[39m { [33mButton[39m } [36mfrom[39m [32m'./Button'[39m[33m;[39m
+ [90m   |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 3 |[39m
+ [90m 4 |[39m [36minterface[39m [33mMessage[39m {
+ [90m 5 |[39m   id[33m:[39m string[33m;[39m[0m
+
+The export Button was not found in module [project]/components/ui/Button.tsx [app-ssr] (ecmascript).
+Did you mean to import default?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import traces:
+  Client Component Browser:
+    ./components/ui/AIChat.tsx [Client Component Browser]
+    ./app/tools/page.tsx [Client Component Browser]
+    ./app/tools/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./components/ui/AIChat.tsx [Client Component SSR]
+    ./app/tools/page.tsx [Client Component SSR]
+    ./app/tools/page.tsx [Server Component]
+
+
+ GET /tools 500 in 125ms
+ ✓ Compiled in 38ms
+ ✓ Compiled /tools in 9ms
+ GET /tools 200 in 133ms
+ ✓ Compiled /api/influencers in 217ms
+Redis connected successfully
+Error fetching influencers: TypeError: redis.smembers is not a function
+    at GET (app/api/influencers/route.ts:15:40)
+  13 |     // Redis 연결 보장 후 조회
+  14 |     const redis = await getRedisClient();
+> 15 |     const influencerSlugs = await redis.smembers('influencers');
+     |                                        ^
+  16 |     let influencers = [];
+  17 |
+  18 |     for (const slug of influencerSlugs) {
+ GET /api/influencers?q=&category=&sort=popular&page=1&pageSize=12 500 in 365ms
+Error fetching influencers: TypeError: redis.smembers is not a function
+    at GET (app/api/influencers/route.ts:15:40)
+  13 |     // Redis 연결 보장 후 조회
+  14 |     const redis = await getRedisClient();
+> 15 |     const influencerSlugs = await redis.smembers('influencers');
+     |                                        ^
+  16 |     let influencers = [];
+  17 |
+  18 |     for (const slug of influencerSlugs) {
+ GET /api/influencers?q=&category=&sort=popular&page=1&pageSize=12 500 in 58ms
+Error fetching influencers: TypeError: redis.smembers is not a function
+    at GET (app/api/influencers/route.ts:15:40)
+  13 |     // Redis 연결 보장 후 조회
+  14 |     const redis = await getRedisClient();
+> 15 |     const influencerSlugs = await redis.smembers('influencers');
+     |                                        ^
+  16 |     let influencers = [];
+  17 |
+  18 |     for (const slug of influencerSlugs) {
+ GET /api/influencers?q=&category=&sort=popular&page=1&pageSize=12 500 in 49ms
+ ✓ Compiled in 32ms
+ ✓ Compiled in 36ms
+ ✓ Compiled in 35ms
+   Reload env: .env.local
+
+-----
+[1m[31mFATAL[39m[0m: An unexpected Turbopack error occurred. A panic log has been written to /var/folders/n4/7fjjy8hx20n4b2xcmq_dgwt80000gn/T/next-panic-c6234a03e3ecc96a1d94e724bd3b8c2a.log.
+
+To help make Turbopack better, report this error by ]8;;https://github.com/vercel/next.js/discussions/new?category=turbopack-error-report&title=Turbopack%20Error%3A%20Next.js%20package%20not%20found&body=Turbopack%20version%3A%20%60v15.4.5-2-g91e5b6b84%60%0ANext.js%20version%3A%20%600.0.0%60%0A%0AError%20message%3A%0A%60%60%60%0ANext.js%20package%20not%20found%0A%0ADebug%20info%3A%0A-%20Execution%20of%20get_entrypoints_with_issues_operation%20failed%0A-%20Execution%20of%20EntrypointsOperation%3A%3Anew%20failed%0A-%20Execution%20of%20Project%3A%3Aentrypoints%20failed%0A-%20Execution%20of%20AppProject%3A%3Aroutes%20failed%0A-%20Execution%20of%20directory_tree_to_entrypoints_internal%20failed%0A-%20Execution%20of%20directory_tree_to_loader_tree%20failed%0A-%20Execution%20of%20get_next_package%20failed%0A-%20Next.js%20package%20not%20found%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace\clicking here.]8;;\
+-----
+
+[Error [TurbopackInternalError]: Next.js package not found
+
+Debug info:
+- Execution of get_entrypoints_with_issues_operation failed
+- Execution of EntrypointsOperation::new failed
+- Execution of Project::entrypoints failed
+- Execution of AppProject::routes failed
+- Execution of directory_tree_to_entrypoints_internal failed
+- Execution of directory_tree_to_loader_tree failed
+- Execution of get_next_package failed
+- Next.js package not found]
+[?25h

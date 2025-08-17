@@ -172,3 +172,14 @@ export const Radio: React.FC<RadioProps> = ({
     </label>
   );
 };
+
+// Form wrapper component
+interface FormProps extends React.FormHTMLAttributes<HTMLFormElement> {
+  children: React.ReactNode;
+}
+
+const Form: React.FC<FormProps> = ({ children, ...props }) => {
+  return <form {...props}>{children}</form>;
+};
+
+export default Form;

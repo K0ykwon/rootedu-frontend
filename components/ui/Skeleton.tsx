@@ -8,7 +8,7 @@ interface SkeletonProps {
   animation?: 'pulse' | 'wave' | 'none';
 }
 
-export const Skeleton: React.FC<SkeletonProps> = ({
+const Skeleton: React.FC<SkeletonProps> = ({
   className = '',
   variant = 'text',
   width,
@@ -47,6 +47,8 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     />
   );
 };
+
+export default Skeleton;
 
 // Card Skeleton
 export const CardSkeleton: React.FC = () => {

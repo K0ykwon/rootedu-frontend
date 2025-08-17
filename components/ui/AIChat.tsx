@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from './Button';
+import Button from './Button';
 
 interface Message {
   id: string;
@@ -15,7 +15,7 @@ interface AIChatProps {
   className?: string;
 }
 
-export const AIChat: React.FC<AIChatProps> = ({
+const AIChat: React.FC<AIChatProps> = ({
   messages = [],
   onSendMessage,
   placeholder = "Ask me anything...",
@@ -119,3 +119,5 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ message }) => {
     </div>
   );
 };
+
+export default AIChat;

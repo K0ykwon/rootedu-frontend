@@ -1,19 +1,19 @@
 import React from 'react';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
-  className?: string;
   hover?: boolean;
   compact?: boolean;
   elevated?: boolean;
 }
 
-export const Card: React.FC<CardProps> = ({
+const Card: React.FC<CardProps> = ({
   children,
   className = '',
   hover = false,
   compact = false,
-  elevated = false
+  elevated = false,
+  ...props
 }) => {
   const baseClasses = 'bg-[var(--color-bg-tertiary)] border border-[var(--color-border-primary)] rounded-xl transition-all duration-200';
   const paddingClasses = compact ? 'p-4' : 'p-6';
@@ -21,11 +21,16 @@ export const Card: React.FC<CardProps> = ({
   const elevatedClasses = elevated ? 'shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]' : '';
 
   return (
-    <div className={`${baseClasses} ${paddingClasses} ${hoverClasses} ${elevatedClasses} ${className}`}>
+    <div
+      {...props}
+      className={`${baseClasses} ${paddingClasses} ${hoverClasses} ${elevatedClasses} ${className}`}
+    >
       {children}
     </div>
   );
 };
+
+export default Card;
 
 interface CardHeaderProps {
   children: React.ReactNode;

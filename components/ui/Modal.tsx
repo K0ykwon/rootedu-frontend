@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Button } from './Button';
+import Button from './Button';
 
 interface ModalProps {
   isOpen: boolean;
@@ -11,7 +11,7 @@ interface ModalProps {
   className?: string;
 }
 
-export const Modal: React.FC<ModalProps> = ({
+const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
   title,
@@ -98,3 +98,5 @@ export const Modal: React.FC<ModalProps> = ({
     </>
   );
 };
+
+export default Modal;

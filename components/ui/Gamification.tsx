@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Badge } from './Badge';
-import { Button } from './Button';
+import Badge from './Badge';
+import Button from './Button';
 import { ProgressBar } from './Progress';
 
 // Achievement Badge Component

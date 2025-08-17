@@ -12,7 +12,7 @@ interface SearchBarProps {
   className?: string;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({
+const SearchBar: React.FC<SearchBarProps> = ({
   placeholder = 'Search...',
   value: controlledValue,
   onChange,
@@ -254,3 +254,5 @@ export const StickySearchHeader: React.FC<StickySearchHeaderProps> = ({
     </header>
   );
 };
+
+export default SearchBar;

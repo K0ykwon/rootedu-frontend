@@ -8,7 +8,7 @@ interface AlertProps {
   className?: string;
 }
 
-export const Alert: React.FC<AlertProps> = ({
+const Alert: React.FC<AlertProps> = ({
   children,
   variant = 'info',
   title,
@@ -84,3 +84,5 @@ export const Alert: React.FC<AlertProps> = ({
     </div>
   );
 };
+
+export default Alert;

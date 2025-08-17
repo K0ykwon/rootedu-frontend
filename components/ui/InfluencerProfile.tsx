@@ -1,7 +1,7 @@
 import React from 'react';
-import { Button } from './Button';
-import { Badge } from './Badge';
-import { Tabs } from './Tabs';
+import Button from './Button';
+import Badge from './Badge';
+import Tabs from './Tabs';
 
 interface InfluencerProfileHeaderProps {
   name: string;

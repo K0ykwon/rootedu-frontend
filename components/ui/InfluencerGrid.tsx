@@ -1,23 +1,28 @@
+'use client';
 import React, { useState } from 'react';
-import { InfluencerCard, InfluencerCardCompact, InfluencerCardMini } from './InfluencerCard';
-import { SearchBar } from './SearchBar';
+import InfluencerCard, { InfluencerCardCompact, InfluencerCardMini } from './InfluencerCard';
+import SearchBar from './SearchBar';
 import { Select } from './Form';
-import { Badge } from './Badge';
-import { Skeleton } from './Skeleton';
+import Badge from './Badge';
+import Skeleton from './Skeleton';
 
 interface Influencer {
-  id: string;
+  slug: string;
+  id?: string;
   name: string;
   username: string;
   avatar: string;
   coverImage?: string;
   bio: string;
-  followers: number;
-  students: number;
-  courses: number;
-  rating: number;
+  tags: string[];
+  stats: {
+    followers: number;
+    students: number;
+    courses: number;
+    rating: number;
+    reviews: number;
+  };
   verified?: boolean;
-  expertise: string[];
   isFollowing?: boolean;
 }
 
@@ -25,12 +30,12 @@ interface InfluencerGridProps {
   influencers: Influencer[];
   loading?: boolean;
   viewMode?: 'grid' | 'list' | 'compact';
-  onInfluencerClick?: (id: string) => void;
-  onFollowToggle?: (id: string) => void;
+  onInfluencerClick?: (slug: string) => void;
+  onFollowToggle?: (slug: string) => void;
   className?: string;
 }
 
-export const InfluencerGrid: React.FC<InfluencerGridProps> = ({
+const InfluencerGrid: React.FC<InfluencerGridProps> = ({
   influencers,
   loading = false,
   viewMode = 'grid',
@@ -53,16 +58,16 @@ export const InfluencerGrid: React.FC<InfluencerGridProps> = ({
       <div className={`space-y-3 ${className}`}>
         {influencers.map((influencer) => (
           <InfluencerCardCompact
-            key={influencer.id}
+            key={influencer.slug}
             name={influencer.name}
             username={influencer.username}
             avatar={influencer.avatar}
-            followers={influencer.followers}
-            rating={influencer.rating}
+            followers={influencer.stats.followers}
+            rating={influencer.stats.rating}
             verified={influencer.verified}
             isFollowing={influencer.isFollowing}
-            onFollow={() => onFollowToggle?.(influencer.id)}
-            onClick={() => onInfluencerClick?.(influencer.id)}
+            onFollow={() => onFollowToggle?.(influencer.slug)}
+            onClick={() => onInfluencerClick?.(influencer.slug)}
           />
         ))}
       </div>
@@ -74,12 +79,12 @@ export const InfluencerGrid: React.FC<InfluencerGridProps> = ({
       <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 ${className}`}>
         {influencers.map((influencer) => (
           <InfluencerCardMini
-            key={influencer.id}
+            key={influencer.slug}
             name={influencer.name}
             avatar={influencer.avatar}
-            expertise={influencer.expertise[0] || 'Educator'}
+            expertise={influencer.tags[0] || 'Educator'}
             verified={influencer.verified}
-            onClick={() => onInfluencerClick?.(influencer.id)}
+            onClick={() => onInfluencerClick?.(influencer.slug)}
           />
         ))}
       </div>
@@ -90,10 +95,20 @@ export const InfluencerGrid: React.FC<InfluencerGridProps> = ({
     <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${className}`}>
       {influencers.map((influencer) => (
         <InfluencerCard
-          key={influencer.id}
-          {...influencer}
-          onFollow={() => onFollowToggle?.(influencer.id)}
-          onClick={() => onInfluencerClick?.(influencer.id)}
+          key={influencer.slug}
+          name={influencer.name}
+          username={influencer.username}
+          avatar={influencer.avatar}
+          bio={influencer.bio}
+          followers={influencer.stats.followers}
+          students={influencer.stats.students}
+          courses={influencer.stats.courses}
+          rating={influencer.stats.rating}
+          expertise={influencer.tags}
+          verified={influencer.verified}
+          isFollowing={influencer.isFollowing}
+          onFollow={() => onFollowToggle?.(influencer.slug)}
+          onClick={() => onInfluencerClick?.(influencer.slug)}
         />
       ))}
     </div>
@@ -140,6 +155,8 @@ export const InfluencerDiscovery: React.FC<InfluencerDiscoveryProps> = ({
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedSort, setSelectedSort] = useState('popular');
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'compact'>('grid');
+  // TODO: Replace with real data source; placeholder to satisfy typing
+  const demoInfluencers: Influencer[] = [];
 
   const categories = [
     { value: 'all', label: 'All Categories' },
@@ -236,6 +253,28 @@ export const InfluencerDiscovery: React.FC<InfluencerDiscoveryProps> = ({
           ))}
         </div>
       </div>
+
+      {/* Influencers Grid */}
+      <div className={`grid gap-6 ${
+        viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
+        viewMode === 'list' ? 'grid-cols-1' :
+        'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+      }`}>
+        {demoInfluencers.map((influencer) => (
+          <InfluencerCard
+            key={influencer.slug}
+            name={influencer.name}
+            username={influencer.username}
+            avatar={influencer.avatar}
+            bio={influencer.bio}
+            followers={influencer.stats.followers}
+            students={influencer.stats.students}
+            courses={influencer.stats.courses}
+            rating={influencer.stats.rating}
+            expertise={influencer.tags}
+          />
+        ))}
+      </div>
     </div>
   );
 };
@@ -272,10 +311,19 @@ export const InfluencerCarousel: React.FC<InfluencerCarouselProps> = ({
       
       <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
         {influencers.map((influencer) => (
-          <div key={influencer.id} className="flex-shrink-0 w-72">
+          <div key={influencer.slug} className="flex-shrink-0 w-72">
             <InfluencerCard
-              {...influencer}
-              onClick={() => onInfluencerClick?.(influencer.id)}
+              name={influencer.name}
+              username={influencer.username}
+              avatar={influencer.avatar}
+              bio={influencer.bio}
+              followers={influencer.stats.followers}
+              students={influencer.stats.students}
+              courses={influencer.stats.courses}
+              rating={influencer.stats.rating}
+              expertise={influencer.tags}
+              verified={influencer.verified}
+              onClick={() => onInfluencerClick?.(influencer.slug)}
             />
           </div>
         ))}
@@ -283,3 +331,5 @@ export const InfluencerCarousel: React.FC<InfluencerCarouselProps> = ({
     </div>
   );
 };
+
+export default InfluencerGrid;

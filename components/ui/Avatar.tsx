@@ -9,7 +9,7 @@ interface AvatarProps {
   className?: string;
 }
 
-export const Avatar: React.FC<AvatarProps> = ({
+const Avatar: React.FC<AvatarProps> = ({
   src,
   alt = '',
   name = '',
@@ -66,7 +66,7 @@ interface AvatarGroupProps {
   className?: string;
 }
 
-export const AvatarGroup: React.FC<AvatarGroupProps> = ({
+const AvatarGroup: React.FC<AvatarGroupProps> = ({
   children,
   max = 3,
   className = ''
@@ -86,3 +86,5 @@ export const AvatarGroup: React.FC<AvatarGroupProps> = ({
     </div>
   );
 };
+
+export default Avatar;

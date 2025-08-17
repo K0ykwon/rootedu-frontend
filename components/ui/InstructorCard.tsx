@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Badge } from './Badge';
-import { Button } from './Button';
+import Badge from './Badge';
+import Button from './Button';
 
 export interface InstructorCardProps {
   id: string;

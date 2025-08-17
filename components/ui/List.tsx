@@ -53,7 +53,7 @@ interface ListProps {
   className?: string;
 }
 
-export const List: React.FC<ListProps> = ({
+const List: React.FC<ListProps> = ({
   children,
   divided = true,
   className = ''
@@ -211,3 +211,5 @@ export const ExpandableListItem: React.FC<ExpandableListItemProps> = ({
     </div>
   );
 };
+
+export default List;

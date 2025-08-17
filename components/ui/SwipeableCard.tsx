@@ -10,7 +10,7 @@ interface SwipeableCardProps {
   className?: string;
 }
 
-export const SwipeableCard: React.FC<SwipeableCardProps> = ({
+const SwipeableCard: React.FC<SwipeableCardProps> = ({
   children,
   onSwipeLeft,
   onSwipeRight,
@@ -203,3 +203,5 @@ export const SwipeableStack: React.FC<SwipeableStackProps> = ({
     </div>
   );
 };
+
+export default SwipeableCard;

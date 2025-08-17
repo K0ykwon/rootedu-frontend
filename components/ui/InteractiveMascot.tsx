@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button } from './Button';
-import { Badge } from './Badge';
+import Button from './Button';
+import Badge from './Badge';
 
 // Interactive Study Buddy Component
 interface StudyBuddyProps {
