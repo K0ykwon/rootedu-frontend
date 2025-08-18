@@ -14,7 +14,7 @@ const Button: React.FC<ButtonProps> = ({
   className = '',
   ...props
 }) => {
-  const baseClasses = 'inline-flex items-center justify-center gap-2 border font-medium rounded-lg transition-all duration-150 cursor-pointer whitespace-nowrap select-none shadow-linear hover-lift tap-scale touch-target';
+  const baseClasses = 'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-150 cursor-pointer whitespace-nowrap select-none hover-lift tap-scale touch-target relative overflow-hidden';
   
   const sizeClasses = {
     sm: 'min-h-[44px] px-4 text-[14px]', // Mobile optimized min touch target
@@ -23,11 +23,11 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   const variantClasses = {
-    primary: 'bg-[var(--color-primary-400)] text-white border-[var(--color-primary-400)] hover:bg-[var(--color-primary-500)] hover:border-[var(--color-primary-500)]',
-    secondary: 'bg-[#e6e6e6] text-[var(--color-bg-primary)] border-[#e6e6e6] hover:bg-[#d6d6d6] hover:border-[#d6d6d6]',
-    outline: 'bg-transparent text-[var(--color-text-tertiary)] border-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-text-secondary)]',
-    ghost: 'bg-transparent text-[var(--color-text-secondary)] border-transparent hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-primary)]',
-    danger: 'bg-[var(--color-error)] text-white border-[var(--color-error)] hover:bg-red-600 hover:border-red-600'
+    primary: 'metallic-button-green text-white border border-[rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(86,186,125,0.3)]',
+    secondary: 'metallic-button bg-[rgba(230,230,230,0.9)] text-[var(--color-bg-primary)] border border-[rgba(255,255,255,0.1)]',
+    outline: 'glass-card text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[rgba(255,255,255,0.05)]',
+    ghost: 'bg-transparent text-[var(--color-text-secondary)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--color-text-primary)]',
+    danger: 'metallic-button bg-gradient-to-r from-[var(--color-error)] to-red-600 text-white border border-[rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]'
   };
 
   return (

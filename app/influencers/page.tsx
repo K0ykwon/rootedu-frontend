@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import SearchBar from '../../components/ui/SearchBar';
 import { CategoryFilter } from '../../components/ui/CategoryFilter';
 import InfluencerGrid from '../../components/ui/InfluencerGrid';
@@ -30,6 +31,7 @@ const categories = [
 ];
 
 export default function InfluencersPage() {
+  const router = useRouter();
   const [influencers, setInfluencers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'compact'>('grid');
@@ -44,6 +46,10 @@ export default function InfluencersPage() {
     totalPages: 0,
     pageSize: 12
   });
+
+  const handleInfluencerClick = (slug: string) => {
+    router.push(`/influencers/${slug}`);
+  };
 
   const fetchInfluencers = async () => {
     setLoading(true);
@@ -341,6 +347,7 @@ export default function InfluencersPage() {
               <InfluencerGrid 
                 influencers={influencers}
                 viewMode={viewMode}
+                onInfluencerClick={handleInfluencerClick}
               />
             ) : (
               <div className="text-center py-12">

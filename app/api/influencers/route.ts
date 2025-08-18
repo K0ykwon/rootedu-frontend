@@ -20,17 +20,16 @@ export async function GET(request: NextRequest) {
       if (data && data.name) {
         // Redis hash에서 가져온 데이터를 파싱
         const influencer = {
+          id: data.id,
           slug: data.slug,
           name: data.name,
           username: data.username,
+          instagram: data.instagram,
           avatar: data.avatar,
           bio: data.bio,
-          subjects: data.subjects ? JSON.parse(data.subjects) : [],
+          description: data.description,
           tags: data.tags ? JSON.parse(data.tags) : [],
-          stats: data.stats ? JSON.parse(data.stats) : {},
-          socials: data.socials ? JSON.parse(data.socials) : {},
-          joinDate: parseInt(data.joinDate || '0'),
-          updatedAt: parseInt(data.updatedAt || '0')
+          stats: data.stats ? JSON.parse(data.stats) : {}
         };
         influencers.push(influencer);
       }
@@ -43,15 +42,15 @@ export async function GET(request: NextRequest) {
         inf.name.toLowerCase().includes(searchLower) ||
         inf.username.toLowerCase().includes(searchLower) ||
         inf.bio.toLowerCase().includes(searchLower) ||
-        inf.tags.some((tag: string) => tag.toLowerCase().includes(searchLower)) ||
-        inf.subjects.some((subject: string) => subject.toLowerCase().includes(searchLower))
+        inf.description.toLowerCase().includes(searchLower) ||
+        inf.tags.some((tag: string) => tag.toLowerCase().includes(searchLower))
       );
     }
 
     // 카테고리 필터링
     if (category) {
       influencers = influencers.filter(inf => 
-        inf.subjects.includes(category) || inf.tags.includes(category)
+        inf.tags.includes(category)
       );
     }
 
@@ -60,14 +59,15 @@ export async function GET(request: NextRequest) {
       case 'popular':
         influencers.sort((a, b) => (b.stats.followers || 0) - (a.stats.followers || 0));
         break;
-      case 'rating':
-        influencers.sort((a, b) => (b.stats.rating || 0) - (a.stats.rating || 0));
-        break;
-      case 'students':
-        influencers.sort((a, b) => (b.stats.students || 0) - (a.stats.students || 0));
+      case 'courses':
+        influencers.sort((a, b) => 
+          ((b.stats.free_courses || 0) + (b.stats.paid_courses || 0)) - 
+          ((a.stats.free_courses || 0) + (a.stats.paid_courses || 0))
+        );
         break;
       case 'recent':
-        influencers.sort((a, b) => b.updatedAt - a.updatedAt);
+        // Sort by ID (newer IDs come later)
+        influencers.sort((a, b) => b.id.localeCompare(a.id));
         break;
       default:
         break;

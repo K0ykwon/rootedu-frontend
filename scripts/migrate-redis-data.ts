@@ -48,9 +48,18 @@ interface Product {
   createdAt: number;
 }
 
+type CommunityType = 
+  | 'elementary' 
+  | 'middle' 
+  | 'high' 
+  | 'elementary-parent' 
+  | 'middle-parent' 
+  | 'high-parent';
+
 interface Post {
   id: string;
   authorId: string;
+  communityType: CommunityType;
   title: string;
   body: string;
   tags: string[];
@@ -424,9 +433,10 @@ function generatePosts(): Post[] {
     {
       id: 'post_1',
       authorId: 'user_1',
-      title: '코딩 초보자를 위한 학습 로드맵',
-      body: '프로그래밍을 처음 시작하는 분들을 위한 단계별 학습 가이드입니다. 1단계: 기초 문법 익히기, 2단계: 간단한 프로젝트 만들기, 3단계: 협업 도구 사용법 배우기...',
-      tags: ['초보자', '학습', '로드맵', '프로그래밍'],
+      communityType: 'high',
+      title: 'SKY 합격 후기 - 수시 전형 준비법',
+      body: '안녕하세요! 올해 SKY 대학에 합격한 학생입니다. 수시 전형 준비 과정에서 도움이 되었던 경험들을 공유합니다...',
+      tags: ['수시', '합격후기', 'SKY', '입시'],
       createdAt: now - 7 * 24 * 60 * 60 * 1000,
       stats: {
         likes: 24,
@@ -436,9 +446,10 @@ function generatePosts(): Post[] {
     {
       id: 'post_2',
       authorId: 'user_2',
-      title: 'React vs Vue, 어떤 프레임워크를 선택해야 할까?',
-      body: '프론트엔드 프레임워크 선택에 고민이 많으신가요? 각각의 장단점을 비교해보고 프로젝트 성격에 따른 선택 기준을 알려드리겠습니다...',
-      tags: ['React', 'Vue', '프레임워크', '비교'],
+      communityType: 'middle',
+      title: '중학교 내신 관리 팁 공유합니다',
+      body: '중학교 2학년 학생입니다. 1학년부터 꾸준히 내신 관리해서 전과목 A를 받고 있는데, 제가 사용한 공부법을 공유하려고 합니다...',
+      tags: ['내신관리', '공부법', '중2'],
       createdAt: now - 5 * 24 * 60 * 60 * 1000,
       stats: {
         likes: 18,
@@ -448,9 +459,10 @@ function generatePosts(): Post[] {
     {
       id: 'post_3',
       authorId: 'user_3',
-      title: '데이터 사이언티스트가 되기 위한 필수 스킬',
-      body: '데이터 사이언스 분야로 전향을 고려하고 계신가요? 통계학, 프로그래밍, 도메인 지식까지 필요한 모든 스킬셋을 정리해드렸습니다...',
-      tags: ['데이터사이언스', '커리어', '스킬', '전향'],
+      communityType: 'elementary-parent',
+      title: '초등 수학 문제집 추천 부탁드려요',
+      body: '안녕하세요! 초등 4학년 아이가 수학에 흥미를 보이는데, 적절한 문제집을 추천해주실 수 있나요? 기초부터 심화까지 단계별로 학습할 수 있는 교재를 찾고 있습니다...',
+      tags: ['초등수학', '문제집추천', '4학년'],
       createdAt: now - 3 * 24 * 60 * 60 * 1000,
       stats: {
         likes: 31,
@@ -460,9 +472,10 @@ function generatePosts(): Post[] {
     {
       id: 'post_4',
       authorId: 'user_4',
-      title: 'UI/UX 디자인 트렌드 2024',
-      body: '올해 주목해야 할 디자인 트렌드들을 정리해봤습니다. 뉴모피즘의 재등장, 다크모드의 고도화, 마이크로 인터랙션의 중요성...',
-      tags: ['UI/UX', '디자인', '트렌드', '2024'],
+      communityType: 'elementary',
+      title: '즐거운 과학 실험 했어요!',
+      body: '오늘 학교에서 정말 재미있는 과학 실험을 했어요! 베이킹소다와 식초로 화산 폭발 실험을 했는데 너무 신기했어요...',
+      tags: ['과학실험', '초등과학', '재미있는수업'],
       createdAt: now - 2 * 24 * 60 * 60 * 1000,
       stats: {
         likes: 42,
@@ -472,9 +485,10 @@ function generatePosts(): Post[] {
     {
       id: 'post_5',
       authorId: 'user_5',
-      title: '블록체인 개발자 로드맵',
-      body: 'Web3 개발자가 되고 싶다면? Solidity 기초부터 DeFi 프로토콜 개발까지, 단계별 학습 계획을 세워봤습니다...',
-      tags: ['블록체인', 'Web3', '개발자', 'DeFi'],
+      communityType: 'high-parent',
+      title: '대입 준비 정보 공유해요',
+      body: '고3 학부모입니다. 올해 대입을 준비하면서 알게 된 정보들을 공유하고자 합니다. 수시 원서 접수부터 면접 준비까지...',
+      tags: ['대입', '수시', '학부모', '정보공유'],
       createdAt: now - 1 * 24 * 60 * 60 * 1000,
       stats: {
         likes: 27,
@@ -619,12 +633,16 @@ async function savePostsToRedis(client: any, posts: Post[]) {
     await client.hSet(`post:${post.id}`, {
       id: post.id,
       authorId: post.authorId,
+      communityType: post.communityType,
       title: post.title,
       body: post.body,
       tags: JSON.stringify(post.tags),
       createdAt: post.createdAt.toString(),
       stats: JSON.stringify(post.stats)
     });
+    
+    // Add post ID to specific community type set
+    await client.sAdd(`community:${post.communityType}:posts`, post.id);
   }
   
   console.log(`✅ ${posts.length}개의 게시글 데이터 저장 완료`);

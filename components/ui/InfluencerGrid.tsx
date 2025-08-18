@@ -8,19 +8,19 @@ import Skeleton from './Skeleton';
 
 interface Influencer {
   slug: string;
-  id?: string;
+  id: string;
   name: string;
   username: string;
+  instagram: string;
   avatar: string;
   coverImage?: string;
   bio: string;
+  description: string;
   tags: string[];
   stats: {
     followers: number;
-    students: number;
-    courses: number;
-    rating: number;
-    reviews: number;
+    free_courses: number;
+    paid_courses: number;
   };
   verified?: boolean;
   isFollowing?: boolean;
@@ -63,7 +63,7 @@ const InfluencerGrid: React.FC<InfluencerGridProps> = ({
             username={influencer.username}
             avatar={influencer.avatar}
             followers={influencer.stats.followers}
-            rating={influencer.stats.rating}
+            rating={4.5}
             verified={influencer.verified}
             isFollowing={influencer.isFollowing}
             onFollow={() => onFollowToggle?.(influencer.slug)}
@@ -101,9 +101,9 @@ const InfluencerGrid: React.FC<InfluencerGridProps> = ({
           avatar={influencer.avatar}
           bio={influencer.bio}
           followers={influencer.stats.followers}
-          students={influencer.stats.students}
-          courses={influencer.stats.courses}
-          rating={influencer.stats.rating}
+          students={0}
+          courses={influencer.stats.free_courses + influencer.stats.paid_courses}
+          rating={4.5}
           expertise={influencer.tags}
           verified={influencer.verified}
           isFollowing={influencer.isFollowing}
@@ -268,9 +268,9 @@ export const InfluencerDiscovery: React.FC<InfluencerDiscoveryProps> = ({
             avatar={influencer.avatar}
             bio={influencer.bio}
             followers={influencer.stats.followers}
-            students={influencer.stats.students}
-            courses={influencer.stats.courses}
-            rating={influencer.stats.rating}
+            students={0}
+            courses={influencer.stats.free_courses + influencer.stats.paid_courses}
+            rating={4.5}
             expertise={influencer.tags}
           />
         ))}
@@ -318,9 +318,9 @@ export const InfluencerCarousel: React.FC<InfluencerCarouselProps> = ({
               avatar={influencer.avatar}
               bio={influencer.bio}
               followers={influencer.stats.followers}
-              students={influencer.stats.students}
-              courses={influencer.stats.courses}
-              rating={influencer.stats.rating}
+              students={0}
+              courses={influencer.stats.free_courses + influencer.stats.paid_courses}
+              rating={4.5}
               expertise={influencer.tags}
               verified={influencer.verified}
               onClick={() => onInfluencerClick?.(influencer.slug)}

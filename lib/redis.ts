@@ -56,27 +56,20 @@ export interface User {
 }
 
 export interface Influencer {
+  id: string;
   slug: string;
   name: string;
-  username: string;
+  username: string; // Instagram username
+  instagram: string; // Instagram handle/URL
   avatar: string;
   bio: string;
-  subjects: string[];
+  description: string; // Service direction/orientation
   tags: string[];
   stats: {
     followers: number;
-    rating: number;
-    reviews: number;
-    students: number;
-    courses: number;
+    free_courses: number;
+    paid_courses: number;
   };
-  socials: {
-    youtube?: string;
-    instagram?: string;
-    twitter?: string;
-  };
-  joinDate: number;
-  updatedAt: number;
 }
 
 export interface Product {
@@ -91,9 +84,18 @@ export interface Product {
   createdAt: number;
 }
 
+export type CommunityType = 
+  | 'elementary' 
+  | 'middle' 
+  | 'high' 
+  | 'elementary-parent' 
+  | 'middle-parent' 
+  | 'high-parent';
+
 export interface Post {
   id: string;
   authorId: string;
+  communityType: CommunityType;
   title: string;
   body: string;
   tags: string[];
@@ -101,6 +103,7 @@ export interface Post {
   stats: {
     likes: number;
     comments: number;
+    views?: number;
   };
 }
 

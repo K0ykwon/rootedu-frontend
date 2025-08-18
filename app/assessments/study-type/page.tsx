@@ -22,7 +22,6 @@ import {
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import Progress from '@/components/ui/Progress';
 import Badge from '@/components/ui/Badge';
 import { QUIZ_QUESTIONS, QuizAnswer, QuizResult, STUDY_TYPES } from '@/types/assessments';
 

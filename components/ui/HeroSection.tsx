@@ -112,19 +112,26 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       {/* Enhanced Background Pattern (if no image/video) */}
       {!backgroundImage && !backgroundVideo && (
         <div className="absolute inset-0">
-          {/* Gradient Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-primary-50)] via-[var(--color-bg-primary)] to-[var(--color-primary-100)]" />
+          {/* Premium Gradient Background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0a0b0c] via-[var(--color-bg-primary)] to-[#0f1012]" />
           
-          {/* Animated Orbs */}
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-[var(--color-primary-400)]/20 to-purple-500/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-blue-500/15 to-[var(--color-primary-300)]/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+          {/* Metallic Shimmer Layer */}
+          <div className="absolute inset-0 bg-[var(--metallic-gradient)] opacity-30" />
+          
+          {/* Animated Glass Orbs */}
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-[var(--color-primary-400)]/10 to-[var(--color-primary-300)]/10 rounded-full blur-3xl animate-pulse backdrop-blur-sm" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-[var(--color-primary-500)]/8 to-[var(--color-primary-400)]/8 rounded-full blur-3xl animate-pulse backdrop-blur-sm" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-gradient-to-r from-[var(--color-primary-400)]/5 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s', transform: 'translate(-50%, -50%)' }} />
+          
+          {/* Noise Texture */}
+          <div className="absolute inset-0 noise-texture opacity-30" />
           
           {/* Pattern Overlay */}
           <div className="absolute inset-0 opacity-5">
-            <svg width="100%" height="100%" viewBox="0 0 100 100" className="animate-pulse">
+            <svg width="100%" height="100%" viewBox="0 0 100 100">
               <defs>
                 <pattern id="hero-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-                  <circle cx="10" cy="10" r="1" fill="currentColor" />
+                  <circle cx="10" cy="10" r="0.5" fill="currentColor" />
                 </pattern>
               </defs>
               <rect width="100%" height="100%" fill="url(#hero-pattern)" />

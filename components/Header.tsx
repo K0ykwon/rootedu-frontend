@@ -8,7 +8,7 @@ export default function Header() {
   const { data: session, status } = useSession();
 
   return (
-    <header className="sticky top-0 z-50 bg-[var(--color-bg-primary)] border-b border-[var(--color-border-primary)]">
+    <header className="sticky top-0 z-50 glass-card-heavy border-b border-[var(--glass-border)] shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -20,6 +20,12 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
+            <Link 
+              href="/study-proof" 
+              className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+            >
+              🔥 공부 인증
+            </Link>
             <Link 
               href="/influencers" 
               className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"

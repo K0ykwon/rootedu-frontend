@@ -19,17 +19,16 @@ export async function GET(request: NextRequest, { params }: Props) {
 
     // 데이터 파싱
     const influencer = {
+      id: influencerData.id,
       slug: influencerData.slug,
       name: influencerData.name,
       username: influencerData.username,
+      instagram: influencerData.instagram,
       avatar: influencerData.avatar,
       bio: influencerData.bio,
-      subjects: influencerData.subjects ? JSON.parse(influencerData.subjects) : [],
+      description: influencerData.description,
       tags: influencerData.tags ? JSON.parse(influencerData.tags) : [],
-      stats: influencerData.stats ? JSON.parse(influencerData.stats) : {},
-      socials: influencerData.socials ? JSON.parse(influencerData.socials) : {},
-      joinDate: parseInt(influencerData.joinDate || '0'),
-      updatedAt: parseInt(influencerData.updatedAt || '0')
+      stats: influencerData.stats ? JSON.parse(influencerData.stats) : {}
     };
 
     // 관련 상품 조회

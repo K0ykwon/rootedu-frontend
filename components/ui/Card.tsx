@@ -5,6 +5,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   hover?: boolean;
   compact?: boolean;
   elevated?: boolean;
+  glass?: boolean;
 }
 
 const Card: React.FC<CardProps> = ({
@@ -13,12 +14,15 @@ const Card: React.FC<CardProps> = ({
   hover = false,
   compact = false,
   elevated = false,
+  glass = true,
   ...props
 }) => {
-  const baseClasses = 'bg-[var(--color-bg-tertiary)] border border-[var(--color-border-primary)] rounded-xl transition-all duration-200';
+  const baseClasses = glass 
+    ? 'glass-card rounded-xl transition-all duration-200' 
+    : 'bg-[var(--color-bg-tertiary)] border border-[var(--color-border-primary)] rounded-xl transition-all duration-200';
   const paddingClasses = compact ? 'p-4' : 'p-6';
-  const hoverClasses = hover ? 'hover:border-[var(--color-primary-400)] hover:shadow-[0_8px_24px_rgba(86,186,125,0.12)]' : '';
-  const elevatedClasses = elevated ? 'shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]' : '';
+  const hoverClasses = hover ? 'hover:border-[var(--color-primary-400)] hover:shadow-[0_8px_24px_rgba(86,186,125,0.12)] hover:bg-[var(--color-bg-quaternary)]' : '';
+  const elevatedClasses = elevated ? 'shadow-[0_4px_12px_rgba(0,0,0,0.15)]' : '';
 
   return (
     <div

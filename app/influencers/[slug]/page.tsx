@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { InfluencerProfileHeader } from '../../../components/ui/InfluencerProfile';
+import Link from 'next/link';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Badge from '../../../components/ui/Badge';
@@ -10,30 +10,22 @@ import Avatar from '../../../components/ui/Avatar';
 import Modal from '../../../components/ui/Modal';
 import { useToast } from '../../../components/ui/Toast';
 import Skeleton from '../../../components/ui/Skeleton';
-import CourseCard from '../../../components/ui/CourseCard';
 
 interface Influencer {
+  id: string;
   slug: string;
   name: string;
   username: string;
+  instagram: string;
   avatar: string;
   bio: string;
-  subjects: string[];
+  description: string;
   tags: string[];
   stats: {
     followers: number;
-    rating: number;
-    reviews: number;
-    students: number;
-    courses: number;
+    free_courses: number;
+    paid_courses: number;
   };
-  socials: {
-    youtube?: string;
-    instagram?: string;
-    twitter?: string;
-  };
-  joinDate: number;
-  updatedAt: number;
 }
 
 interface Product {
@@ -52,7 +44,10 @@ export default function InfluencerDetailPage() {
   const [influencer, setInfluencer] = useState<Influencer | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showFAQModal, setShowFAQModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'posts' | 'courses' | 'reviews' | 'about'>('posts');
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [showTipModal, setShowTipModal] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -79,41 +74,32 @@ export default function InfluencerDetailPage() {
     }
   }, [slug]);
 
+  const handleFollow = () => {
+    setIsFollowing(!isFollowing);
+    showToast(isFollowing ? '팔로우를 취소했습니다' : '팔로우했습니다', 'success');
+  };
+
   const handlePurchase = (productId: string) => {
-    showToast('구매 기능은 곧 추가될 예정입니다. 조금만 기다려주세요!', 'info');
+    showToast('구매 페이지로 이동합니다...', 'info');
   };
 
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case 'beginner': return 'success';
-      case 'intermediate': return 'warning';
-      case 'advanced': return 'error';
-      default: return 'default';
-    }
-  };
-
-  const getLevelText = (level: string) => {
-    switch (level) {
-      case 'beginner': return '초급';
-      case 'intermediate': return '중급';
-      case 'advanced': return '고급';
-      default: return level;
-    }
+  const handleSendTip = (amount: number) => {
+    showToast(`₩${amount.toLocaleString()} 후원이 완료되었습니다!`, 'success');
+    setShowTipModal(false);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[var(--color-bg-primary)]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Skeleton className="h-80 mb-8" />
+      <div className="min-h-screen bg-[#0f0f0f]">
+        <Skeleton className="h-96" />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <Skeleton className="h-32 mb-8" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-              <Skeleton className="h-60" />
-              <Skeleton className="h-40" />
+            <div className="lg:col-span-2">
+              <Skeleton className="h-96" />
             </div>
-            <div className="space-y-6">
-              <Skeleton className="h-40" />
-              <Skeleton className="h-32" />
+            <div>
+              <Skeleton className="h-64" />
             </div>
           </div>
         </div>
@@ -123,114 +109,206 @@ export default function InfluencerDetailPage() {
 
   if (!influencer) {
     return (
-      <div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-[var(--color-bg-tertiary)] rounded-lg mx-auto mb-4 flex items-center justify-center">
-            <svg className="w-8 h-8 text-[var(--color-text-quaternary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
-            인플루언서를 찾을 수 없습니다
-          </h2>
-          <p className="text-[var(--color-text-tertiary)]">
-            요청하신 인플루언서가 존재하지 않거나 삭제되었습니다.
-          </p>
+          <h2 className="text-2xl font-bold text-white mb-4">인플루언서를 찾을 수 없습니다</h2>
+          <Link href="/influencers">
+            <Button variant="outline">돌아가기</Button>
+          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-primary)]">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Influencer Profile Header */}
-        <InfluencerProfileHeader 
-          name={influencer.name}
-          username={influencer.username}
-          avatar={influencer.avatar}
-          bio={influencer.bio}
-          followers={influencer.stats.followers}
-          following={0}
-          students={influencer.stats.students}
-          courses={influencer.stats.courses}
-          rating={influencer.stats.rating}
-          reviews={influencer.stats.reviews}
-          expertise={influencer.tags}
-          verified={true}
-          joinDate="2024"
-        />
+    <div className="min-h-screen bg-[#0f0f0f]">
+      {/* Cover Image Section */}
+      <div className="relative h-80 md:h-96 bg-gradient-to-br from-purple-600 via-pink-500 to-red-500">
+        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent h-32" />
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Bio and Introduction */}
-            <Card>
-              <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">
-                소개
-              </h3>
-              <div className="space-y-4">
-                <p className="text-[var(--color-text-secondary)] leading-relaxed">
-                  {influencer.bio}
-                </p>
-                
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-sm text-[var(--color-text-tertiary)]">전공:</span>
-                  {influencer.subjects.map((subject) => (
-                    <Badge key={subject} variant="primary" size="sm">
-                      {subject}
-                    </Badge>
-                  ))}
-                </div>
-                
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-sm text-[var(--color-text-tertiary)]">태그:</span>
-                  {influencer.tags.map((tag) => (
-                    <Badge key={tag} variant="default" size="sm">
-                      {tag}
-                    </Badge>
-                  ))}
+      {/* Profile Header */}
+      <div className="relative -mt-20 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-start md:items-end gap-6">
+            {/* Profile Picture */}
+            <div className="relative">
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 p-1">
+                <div className="w-full h-full rounded-full bg-gray-800 flex items-center justify-center text-3xl font-bold text-white">
+                  {influencer.name.charAt(0)}
                 </div>
               </div>
-            </Card>
+              <div className="absolute bottom-2 right-2 w-6 h-6 bg-green-500 border-2 border-black rounded-full" />
+            </div>
 
-            {/* Products/Courses */}
-            <Card>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-[var(--color-text-primary)]">
-                  강의 및 상품 ({products.length})
-                </h3>
+            {/* Profile Info */}
+            <div className="flex-1 text-white">
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl md:text-4xl font-bold">{influencer.name}</h1>
+                <svg className="w-6 h-6 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
               </div>
-              
-              {products.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {products.map((product) => (
-                    <Card key={product.id} className="p-0 overflow-hidden hover-lift">
-                      <div className="aspect-video bg-[var(--color-bg-tertiary)]">
-                        <div className="w-full h-full flex items-center justify-center text-[var(--color-text-quaternary)]">
-                          강의 썸네일
+              <p className="text-gray-300 mb-2">@{influencer.username}</p>
+              <p className="text-gray-200 max-w-2xl">{influencer.bio}</p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <Button 
+                variant={isFollowing ? "outline" : "primary"}
+                onClick={handleFollow}
+                className={isFollowing ? "border-gray-600 text-gray-300" : "bg-gradient-to-r from-purple-500 to-pink-500"}
+              >
+                {isFollowing ? '팔로잉' : '팔로우'}
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setShowMessageModal(true)}
+                className="border-gray-600 text-gray-300"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                메시지
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setShowTipModal(true)}
+                className="border-gray-600 text-gray-300"
+              >
+                💝 후원
+              </Button>
+            </div>
+          </div>
+
+          {/* Stats Bar */}
+          <div className="grid grid-cols-4 gap-8 mt-8 py-6 border-t border-b border-gray-800">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-white">{products.length}</p>
+              <p className="text-sm text-gray-400">콘텐츠</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-white">{influencer.stats.followers.toLocaleString()}</p>
+              <p className="text-sm text-gray-400">팔로워</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-white">4.9</p>
+              <p className="text-sm text-gray-400">평점</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-white">156</p>
+              <p className="text-sm text-gray-400">리뷰</p>
+            </div>
+          </div>
+
+          {/* Navigation Tabs */}
+          <div className="flex gap-8 mt-6 border-b border-gray-800">
+            {['posts', 'courses', 'reviews', 'about'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab as any)}
+                className={`pb-4 px-2 text-sm font-medium transition-colors ${
+                  activeTab === tab 
+                    ? 'text-white border-b-2 border-purple-500' 
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {tab === 'posts' && '포스트'}
+                {tab === 'courses' && '강의'}
+                {tab === 'reviews' && '리뷰'}
+                {tab === 'about' && '소개'}
+              </button>
+            ))}
+          </div>
+
+          {/* Content Area */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8 pb-12">
+            {/* Main Content */}
+            <div className="lg:col-span-2">
+              {/* Posts Tab */}
+              {activeTab === 'posts' && (
+                <div className="space-y-6">
+                  {/* Featured Post */}
+                  <Card className="bg-gray-900/50 border-gray-800 overflow-hidden">
+                    <div className="aspect-video bg-gradient-to-br from-purple-600/20 to-pink-600/20" />
+                    <div className="p-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge variant="primary" size="sm">NEW</Badge>
+                        <span className="text-xs text-gray-400">2시간 전</span>
+                      </div>
+                      <h3 className="text-lg font-semibold text-white mb-2">
+                        2025 수능 대비 완벽 가이드
+                      </h3>
+                      <p className="text-gray-300 text-sm mb-4">
+                        올해 수능을 준비하는 학생들을 위한 특별 콘텐츠입니다. 
+                        제가 직접 경험한 노하우와 전략을 모두 담았습니다.
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex gap-4">
+                          <button className="flex items-center gap-1 text-gray-400 hover:text-pink-500 transition-colors">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                            <span className="text-sm">234</span>
+                          </button>
+                          <button className="flex items-center gap-1 text-gray-400 hover:text-blue-500 transition-colors">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <span className="text-sm">45</span>
+                          </button>
+                        </div>
+                        <Button size="sm" variant="outline" className="text-purple-400 border-purple-400">
+                          자세히 보기
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Post Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <div key={i} className="relative group cursor-pointer">
+                        <div className="aspect-square bg-gradient-to-br from-purple-600/20 to-pink-600/20 rounded-lg overflow-hidden">
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <div className="text-white text-center">
+                              <p className="font-semibold">포스트 {i}</p>
+                              <p className="text-sm">❤️ 123</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-medium text-[var(--color-text-primary)] text-sm">
-                            {product.title}
-                          </h4>
-                          <Badge variant={getLevelColor(product.level)} size="sm">
-                            {getLevelText(product.level)}
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Courses Tab */}
+              {activeTab === 'courses' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {products.map((product) => (
+                    <Card key={product.id} className="bg-gray-900/50 border-gray-800 overflow-hidden hover:border-purple-500/50 transition-all">
+                      <div className="aspect-video bg-gradient-to-br from-purple-600/20 to-pink-600/20 relative">
+                        <div className="absolute top-3 right-3">
+                          <Badge variant="warning" size="sm">
+                            {product.level === 'beginner' ? '초급' : product.level === 'intermediate' ? '중급' : '고급'}
                           </Badge>
                         </div>
-                        <p className="text-sm text-[var(--color-text-secondary)] mb-4 line-clamp-2">
-                          {product.summary}
-                        </p>
+                      </div>
+                      <div className="p-5">
+                        <h3 className="font-semibold text-white mb-2">{product.title}</h3>
+                        <p className="text-sm text-gray-300 mb-4">{product.summary}</p>
                         <div className="flex items-center justify-between">
-                          <span className="text-lg font-semibold text-[var(--color-primary-500)]">
+                          <span className="text-xl font-bold text-purple-400">
                             ₩{product.price.toLocaleString()}
                           </span>
                           <Button 
                             size="sm" 
                             variant="primary"
                             onClick={() => handlePurchase(product.id)}
+                            className="bg-gradient-to-r from-purple-500 to-pink-500"
                           >
                             구매하기
                           </Button>
@@ -239,135 +317,211 @@ export default function InfluencerDetailPage() {
                     </Card>
                   ))}
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-[var(--color-text-tertiary)]">
-                    아직 등록된 강의가 없습니다.
-                  </p>
+              )}
+
+              {/* Reviews Tab */}
+              {activeTab === 'reviews' && (
+                <div className="space-y-6">
+                  {[1, 2, 3, 4].map((i) => (
+                    <Card key={i} className="bg-gray-900/50 border-gray-800">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+                          U{i}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-white">수강생 {i}</span>
+                            <div className="flex text-yellow-400">
+                              {[...Array(5)].map((_, star) => (
+                                <svg key={star} className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-300">
+                            정말 유익한 강의였습니다. 실제 경험을 바탕으로 한 설명이 매우 도움이 되었어요.
+                            특히 실전 문제 풀이 부분이 인상적이었습니다.
+                          </p>
+                          <p className="text-xs text-gray-500 mt-2">2024.03.15</p>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
               )}
-            </Card>
 
-            {/* Reviews Section */}
-            <Card>
-              <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-6">
-                리뷰 ({influencer.stats.reviews})
-              </h3>
-              
-              {/* Mock Reviews */}
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="border-b border-[var(--color-border-secondary)] pb-4 last:border-b-0 last:pb-0">
-                    <div className="flex items-start gap-3">
-                      <Avatar 
-                        src={`/avatars/reviewer${i}.jpg`}
-                        alt={`리뷰어 ${i}`}
-                        size="sm"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-[var(--color-text-primary)] text-sm">
-                            수강생 {i}
-                          </span>
-                          <div className="flex text-yellow-400">
-                            {[...Array(5)].map((_, star) => (
-                              <svg key={star} className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                            ))}
-                          </div>
-                        </div>
-                        <p className="text-sm text-[var(--color-text-secondary)]">
-                          정말 유익한 강의였습니다. 실제 경험을 바탕으로 한 설명이 매우 도움이 되었어요.
-                        </p>
+              {/* About Tab */}
+              {activeTab === 'about' && (
+                <Card className="bg-gray-900/50 border-gray-800">
+                  <h3 className="text-xl font-semibold text-white mb-4">소개</h3>
+                  <div className="space-y-4 text-gray-300">
+                    <p>{influencer.description}</p>
+                    
+                    <div>
+                      <h4 className="font-medium text-white mb-2">전문 분야</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {influencer.tags.map((tag) => (
+                          <Badge key={tag} variant="primary" className="border-purple-500 text-purple-400">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium text-white mb-2">경력 및 자격</h4>
+                      <ul className="space-y-1 text-sm">
+                        <li>• SKY 대학 재학/졸업</li>
+                        <li>• 전공 분야 상위 1% 성적</li>
+                        <li>• 관련 자격증 다수 보유</li>
+                        <li>• 멘토링 경력 2년 이상</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium text-white mb-2">연락처</h4>
+                      <div className="flex items-center gap-4">
+                        <a 
+                          href={`https://instagram.com/${influencer.instagram}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-purple-400 hover:text-purple-300"
+                        >
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zM5.838 12a6.162 6.162 0 1112.324 0 6.162 6.162 0 01-12.324 0zM12 16a4 4 0 110-8 4 4 0 010 8zm4.965-10.405a1.44 1.44 0 112.881.001 1.44 1.44 0 01-2.881-.001z"/>
+                          </svg>
+                          @{influencer.instagram}
+                        </a>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </Card>
-          </div>
+                </Card>
+              )}
+            </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Quick Stats */}
-            <Card>
-              <h4 className="font-medium text-[var(--color-text-primary)] mb-4">
-                통계
-              </h4>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-[var(--color-text-tertiary)]">팔로워</span>
-                  <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                    {influencer.stats.followers?.toLocaleString()}
-                  </span>
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Subscription Card */}
+              <Card className="bg-gradient-to-br from-purple-900/50 to-pink-900/50 border-purple-500/30">
+                <h4 className="font-semibold text-white mb-3">프리미엄 구독</h4>
+                <p className="text-sm text-gray-300 mb-4">
+                  모든 콘텐츠를 무제한으로 이용하세요
+                </p>
+                <div className="space-y-3">
+                  <div className="p-3 bg-black/30 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">월간 구독</span>
+                      <span className="text-white font-bold">₩29,000</span>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-black/30 rounded-lg border border-purple-500">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="text-gray-300">연간 구독</span>
+                        <Badge variant="success" size="sm" className="ml-2">20% 할인</Badge>
+                      </div>
+                      <span className="text-white font-bold">₩278,400</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-[var(--color-text-tertiary)]">평점</span>
-                  <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                    ⭐ {influencer.stats.rating}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-[var(--color-text-tertiary)]">수강생</span>
-                  <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                    {influencer.stats.students?.toLocaleString()}명
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-[var(--color-text-tertiary)]">강좌 수</span>
-                  <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                    {influencer.stats.courses}개
-                  </span>
-                </div>
-              </div>
-            </Card>
+                <Button className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500">
+                  구독 시작하기
+                </Button>
+              </Card>
 
-            {/* FAQ Chat Button */}
-            <Card>
-              <h4 className="font-medium text-[var(--color-text-primary)] mb-4">
-                FAQ 챗봇
-              </h4>
-              <p className="text-sm text-[var(--color-text-tertiary)] mb-4">
-                이 인플루언서에 대한 자주 묻는 질문들을 확인해보세요.
-              </p>
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => setShowFAQModal(true)}
-              >
-                FAQ 확인하기
-              </Button>
-            </Card>
+              {/* Quick Stats */}
+              <Card className="bg-gray-900/50 border-gray-800">
+                <h4 className="font-semibold text-white mb-4">활동 통계</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-400">이번 달 포스트</span>
+                    <span className="text-white font-medium">24개</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-400">총 좋아요</span>
+                    <span className="text-white font-medium">3.2K</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-400">응답 시간</span>
+                    <span className="text-white font-medium">~2시간</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-400">가입일</span>
+                    <span className="text-white font-medium">2024.01</span>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Tip Jar */}
+              <Card className="bg-gray-900/50 border-gray-800">
+                <h4 className="font-semibold text-white mb-3">후원하기</h4>
+                <p className="text-sm text-gray-300 mb-4">
+                  마음에 드는 콘텐츠가 있다면 후원으로 응원해주세요!
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[5000, 10000, 30000].map((amount) => (
+                    <button
+                      key={amount}
+                      onClick={() => handleSendTip(amount)}
+                      className="p-2 bg-purple-900/30 hover:bg-purple-900/50 rounded-lg text-white text-sm font-medium transition-colors"
+                    >
+                      ₩{(amount/1000)}K
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* FAQ Modal */}
+      {/* Message Modal */}
       <Modal
-        isOpen={showFAQModal}
-        onClose={() => setShowFAQModal(false)}
-        title="FAQ 챗봇"
+        isOpen={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+        title="메시지 보내기"
       >
         <div className="space-y-4">
-          <p className="text-[var(--color-text-secondary)]">
-            FAQ 챗봇 기능은 현재 개발 중입니다. 
-            향후 업데이트에서 인플루언서별 맞춤형 FAQ를 제공할 예정입니다.
-          </p>
-          <div className="bg-[var(--color-bg-tertiary)] p-4 rounded-lg">
-            <h5 className="font-medium text-[var(--color-text-primary)] mb-2">
-              예상 기능:
-            </h5>
-            <ul className="text-sm text-[var(--color-text-secondary)] space-y-1">
-              <li>• 강의 일정 및 커리큘럼 문의</li>
-              <li>• 수강료 및 할인 정보</li>
-              <li>• 개인 맞춤 학습 계획 상담</li>
-              <li>• 멘토링 프로그램 안내</li>
-            </ul>
+          <textarea
+            className="w-full p-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+            rows={4}
+            placeholder="메시지를 입력하세요..."
+          />
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setShowMessageModal(false)}>
+              취소
+            </Button>
+            <Button variant="primary" className="bg-gradient-to-r from-purple-500 to-pink-500">
+              전송
+            </Button>
           </div>
         </div>
       </Modal>
 
+      {/* Tip Modal */}
+      <Modal
+        isOpen={showTipModal}
+        onClose={() => setShowTipModal(false)}
+        title="후원하기"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-300">
+            {influencer.name}님께 후원할 금액을 선택해주세요
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {[5000, 10000, 30000, 50000, 100000, 200000].map((amount) => (
+              <button
+                key={amount}
+                onClick={() => handleSendTip(amount)}
+                className="p-4 bg-gray-900 hover:bg-purple-900/30 border border-gray-700 hover:border-purple-500 rounded-lg text-white font-medium transition-all"
+              >
+                ₩{amount.toLocaleString()}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

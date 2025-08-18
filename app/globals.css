@@ -40,6 +40,27 @@
 
   /* Shadows */
   --shadow-linear: 0px 8px 2px 0px rgba(0, 0, 0, 0), 0px 5px 2px 0px rgba(0, 0, 0, 0.01), 0px 3px 2px 0px rgba(0, 0, 0, 0.04), 0px 1px 1px 0px rgba(0, 0, 0, 0.07), 0px 0px 1px 0px rgba(0, 0, 0, 0.08);
+  
+  /* Glass Morphism & Premium Effects */
+  --glass-bg: rgba(15, 16, 17, 0.6);
+  --glass-bg-heavy: rgba(15, 16, 17, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-light: rgba(255, 255, 255, 0.05);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --glass-shadow-subtle: 0 4px 16px 0 rgba(0, 0, 0, 0.25);
+  
+  /* Metallic Gradients */
+  --metallic-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 40%, rgba(255, 255, 255, 0.02) 100%);
+  --metallic-shine: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.07) 50%, transparent 60%);
+  --metallic-green: linear-gradient(135deg, #34a85a 0%, #56ba7d 50%, #34a85a 100%);
+  --metallic-dark: linear-gradient(135deg, #1c1d1f 0%, #2a2f3a 50%, #1c1d1f 100%);
+  
+  /* Premium Overlays */
+  --noise-overlay: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.02'/%3E%3C/svg%3E");
+  
+  /* Subtle Glow Effects */
+  --glow-green: 0 0 20px rgba(86, 186, 125, 0.15);
+  --glow-green-subtle: 0 0 10px rgba(86, 186, 125, 0.08);
 }
 
 @theme inline {
@@ -324,6 +345,96 @@ body {
 
   .animate-shimmer {
     animation: shimmer 2s infinite;
+  }
+
+  /* Premium Glass Effects */
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow-subtle);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--metallic-gradient);
+    pointer-events: none;
+  }
+  
+  .glass-card-heavy {
+    background: var(--glass-bg-heavy);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+  
+  /* Metallic Button Effects */
+  .metallic-button {
+    position: relative;
+    background: var(--metallic-dark);
+    border: 1px solid var(--glass-border-light);
+    overflow: hidden;
+  }
+  
+  .metallic-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--metallic-shine);
+    transform: translateX(-100%);
+    transition: transform 0.6s;
+  }
+  
+  .metallic-button:hover::before {
+    transform: translateX(100%);
+  }
+  
+  .metallic-button-green {
+    background: var(--metallic-green);
+    box-shadow: var(--glow-green-subtle);
+  }
+  
+  .metallic-button-green:hover {
+    box-shadow: var(--glow-green);
+  }
+  
+  /* Premium Badge */
+  .premium-badge {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border-light);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  }
+  
+  /* Subtle Noise Texture */
+  .noise-texture::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--noise-overlay);
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  
+  /* Premium Gradient Background */
+  .premium-gradient {
+    background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
+    position: relative;
+  }
+  
+  .premium-gradient::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 50%, rgba(86, 186, 125, 0.05) 0%, transparent 50%);
+    pointer-events: none;
   }
 
 }
