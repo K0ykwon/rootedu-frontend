@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { getRedisClient } from '../../../../lib/redis';
-import { ChromaClient } from 'chromadb';
-import { OpenAIEmbeddings } from '@langchain/openai';
+// TODO: Re-enable ChromaDB when build issues are resolved
+// import { ChromaClient } from 'chromadb';
+// import { OpenAIEmbeddings } from '@langchain/openai';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// TODO: Re-enable ChromaDB when build issues are resolved
 // ChromaDB 클라이언트 및 OpenAI 임베딩 초기화
-const embeddings = new OpenAIEmbeddings({
-  openAIApiKey: process.env.OPENAI_API_KEY,
-});
+// const embeddings = new OpenAIEmbeddings({
+//   openAIApiKey: process.env.OPENAI_API_KEY,
+// });
 
-const chromaClient = new ChromaClient({
-  path: process.env.CHROMA_URL || 'http://localhost:8000'
-});
+// const chromaClient = new ChromaClient({
+//   path: process.env.CHROMA_URL || 'http://localhost:8000'
+// });
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,9 +54,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ChromaDB를 사용한 의미적 검색 (RAG)
-    let relevantInfluencers: any[] = [];
+    // TODO: Re-enable ChromaDB when build issues are resolved
+    // ChromaDB를 사용한 의미적 검색 (RAG) - 임시로 비활성화
+    let relevantInfluencers: any[] = allInfluencers; // 임시로 모든 인플루언서 사용
     
+    /*
     try {
       // ChromaDB 컬렉션 접근 또는 생성
       const collectionName = 'rootedu-influencers';
@@ -97,6 +101,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+    */
 
     // 관련성 점수 계산 및 정렬
     const scoredInfluencers = relevantInfluencers.map(inf => {
@@ -143,7 +148,7 @@ export async function POST(request: NextRequest) {
     const messages = [
       {
         role: 'system' as const,
-        content: `당신은 RootEdu 강좌 추천 전문 AI 어시스턴트입니다. ChromaDB 벡터 기반 의미적 검색을 통해 찾은 실제 인플루언서 데이터를 기반으로 학생들에게 최적의 강좌를 추천해야 합니다.
+        content: `당신은 RootEdu 강좌 추천 전문 AI 어시스턴트입니다. 실제 인플루언서 데이터를 기반으로 학생들에게 최적의 강좌를 추천해야 합니다.
 
 현재 RootEdu에 등록된 인플루언서 정보:
 ${context}
