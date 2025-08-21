@@ -1,0 +1,41 @@
+{
+  "name": "rootedu-platform",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "seed": "npx tsx scripts/seed.ts",
+    "setup-vector-db": "npx tsx scripts/setup-vector-db.ts"
+  },
+  "dependencies": {
+    "@langchain/community": "^0.0.57",
+    "@langchain/openai": "^0.0.14",
+    "@playwright/test": "^1.54.2",
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.2",
+    "chromadb": "^1.8.1",
+    "cohere-ai": "^7.18.1",
+    "dotenv": "^17.2.1",
+    "framer-motion": "^12.23.12",
+    "langchain": "^0.1.0",
+    "lucide-react": "^0.539.0",
+    "next": "15.4.6",
+    "next-auth": "^4.24.11",
+    "openai": "^4.28.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "redis": "^5.8.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4",
+    "tsx": "^4.20.4",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,161 @@
+{
+  "header": {
+    "tag": "HEADER",
+    "classes": "css-12iupe6",
+    "id": "",
+    "attributes": {
+      "class": "css-12iupe6"
+    },
+    "children": [
+      {
+        "tag": "DIV",
+        "classes": "css-534d5p",
+        "id": "",
+        "attributes": {
+          "class": "css-534d5p"
+        },
+        "children": [
+          {
+            "tag": "H2",
+            "classes": "css-1ke88iq",
+            "id": "",
+            "attributes": {
+              "data-testid": "title",
+              "class": "css-1ke88iq"
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "tag": "DIV",
+        "classes": "css-15gl84l",
+        "id": "",
+        "attributes": {
+          "class": "css-15gl84l"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "classes": "css-1m6kh0p",
+            "id": "",
+            "attributes": {
+              "class": "css-1m6kh0p"
+            },
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "main": {
+    "tag": "MAIN",
+    "classes": "",
+    "id": "",
+    "attributes": {},
+    "children": [
+      {
+        "tag": "DIV",
+        "classes": "css-mw5pt9",
+        "id": "",
+        "attributes": {
+          "class": "css-mw5pt9"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "classes": "css-lrk3v9",
+            "id": "",
+            "attributes": {
+              "class": "css-lrk3v9"
+            },
+            "children": []
+          },
+          {
+            "tag": "DIV",
+            "classes": "css-1j2he8a",
+            "id": "",
+            "attributes": {
+              "class": "css-1j2he8a"
+            },
+            "children": []
+          },
+          {
+            "tag": "DIV",
+            "classes": "css-1jl7ivf",
+            "id": "",
+            "attributes": {
+              "class": "css-1jl7ivf"
+            },
+            "children": []
+          },
+          {
+            "tag": "DIV",
+            "classes": "css-14vima6",
+            "id": "",
+            "attributes": {
+              "class": "css-14vima6"
+            },
+            "children": []
+          },
+          {
+            "tag": "DIV",
+            "classes": "css-1cbthfr",
+            "id": "",
+            "attributes": {
+              "class": "css-1cbthfr"
+            },
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "footer": {
+    "tag": "FOOTER",
+    "classes": "css-18yb3mg",
+    "id": "",
+    "attributes": {
+      "class": "css-18yb3mg"
+    },
+    "children": [
+      {
+        "tag": "DIV",
+        "classes": "css-1ljnv6q",
+        "id": "",
+        "attributes": {
+          "class": "css-1ljnv6q"
+        },
+        "children": []
+      },
+      {
+        "tag": "SPAN",
+        "classes": "css-1szuq4w",
+        "id": "",
+        "attributes": {
+          "class": "css-1szuq4w"
+        },
+        "children": []
+      },
+      {
+        "tag": "DIV",
+        "classes": "css-7qlpjs",
+        "id": "",
+        "attributes": {
+          "class": "css-7qlpjs"
+        },
+        "children": [
+          {
+            "tag": "DIV",
+            "classes": "css-ewv9rt",
+            "id": "",
+            "attributes": {
+              "class": "css-ewv9rt"
+            },
+            "children": []
+          }
+        ]
+      }
+    ]
+  }
+}
