@@ -85,11 +85,24 @@
     --color-border-primary: #e8eaed;
     --color-border-secondary: #f1f3f4;
     --color-border-tertiary: #f8f9fa;
+
+    /* Glass Morphism & Premium Effects - 라이트모드 */
+    --glass-bg: rgba(248, 249, 250, 0.6);
+    --glass-bg-heavy: rgba(248, 249, 250, 0.8);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --glass-border-light: rgba(0, 0, 0, 0.05);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+    --glass-shadow-subtle: 0 4px 16px 0 rgba(0, 0, 0, 0.08);
+    
+    /* Metallic Gradients - 라이트모드 */
+    --metallic-gradient: linear-gradient(135deg, rgba(0, 0, 0, 0.03) 0%, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, 0.02) 100%);
+    --metallic-shine: linear-gradient(105deg, transparent 40%, rgba(0, 0, 0, 0.07) 50%, transparent 60%);
+    --metallic-dark: linear-gradient(135deg, #e8eaed 0%, #f1f3f4 50%, #e8eaed 100%);
   }
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light dark;
 }
 
 body {
@@ -214,7 +227,9 @@ body {
   }
   .swipe-hint::after {
     content: '';
-    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent;
+    @apply absolute inset-0;
+    background: linear-gradient(to right, transparent, var(--color-text-primary), transparent);
+    opacity: 0.1;
     transform: translateX(-100%);
     animation: shimmer 2s infinite;
   }

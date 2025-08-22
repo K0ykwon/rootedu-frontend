@@ -4,75 +4,58 @@ import { useState } from 'react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
-import AIChat from '../../components/ui/AIChat';
+import Link from 'next/link';
+import { BookOpen, Brain, Target, ArrowRight } from 'lucide-react';
 
-const presetPrompts = [
+const tools = [
   {
     id: 'study-plan',
-    title: '학습 계획 템플릿',
-    description: '효율적인 학습 계획을 세워보세요',
-    prompt: '안녕하세요! 다음과 같은 학습 계획 템플릿을 제공합니다:\n\n📚 **월간 학습 계획**\n1. 목표 설정 (SMART 기준)\n2. 주간 계획 분할\n3. 일일 실행 계획\n4. 진도 체크 방법\n5. 복습 사이클\n\n원하는 과목이나 목표를 알려주시면 더 구체적인 계획을 도와드릴 수 있습니다.'
+    title: '📚 학습 계획 AI 어시스턴트',
+    description: 'AI가 당신의 학습 목표에 맞는 맞춤형 계획을 제공합니다',
+    features: [
+      'SMART 기준 목표 설정',
+      '월간/주간/일일 계획 수립',
+      '과목별 맞춤 학습 방법',
+      '진도 체크와 복습 사이클',
+      '현실적이고 지속 가능한 계획'
+    ],
+    icon: BookOpen,
+    href: '/tools/study-plan',
+    color: 'bg-blue-500'
   },
   {
-    id: 'subject-questions',
-    title: '과목별 질문 가이드',
-    description: '각 과목별 핵심 질문들을 확인하세요',
-    prompt: '📖 **과목별 핵심 질문 가이드**\n\n**수학**: 개념 이해도, 문제 유형 분석, 풀이 과정\n**과학**: 실험 원리, 개념 연결, 응용 능력\n**언어**: 독해력, 어휘력, 표현력\n**사회**: 사건 연관성, 비판적 사고, 시사 연결\n\n어떤 과목에 대해 더 자세한 질문 리스트를 원하시나요?'
+    id: 'study-type',
+    title: '🔍 공부 유형 진단 AI',
+    description: '16가지 공부 유형 중 당신에게 맞는 유형을 찾아보세요',
+    features: [
+      '4가지 축 기반 유형 분석',
+      '16개 세부 유형 진단',
+      '유형별 맞춤 학습 전략',
+      '개인별 학습 환경 설정',
+      '유형의 장점 활용 방안'
+    ],
+    icon: Brain,
+    href: '/tools/study-type',
+    color: 'bg-green-500'
   },
   {
     id: 'course-recommendation',
-    title: '강좌 추천 질문',
-    description: '나에게 맞는 강좌를 찾는 질문들',
-    prompt: '🎯 **강좌 선택 가이드**\n\n다음 질문들을 통해 최적의 강좌를 찾아보세요:\n\n1. 현재 실력 수준은?\n2. 목표하는 성취 수준은?\n3. 선호하는 학습 방식은?\n4. 가능한 학습 시간은?\n5. 특별히 보완하고 싶은 부분은?\n\n이 정보를 바탕으로 RootEdu의 인플루언서 강좌 중 적합한 것을 추천해드릴 수 있습니다.'
+    title: '🎯 강좌 추천 AI',
+    description: 'AI가 당신에게 맞는 최적의 인플루언서 강좌를 추천합니다',
+    features: [
+      '학습 목표와 수준 분석',
+      '과목별 맞춤 강좌 추천',
+      '인플루언서 강좌 데이터베이스 활용',
+      '학습 스타일과 선호도 반영',
+      '성공 가능성 높은 강좌 선택'
+    ],
+    icon: Target,
+    href: '/tools/course-recommendation',
+    color: 'bg-purple-500'
   }
 ];
 
 export default function ToolsPage() {
-  type ChatMessage = {
-    id: string;
-    role: 'user' | 'ai';
-    content: string;
-    timestamp: Date;
-  };
-
-  const [selectedTool, setSelectedTool] = useState<string | null>(null);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-
-  const handleToolSelect = (toolId: string) => {
-    const tool = presetPrompts.find(p => p.id === toolId);
-    if (tool) {
-      setSelectedTool(toolId);
-      setChatMessages([
-        {
-          id: `ai-${Date.now()}`,
-          role: 'ai',
-          content: tool.prompt,
-          timestamp: new Date(),
-        },
-      ]);
-    }
-  };
-
-  const handleSendMessage = (message: string) => {
-    const now = Date.now();
-    setChatMessages(prev => [
-      ...prev,
-      {
-        id: `user-${now}`,
-        role: 'user',
-        content: message,
-        timestamp: new Date(),
-      },
-      {
-        id: `ai-${now + 1}`,
-        role: 'ai',
-        content:
-          '죄송합니다. 현재는 템플릿 기반 응답만 제공됩니다. 고도화된 AI 기능은 멘토 상품과 연동하여 제공될 예정입니다.',
-        timestamp: new Date(),
-      },
-    ]);
-  };
-
   return (
     <div className="min-h-screen bg-[var(--color-bg-primary)]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -82,125 +65,152 @@ export default function ToolsPage() {
             AI 학습 도구
           </h1>
           <p className="text-[var(--color-text-secondary)]">
-            AI 기반 학습 도구로 효율적인 학습을 시작하세요
+            OpenAI 기반 AI 어시스턴트로 효율적인 학습을 시작하세요
           </p>
         </div>
 
         {/* Notice */}
         <Alert variant="info" className="mb-8">
-          <strong>안내:</strong> 고도화된 AI 기능은 멘토 상품과 연동됩니다. 
-          현재는 기본 템플릿을 체험해보실 수 있습니다.
+          <strong>안내:</strong> 모든 AI 도구는 OpenAI GPT-4 모델을 활용하여 실시간으로 맞춤형 응답을 제공합니다. 
+          각 도구는 특화된 전문 지식을 바탕으로 최적의 학습 가이드를 제시합니다.
         </Alert>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Tool Selection */}
-          <div className="lg:col-span-1">
-            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
-              도구 선택
-            </h3>
-            <div className="space-y-4">
-              {presetPrompts.map((tool) => (
-                <Card 
-                  key={tool.id}
-                  className={`cursor-pointer transition-colors ${
-                    selectedTool === tool.id 
-                      ? 'border-[var(--color-primary-500)] bg-[var(--color-primary-50)]' 
-                      : 'hover:border-[var(--color-border-secondary)]'
-                  }`}
-                  onClick={() => handleToolSelect(tool.id)}
-                >
-                  <h4 className="font-medium text-[var(--color-text-primary)] mb-2">
-                    {tool.title}
-                  </h4>
-                  <p className="text-sm text-[var(--color-text-tertiary)]">
-                    {tool.description}
-                  </p>
-                </Card>
-              ))}
-            </div>
-          </div>
-
-          {/* Chat Interface */}
-          <div className="lg:col-span-2">
-            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
-              AI 어시스턴트
-            </h3>
-            
-            {selectedTool ? (
-              <AIChat
-                messages={chatMessages}
-                onSendMessage={handleSendMessage}
-                placeholder="질문을 입력하세요..."
-                className="h-96"
-              />
-            ) : (
-              <Card className="h-96 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-[var(--color-bg-tertiary)] rounded-lg mx-auto mb-4 flex items-center justify-center">
-                    <svg className="w-8 h-8 text-[var(--color-text-quaternary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                    </svg>
-                  </div>
-                  <h4 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">
-                    도구를 선택하세요
-                  </h4>
-                  <p className="text-[var(--color-text-tertiary)]">
-                    왼쪽에서 사용할 AI 도구를 선택하면 채팅을 시작할 수 있습니다.
-                  </p>
+        {/* Tools Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+          {tools.map((tool) => (
+            <Card key={tool.id} className="p-6 hover:shadow-lg transition-shadow">
+              <div className="flex items-start justify-between mb-4">
+                <div className={`w-12 h-12 ${tool.color} rounded-lg flex items-center justify-center`}>
+                  <tool.icon className="w-6 h-6 text-white" />
                 </div>
-              </Card>
-            )}
+                <Link 
+                  href={tool.href}
+                  className="text-[var(--color-primary-500)] hover:text-[var(--color-primary-600)] transition-colors"
+                >
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+              </div>
+              
+              <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-3">
+                {tool.title}
+              </h3>
+              
+              <p className="text-[var(--color-text-secondary)] mb-4">
+                {tool.description}
+              </p>
+              
+              <ul className="space-y-2 mb-6">
+                {tool.features.map((feature, index) => (
+                  <li key={index} className="flex items-center text-sm text-[var(--color-text-tertiary)]">
+                    <div className="w-1.5 h-1.5 bg-[var(--color-primary-500)] rounded-full mr-2"></div>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              
+              <Link href={tool.href}>
+                <Button className="w-full">
+                  도구 사용하기
+                </Button>
+              </Link>
+            </Card>
+          ))}
+        </div>
+
+        {/* How to Use */}
+        <div className="mb-12">
+          <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-6">
+            🚀 AI 도구 사용 방법
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="p-6 text-center">
+              <div className="w-16 h-16 bg-[var(--color-primary-100)] rounded-full mx-auto mb-4 flex items-center justify-center">
+                <span className="text-2xl">1️⃣</span>
+              </div>
+              <h4 className="font-medium text-[var(--color-text-primary)] mb-2">도구 선택</h4>
+              <p className="text-sm text-[var(--color-text-tertiary)]">
+                학습 목표에 맞는 AI 도구를 선택하세요
+              </p>
+            </Card>
+            
+            <Card className="p-6 text-center">
+              <div className="w-16 h-16 bg-[var(--color-primary-100)] rounded-full mx-auto mb-4 flex items-center justify-center">
+                <span className="text-2xl">2️⃣</span>
+              </div>
+              <h4 className="font-medium text-[var(--color-text-primary)] mb-2">질문 입력</h4>
+              <p className="text-sm text-[var(--color-text-tertiary)]">
+                구체적인 질문이나 상황을 자세히 설명하세요
+              </p>
+            </Card>
+            
+            <Card className="p-6 text-center">
+              <div className="w-16 h-16 bg-[var(--color-primary-100)] rounded-full mx-auto mb-4 flex items-center justify-center">
+                <span className="text-2xl">3️⃣</span>
+              </div>
+              <h4 className="font-medium text-[var(--color-text-primary)] mb-2">맞춤 응답</h4>
+              <p className="text-sm text-[var(--color-text-tertiary)]">
+                AI가 당신에게 최적화된 답변을 제공합니다
+              </p>
+            </Card>
           </div>
         </div>
 
-        {/* Feature Preview */}
-        <div className="mt-12">
+        {/* Benefits */}
+        <div className="mb-12">
           <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-6">
-            향후 제공 예정인 기능
+            ✨ AI 도구의 장점
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card>
-              <div className="w-12 h-12 bg-[var(--color-primary-500)] rounded-lg mb-4 flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h4 className="font-medium text-[var(--color-text-primary)] mb-2">
-                개인 맞춤 분석
-              </h4>
-              <p className="text-sm text-[var(--color-text-tertiary)]">
-                학습 패턴을 분석하여 개인 맞춤 학습 계획을 제공합니다.
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="p-6">
+              <h4 className="font-medium text-[var(--color-text-primary)] mb-3">🎯 개인 맞춤형</h4>
+              <p className="text-[var(--color-text-tertiary)]">
+                당신의 수준, 목표, 선호도를 고려한 맞춤형 학습 가이드를 제공합니다.
               </p>
             </Card>
-
-            <Card>
-              <div className="w-12 h-12 bg-[var(--color-primary-500)] rounded-lg mb-4 flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-              <h4 className="font-medium text-[var(--color-text-primary)] mb-2">
-                스마트 문제 추천
-              </h4>
-              <p className="text-sm text-[var(--color-text-tertiary)]">
-                실력 수준과 약점을 분석하여 최적의 문제를 추천합니다.
+            
+            <Card className="p-6">
+              <h4 className="font-medium text-[var(--color-text-primary)] mb-3">⚡ 실시간 응답</h4>
+              <p className="text-[var(--color-text-tertiary)]">
+                질문에 즉시 답변하여 학습 흐름을 방해하지 않습니다.
               </p>
             </Card>
-
-            <Card>
-              <div className="w-12 h-12 bg-[var(--color-primary-500)] rounded-lg mb-4 flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h4 className="font-medium text-[var(--color-text-primary)] mb-2">
-                실시간 튜터링
-              </h4>
-              <p className="text-sm text-[var(--color-text-tertiary)]">
-                AI 튜터와 실시간으로 질문하고 답변을 받을 수 있습니다.
+            
+            <Card className="p-6">
+              <h4 className="font-medium text-[var(--color-text-primary)] mb-3">🧠 전문 지식</h4>
+              <p className="text-[var(--color-text-tertiary)]">
+                각 도구별로 특화된 전문 지식을 바탕으로 정확한 정보를 제공합니다.
+              </p>
+            </Card>
+            
+            <Card className="p-6">
+              <h4 className="font-medium text-[var(--color-text-primary)] mb-3">🔄 지속적 개선</h4>
+              <p className="text-[var(--color-text-tertiary)]">
+                대화를 통해 더 정확한 답변을 제공하고 학습 효과를 극대화합니다.
               </p>
             </Card>
           </div>
+        </div>
+
+        {/* CTA */}
+        <div className="text-center">
+          <Card className="p-8 bg-gradient-to-r from-[var(--color-primary-500)] to-[var(--color-primary-600)] text-white">
+            <h3 className="text-2xl font-semibold mb-4">
+              지금 바로 AI 학습 도구를 체험해보세요!
+            </h3>
+            <p className="text-[var(--color-primary-100)] mb-6">
+              위의 도구 중 하나를 선택하여 AI와 함께 학습 계획을 세우고, 
+              공부 유형을 진단하고, 최적의 강좌를 찾아보세요.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              {tools.map((tool) => (
+                <Link key={tool.id} href={tool.href}>
+                  <Button variant="secondary" className="bg-white text-[var(--color-primary-600)] hover:bg-gray-100">
+                    {tool.title.split(' ')[0]} 시작하기
+                  </Button>
+                </Link>
+              ))}
+            </div>
+          </Card>
         </div>
       </div>
     </div>

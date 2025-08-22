@@ -89,7 +89,7 @@ const InfluencerCard: React.FC<InfluencerCardProps> = ({
         <div className="relative -mt-10 mb-3">
           <div className="relative inline-block">
             <img
-              src={avatar}
+              src={avatar && avatar.trim() !== '' ? avatar : undefined}
               alt={name}
               className="w-20 h-20 rounded-full border-4 border-[var(--color-bg-secondary)] object-cover"
             />
@@ -213,7 +213,7 @@ export const InfluencerCardCompact: React.FC<InfluencerCardCompactProps> = ({
       {/* Avatar */}
       <div className="relative flex-shrink-0">
         <img
-          src={avatar}
+          src={avatar && avatar.trim() !== '' ? avatar : undefined}
           alt={name}
           className="w-12 h-12 rounded-full object-cover"
         />
@@ -292,7 +292,7 @@ export const InfluencerCardMini: React.FC<InfluencerCardMiniProps> = ({
     >
       <div className="relative mb-3">
         <img
-          src={avatar}
+          src={avatar && avatar.trim() !== '' ? avatar : undefined}
           alt={name}
           className="w-16 h-16 rounded-full object-cover"
         />
