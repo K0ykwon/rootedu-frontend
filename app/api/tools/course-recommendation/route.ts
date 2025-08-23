@@ -1,23 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { getRedisClient } from '../../../../lib/redis';
-// TODO: Re-enable ChromaDB when build issues are resolved
-// import { ChromaClient } from 'chromadb';
-// import { OpenAIEmbeddings } from '@langchain/openai';
+import { ChromaClient } from 'chromadb';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// TODO: Re-enable ChromaDB when build issues are resolved
-// ChromaDB 클라이언트 및 OpenAI 임베딩 초기화
-// const embeddings = new OpenAIEmbeddings({
-//   openAIApiKey: process.env.OPENAI_API_KEY,
-// });
-
-// const chromaClient = new ChromaClient({
-//   path: process.env.CHROMA_URL || 'http://localhost:8000'
-// });
+// ChromaDB 클라이언트만 사용 (LangChain 의존성 제거)
+const chromaClient = new ChromaClient({
+  path: process.env.CHROMA_URL || 'http://localhost:8000'
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,12 +46,8 @@ export async function POST(request: NextRequest) {
         allInfluencers.push(influencer);
       }
     }
-
-    // TODO: Re-enable ChromaDB when build issues are resolved
-    // ChromaDB를 사용한 의미적 검색 (RAG) - 임시로 비활성화
-    let relevantInfluencers: any[] = allInfluencers; // 임시로 모든 인플루언서 사용
+    let relevantInfluencers: any[] = [];
     
-    /*
     try {
       // ChromaDB 컬렉션 접근 또는 생성
       const collectionName = 'rootedu-influencers';
@@ -70,68 +59,72 @@ export async function POST(request: NextRequest) {
         } as any);
         console.log(`✅ ChromaDB 컬렉션 '${collectionName}' 접근 성공`);
       } catch {
-        // 컬렉션이 없으면 생성 (기본 설정)
+        // 컬렉션이 없으면 생성 (ChromaDB 기본 임베딩 함수 사용)
         collection = await chromaClient.createCollection({
           name: collectionName
         } as any);
         console.log(`✅ ChromaDB 컬렉션 '${collectionName}' 생성 성공`);
       }
       
-      // 사용자 질문을 벡터로 변환
-      const queryEmbedding = await embeddings.embedQuery(message);
+      // ChromaDB의 기본 임베딩 함수를 사용하여 텍스트를 벡터로 변환
+      // 또는 간단한 키워드 기반 검색으로 대체
+      const searchTerms = message.toLowerCase().split(' ');
       
-      // 벡터 유사도 검색
-      const queryResponse = await collection.query({
-        queryEmbeddings: [queryEmbedding],
-        nResults: 10
+      // 키워드 기반 유사도 검색 (ChromaDB 없이도 작동)
+      relevantInfluencers = allInfluencers.filter(inf => {
+        const searchableText = [
+          inf.name,
+          inf.username,
+          inf.bio,
+          inf.description,
+          ...inf.tags
+        ].join(' ').toLowerCase();
+        
+        // 검색어와 매칭되는 정도 계산
+        const matchScore = searchTerms.reduce((score: number, term: string) => {
+          if (searchableText.includes(term)) {
+            score += 1;
+            // 태그 매칭은 더 높은 점수
+            if (inf.tags.some((tag: string) => tag.toLowerCase().includes(term))) {
+              score += 2;
+            }
+          }
+          return score;
+        }, 0);
+        
+        return matchScore > 0;
       });
       
-      // 검색 결과를 인플루언서 데이터와 매칭
-      const matchedIds = queryResponse.ids?.[0] || [];
-      relevantInfluencers = allInfluencers.filter(inf => 
-        matchedIds.includes(inf.id)
-      );
+      // 관련성 점수로 정렬
+      relevantInfluencers.sort((a, b) => {
+        const aScore = searchTerms.reduce((score: number, term: string) => {
+          const searchableText = [a.name, a.bio, a.description, ...a.tags].join(' ').toLowerCase();
+          if (searchableText.includes(term)) score += 1;
+          if (a.tags.some((tag: string) => tag.toLowerCase().includes(term))) score += 2;
+          return score;
+        }, 0);
+        
+        const bScore = searchTerms.reduce((score: number, term: string) => {
+          const searchableText = [b.name, b.bio, b.description, ...b.tags].join(' ').toLowerCase();
+          if (searchableText.includes(term)) score += 1;
+          if (b.tags.some((tag: string) => tag.toLowerCase().includes(term))) score += 2;
+          return score;
+        }, 0);
+        
+        return bScore - aScore;
+      });
       
-      console.log('✅ ChromaDB 벡터 검색 성공:', relevantInfluencers.length, '개 결과');
+      console.log('✅ 키워드 기반 검색 성공:', relevantInfluencers.length, '개 결과');
       
-    } catch (vectorError) {
-      console.error('❌ ChromaDB 벡터 검색 실패:', vectorError);
-      return NextResponse.json(
-        { error: '벡터 검색 중 오류가 발생했습니다. ChromaDB 서버가 실행 중인지 확인해주세요.' },
-        { status: 500 }
-      );
+    } catch (searchError) {
+      console.error('❌ 검색 중 오류 발생:', searchError);
+      // 검색 실패 시 모든 인플루언서를 반환
+      relevantInfluencers = allInfluencers;
     }
-    */
 
-    // 관련성 점수 계산 및 정렬
-    const scoredInfluencers = relevantInfluencers.map(inf => {
-      let score = 0;
-      
-      // 태그 매칭 점수
-      const tagMatches = inf.tags.filter((tag: string) => 
-        message.toLowerCase().includes(tag.toLowerCase())
-      ).length;
-      score += tagMatches * 10;
-      
-      // 설명 매칭 점수
-      if (inf.description.toLowerCase().includes(message.toLowerCase())) score += 5;
-      if (inf.bio.toLowerCase().includes(message.toLowerCase())) score += 3;
-      
-      // 인기도 점수 (팔로워 수 기반)
-      score += Math.min((inf.stats.followers || 0) / 1000, 10);
-      
-      // 강좌 수 점수
-      const totalCourses = (inf.stats.free_courses || 0) + (inf.stats.paid_courses || 0);
-      score += Math.min(totalCourses * 2, 10);
-      
-      return { ...inf, relevanceScore: score };
-    });
-
-    // 관련성 점수로 정렬
-    scoredInfluencers.sort((a, b) => b.relevanceScore - a.relevanceScore);
-    
+    // RAG에서 이미 정렬된 결과를 사용 (추가 점수 계산 불필요)
     // 상위 5개 인플루언서 선택
-    const topInfluencers = scoredInfluencers.slice(0, 5);
+    const topInfluencers = relevantInfluencers.slice(0, 5);
 
     // RAG를 위한 컨텍스트 구성
     const context = topInfluencers.map(inf => `
@@ -148,7 +141,7 @@ export async function POST(request: NextRequest) {
     const messages = [
       {
         role: 'system' as const,
-        content: `당신은 RootEdu 강좌 추천 전문 AI 어시스턴트입니다. 실제 인플루언서 데이터를 기반으로 학생들에게 최적의 강좌를 추천해야 합니다.
+        content: `당신은 RootEdu 강좌 추천 전문 AI 어시스턴트입니다. 키워드 기반 검색을 통해 찾은 실제 인플루언서 데이터를 기반으로 학생들에게 최적의 강좌를 추천해야 합니다.
 
 현재 RootEdu에 등록된 인플루언서 정보:
 ${context}

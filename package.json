@@ -11,22 +11,23 @@
     "setup-vector-db": "npx tsx scripts/setup-vector-db.ts"
   },
   "dependencies": {
-    "@langchain/community": "^0.3.0",
-    "@langchain/core": "^0.3.0",
-    "@langchain/openai": "^0.3.0",
+    "@langchain/community": "^0.0.57",
+    "@langchain/openai": "^0.0.14",
     "@playwright/test": "^1.54.2",
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.2",
-    "dotenv": "^16.4.5",
+    "chromadb": "^1.8.1",
+    "cohere-ai": "^7.18.1",
+    "dotenv": "^17.2.1",
     "framer-motion": "^12.23.12",
-    "langchain": "^0.3.0",
+    "langchain": "^0.1.0",
     "lucide-react": "^0.539.0",
     "next": "15.4.6",
     "next-auth": "^4.24.11",
     "openai": "^4.28.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "redis": "^4.7.1"
+    "redis": "^5.8.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
