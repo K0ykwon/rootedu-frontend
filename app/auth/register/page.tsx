@@ -1,16 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Form from '../../../components/ui/Form';
 import { useToast } from '../../../components/ui/Toast';
+import AuthRedirect from '../../../components/auth/AuthRedirect';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [userId, setUserId] = useState('');
+  const [studentPhoneNumber, setStudentPhoneNumber] = useState('');
+  const [parentPhoneNumber, setParentPhoneNumber] = useState('');
+  const [userType, setUserType] = useState<'student' | 'parent'>('student');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,7 +25,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !userId || !studentPhoneNumber || !parentPhoneNumber || !password || !confirmPassword) {
       setError('모든 필드를 입력해주세요.');
       return;
     }
@@ -45,7 +49,7 @@ export default function RegisterPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, userId, studentPhoneNumber, parentPhoneNumber, userType, password }),
       });
 
       const data = await response.json();
@@ -66,7 +70,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center p-6">
+    <Suspense fallback={<div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center"><div>Loading...</div></div>}>
+      <AuthRedirect>
+        <div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center p-6">
       <Card className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-2">
@@ -94,16 +100,59 @@ export default function RegisterPage() {
 
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-              이메일
+              사용자 ID
             </label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
               className="w-full px-3 py-2 border border-[var(--color-border-primary)] rounded-lg bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:border-transparent"
-              placeholder="이메일을 입력하세요"
+              placeholder="로그인에 사용할 ID를 입력하세요"
               required
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+              학생 전화번호
+            </label>
+            <input
+              type="tel"
+              value={studentPhoneNumber}
+              onChange={(e) => setStudentPhoneNumber(e.target.value)}
+              className="w-full px-3 py-2 border border-[var(--color-border-primary)] rounded-lg bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:border-transparent"
+              placeholder="010-0000-0000"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+              학부모 전화번호
+            </label>
+            <input
+              type="tel"
+              value={parentPhoneNumber}
+              onChange={(e) => setParentPhoneNumber(e.target.value)}
+              className="w-full px-3 py-2 border border-[var(--color-border-primary)] rounded-lg bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:border-transparent"
+              placeholder="010-0000-0000"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+              사용자 구분
+            </label>
+            <select
+              value={userType}
+              onChange={(e) => setUserType(e.target.value as 'student' | 'parent')}
+              className="w-full px-3 py-2 border border-[var(--color-border-primary)] rounded-lg bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:border-transparent"
+              required
+            >
+              <option value="student">학생</option>
+              <option value="parent">학부모</option>
+            </select>
           </div>
 
           <div>
@@ -158,7 +207,9 @@ export default function RegisterPage() {
             </Link>
           </p>
         </div>
-      </Card>
-    </div>
+        </Card>
+      </div>
+    </AuthRedirect>
+    </Suspense>
   );
 }

@@ -10,6 +10,7 @@ import Avatar from '../../../components/ui/Avatar';
 import Modal from '../../../components/ui/Modal';
 import { useToast } from '../../../components/ui/Toast';
 import Skeleton from '../../../components/ui/Skeleton';
+import { MedskyAnalyzer } from '../../../components/medsky/MedskyAnalyzer';
 
 interface Influencer {
   id: string;
@@ -44,7 +45,7 @@ export default function InfluencerDetailPage() {
   const [influencer, setInfluencer] = useState<Influencer | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'posts' | 'courses' | 'reviews' | 'about'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'courses' | 'reviews' | 'about' | 'ai_features' | 'learning_space'>('posts');
   const [isFollowing, setIsFollowing] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showTipModal, setShowTipModal] = useState(false);
@@ -204,21 +205,26 @@ export default function InfluencerDetailPage() {
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex gap-8 mt-6 border-b border-gray-800">
-            {['posts', 'courses', 'reviews', 'about'].map((tab) => (
+          <div className="flex gap-2 md:gap-4 lg:gap-6 mt-6 border-b border-gray-800 overflow-x-auto">
+            {[
+              { id: 'posts', label: '포스트', icon: '📝' },
+              { id: 'courses', label: '강의', icon: '📚' },
+              { id: 'reviews', label: '리뷰', icon: '⭐' },
+              { id: 'about', label: '소개', icon: 'ℹ️' },
+              { id: 'ai_features', label: '무료 AI 기능', icon: '🤖' },
+              { id: 'learning_space', label: '학습공간', icon: '📖' }
+            ].map((tab) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab as any)}
-                className={`pb-4 px-2 text-sm font-medium transition-colors ${
-                  activeTab === tab 
-                    ? 'text-white border-b-2 border-purple-500' 
-                    : 'text-gray-400 hover:text-white'
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`pb-4 px-3 md:px-4 text-sm font-medium transition-all duration-300 whitespace-nowrap flex items-center gap-1.5 ${
+                  activeTab === tab.id 
+                    ? 'text-white border-b-2 border-purple-500 scale-105' 
+                    : 'text-gray-400 hover:text-white hover:scale-105'
                 }`}
               >
-                {tab === 'posts' && '포스트'}
-                {tab === 'courses' && '강의'}
-                {tab === 'reviews' && '리뷰'}
-                {tab === 'about' && '소개'}
+                <span className="hidden md:inline">{tab.icon}</span>
+                <span>{tab.label}</span>
               </button>
             ))}
           </div>
@@ -397,6 +403,126 @@ export default function InfluencerDetailPage() {
                     </div>
                   </div>
                 </Card>
+              )}
+
+              {/* AI Features Tab - Empty for all influencers */}
+              {activeTab === 'ai_features' && (
+                <div className="space-y-6">
+                  <Card className="bg-gray-900/50 border-gray-800">
+                    <div className="text-center py-16">
+                      <div className="mb-6">
+                        <div className="w-24 h-24 mx-auto bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center">
+                          <span className="text-5xl">🤖</span>
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-bold text-white mb-3">무료 AI 기능</h3>
+                      <p className="text-gray-400 max-w-md mx-auto">
+                        곧 다양한 AI 기능이 추가될 예정입니다.
+                        조금만 기다려주세요!
+                      </p>
+                      <div className="mt-8 flex justify-center gap-4">
+                        <Badge variant="primary" size="sm">Coming Soon</Badge>
+                        <Badge variant="warning" size="sm">AI Powered</Badge>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              )}
+
+              {/* Learning Space Tab - Show content only for 알약툰 */}
+              {activeTab === 'learning_space' && influencer.slug === 'yaktoon' && (
+                <div className="space-y-6">
+                  {/* Special Header for 알약툰 */}
+                  <Card className="bg-gradient-to-br from-green-900/50 to-blue-900/50 border-green-500/30">
+                    <div className="text-center py-6">
+                      <div className="flex justify-center items-center gap-3 mb-3">
+                        <span className="text-3xl">🏥</span>
+                        <h2 className="text-2xl font-bold text-white">알약툰 생기부 AI 분석</h2>
+                        <span className="text-3xl">📊</span>
+                      </div>
+                      <p className="text-green-200 mb-4">
+                        의대 진학 전문가 알약툰과 함께하는 학생생활기록부 맞춤 분석
+                      </p>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        <Badge variant="success" size="sm">Medical 전문</Badge>
+                        <Badge variant="primary" size="sm">SKY 출신</Badge>
+                        <Badge variant="warning" size="sm">AI 분석</Badge>
+                        <Badge variant="default" size="sm">1:1 맞춤</Badge>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Medsky Analyzer Component */}
+                  <div className="bg-white rounded-lg p-6">
+                    <MedskyAnalyzer 
+                      onComplete={(result) => {
+                        showToast('생기부 분석이 완료되었습니다!', 'success');
+                      }}
+                      onStatusChange={(status) => {
+                        console.log('Status update:', status);
+                      }}
+                    />
+                  </div>
+
+                  {/* 알약툰 Special Features */}
+                  <Card className="bg-gray-900/50 border-gray-800">
+                    <div className="p-6">
+                      <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                        <span>💊</span> 알약툰만의 특별 서비스
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 bg-blue-900/20 rounded-lg border border-blue-500/30">
+                          <h4 className="font-medium text-blue-200 mb-2">🎯 의대 진학 전략</h4>
+                          <p className="text-sm text-blue-100/80">
+                            분석 결과를 바탕으로 의대 입시에 특화된 맞춤 전략을 제공합니다
+                          </p>
+                        </div>
+                        <div className="p-4 bg-green-900/20 rounded-lg border border-green-500/30">
+                          <h4 className="font-medium text-green-200 mb-2">📈 역량 강화 로드맵</h4>
+                          <p className="text-sm text-green-100/80">
+                            부족한 부분을 체계적으로 보완할 수 있는 구체적인 계획을 제시합니다
+                          </p>
+                        </div>
+                        <div className="p-4 bg-purple-900/20 rounded-lg border border-purple-500/30">
+                          <h4 className="font-medium text-purple-200 mb-2">🏥 의료진 멘토링</h4>
+                          <p className="text-sm text-purple-100/80">
+                            현직 의료진 출신 멘토들의 실질적인 조언과 가이드를 받을 수 있습니다
+                          </p>
+                        </div>
+                        <div className="p-4 bg-orange-900/20 rounded-lg border border-orange-500/30">
+                          <h4 className="font-medium text-orange-200 mb-2">📝 1:1 맞춤 피드백</h4>
+                          <p className="text-sm text-orange-100/80">
+                            AI 분석 결과를 바탕으로 개인별 맞춤 피드백을 제공합니다
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              )}
+
+              {/* Learning Space Tab - Empty for other influencers */}
+              {activeTab === 'learning_space' && influencer.slug !== 'yaktoon' && (
+                <div className="space-y-6">
+                  <Card className="bg-gray-900/50 border-gray-800">
+                    <div className="text-center py-16">
+                      <div className="mb-6">
+                        <div className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-500/20 to-green-500/20 rounded-full flex items-center justify-center">
+                          <span className="text-5xl">📖</span>
+                        </div>
+                      </div>
+                      <h3 className="text-2xl font-bold text-white mb-3">학습공간</h3>
+                      <p className="text-gray-400 max-w-md mx-auto">
+                        이 인플루언서의 학습 콘텐츠가 곧 추가될 예정입니다.
+                        더 나은 학습 경험을 위해 준비 중입니다!
+                      </p>
+                      <div className="mt-8 flex justify-center gap-4">
+                        <Badge variant="primary" size="sm">준비 중</Badge>
+                        <Badge variant="success" size="sm">곧 오픈</Badge>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
               )}
             </div>
 

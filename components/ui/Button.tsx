@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success';
   size?: 'sm' | 'md' | 'lg';
   children: React.ReactNode;
   className?: string;
@@ -27,7 +27,8 @@ const Button: React.FC<ButtonProps> = ({
     secondary: 'metallic-button bg-[rgba(230,230,230,0.9)] text-[var(--color-bg-primary)] border border-[rgba(255,255,255,0.1)]',
     outline: 'glass-card text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[rgba(255,255,255,0.05)]',
     ghost: 'bg-transparent text-[var(--color-text-secondary)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--color-text-primary)]',
-    danger: 'metallic-button bg-gradient-to-r from-[var(--color-error)] to-red-600 text-white border border-[rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]'
+    danger: 'metallic-button bg-gradient-to-r from-[var(--color-error)] to-red-600 text-white border border-[rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]',
+    success: 'metallic-button bg-gradient-to-r from-green-500 to-emerald-600 text-white border border-[rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]'
   };
 
   return (

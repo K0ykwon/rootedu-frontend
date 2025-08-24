@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { getRedisClient } from '../../../../lib/redis';
-import { ChromaClient } from 'chromadb';
+// import { ChromaClient } from 'chromadb'; // Temporarily disabled to fix build
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 // ChromaDB 클라이언트만 사용 (LangChain 의존성 제거)
-const chromaClient = new ChromaClient({
-  path: process.env.CHROMA_URL || 'http://localhost:8000'
-});
+// Temporarily disabled to fix build
+// const chromaClient = new ChromaClient({
+//   path: process.env.CHROMA_URL || 'http://localhost:8000'
+// });
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,22 +50,22 @@ export async function POST(request: NextRequest) {
     let relevantInfluencers: any[] = [];
     
     try {
-      // ChromaDB 컬렉션 접근 또는 생성
-      const collectionName = 'rootedu-influencers';
-      let collection;
+      // ChromaDB 컬렉션 접근 또는 생성 - Temporarily disabled
+      // const collectionName = 'rootedu-influencers';
+      // let collection;
       
-      try {
-        collection = await chromaClient.getCollection({
-          name: collectionName
-        } as any);
-        console.log(`✅ ChromaDB 컬렉션 '${collectionName}' 접근 성공`);
-      } catch {
-        // 컬렉션이 없으면 생성 (ChromaDB 기본 임베딩 함수 사용)
-        collection = await chromaClient.createCollection({
-          name: collectionName
-        } as any);
-        console.log(`✅ ChromaDB 컬렉션 '${collectionName}' 생성 성공`);
-      }
+      // try {
+      //   collection = await chromaClient.getCollection({
+      //     name: collectionName
+      //   } as any);
+      //   console.log(`✅ ChromaDB 컬렉션 '${collectionName}' 접근 성공`);
+      // } catch {
+      //   // 컬렉션이 없으면 생성 (ChromaDB 기본 임베딩 함수 사용)
+      //   collection = await chromaClient.createCollection({
+      //     name: collectionName
+      //   } as any);
+      //   console.log(`✅ ChromaDB 컬렉션 '${collectionName}' 생성 성공`);
+      // }
       
       // ChromaDB의 기본 임베딩 함수를 사용하여 텍스트를 벡터로 변환
       // 또는 간단한 키워드 기반 검색으로 대체

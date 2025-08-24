@@ -2,46 +2,78 @@ import { createClient } from 'redis';
 
 declare global {
   var __redis: ReturnType<typeof createClient> | undefined;
+  var __redisPromise: Promise<ReturnType<typeof createClient>> | undefined;
 }
 
-const client = globalThis.__redis ?? createClient({
-  url: process.env.REDIS_URL || 'redis://localhost:6379',
-  database: 0
-});
+const REDIS_URL = process.env.REDIS_URL || process.env.DATABASE_URL || 'redis://localhost:6379';
 
-if (process.env.NODE_ENV !== 'production') globalThis.__redis = client;
-
-// Redis 연결을 보장하는 함수
-async function ensureRedisConnection() {
-  if (!client.isOpen) {
-    try {
-      await client.connect();
-      console.log('Redis connected successfully');
-    } catch (error) {
-      console.error('Redis connection failed:', error);
-      throw error;
+// Create a singleton Redis client with connection pooling
+function createRedisClient() {
+  const client = createClient({
+    url: REDIS_URL,
+    database: 0,
+    socket: {
+      reconnectStrategy: (retries) => {
+        if (retries > 10) {
+          console.error('Redis: Too many reconnection attempts');
+          return new Error('Too many reconnection attempts');
+        }
+        return Math.min(retries * 100, 3000);
+      }
     }
-  }
-}
-
-// 연결 보장 후 클라이언트 반환
-export async function getRedisClient() {
-  // 새로운 클라이언트 인스턴스를 생성하여 문제 해결
-  const newClient = createClient({
-    url: process.env.REDIS_URL || 'redis://localhost:6379'
   });
-  
-  if (!newClient.isOpen) {
-    try {
-      await newClient.connect();
-      console.log('New Redis client connected successfully');
-    } catch (error) {
-      console.error('Redis connection error:', error);
-      throw error;
-    }
+
+  client.on('error', (err) => {
+    console.error('Redis Client Error:', err);
+  });
+
+  client.on('connect', () => {
+    console.log('Redis client connected');
+  });
+
+  client.on('ready', () => {
+    console.log('Redis client ready');
+  });
+
+  return client;
+}
+
+// Initialize the global client if it doesn't exist
+if (!globalThis.__redis) {
+  globalThis.__redis = createRedisClient();
+}
+
+const client = globalThis.__redis;
+
+// Singleton connection promise to prevent multiple simultaneous connections
+async function ensureConnection() {
+  if (!globalThis.__redisPromise) {
+    globalThis.__redisPromise = (async () => {
+      if (!client.isOpen) {
+        await client.connect();
+      }
+      return client;
+    })();
   }
+  return globalThis.__redisPromise;
+}
+
+// Get the singleton Redis client (ensures connection)
+export async function getRedisClient() {
+  const connectedClient = await ensureConnection();
   
-  return newClient;
+  // Return a proxy that prevents closing the shared connection
+  return new Proxy(connectedClient, {
+    get(target, prop) {
+      // Prevent quit/disconnect on the shared client
+      if (prop === 'quit' || prop === 'disconnect') {
+        return async () => {
+          console.log('Redis: Skipping quit/disconnect on shared client');
+        };
+      }
+      return target[prop as keyof typeof target];
+    }
+  });
 }
 
 export default client;
@@ -50,9 +82,13 @@ export default client;
 export interface User {
   id: string;
   name: string;
-  email: string;
+  userId: string; // Used as username/login ID
+  studentPhoneNumber: string; // Student's phone number
+  parentPhoneNumber: string; // Parent's phone number
+  userType: 'student' | 'parent' | 'influencer'; // User type
   passwordHash: string;
   createdAt: number;
+  role?: string; // 'admin', 'influencer', or undefined for regular users
 }
 
 export interface Influencer {

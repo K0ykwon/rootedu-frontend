@@ -15,7 +15,7 @@ parser = LlamaParse(
     output_tables_as_HTML=True
 )
 
-file_path = "dev/file/park_sample.pdf"
+file_path = "dev/medsky/file/park/park_sample.pdf"
 
 result = parser.parse(file_path)
 

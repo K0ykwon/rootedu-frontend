@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useToast } from '../ui/Toast';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -11,12 +12,16 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose, redirectTo }: AuthModalProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
   const [formData, setFormData] = useState({
-    email: '',
+    userId: '',
+    studentPhoneNumber: '',
+    parentPhoneNumber: '',
+    userType: 'student' as 'student' | 'parent',
     password: '',
     name: '',
     confirmPassword: ''
@@ -42,7 +47,10 @@ export default function AuthModal({ isOpen, onClose, redirectTo }: AuthModalProp
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: formData.email,
+            userId: formData.userId,
+            studentPhoneNumber: formData.studentPhoneNumber,
+            parentPhoneNumber: formData.parentPhoneNumber,
+            userType: formData.userType,
             password: formData.password,
             name: formData.name
           })
@@ -55,46 +63,19 @@ export default function AuthModal({ isOpen, onClose, redirectTo }: AuthModalProp
         }
 
         // Auto sign in after successful registration
-        const signInRes = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password
-          })
-        });
-
-        if (!signInRes.ok) {
-          throw new Error('자동 로그인에 실패했습니다. 다시 로그인해주세요.');
-        }
-
-        // Redirect or close modal
-        if (redirectTo) {
-          router.push(redirectTo);
-        }
-        onClose();
-        router.refresh();
+        showToast('회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.', 'success');
+        setTimeout(() => {
+          router.push('/auth/login');
+          onClose();
+        }, 1500);
+        return;
       } else {
-        // Sign in
-        const result = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password
-          })
-        });
-
-        if (!result.ok) {
-          throw new Error('이메일 또는 비밀번호가 올바르지 않습니다.');
-        }
-
-        // Redirect or close modal
-        if (redirectTo) {
-          router.push(redirectTo);
-        }
+        // Sign in - redirect to login page for proper NextAuth flow
+        const loginUrl = redirectTo ? `/auth/login?callbackUrl=${encodeURIComponent(redirectTo)}` : '/auth/login';
+        router.push(loginUrl);
         onClose();
-        router.refresh();
+        return;
+
       }
     } catch (err: any) {
       setError(err.message);
@@ -171,18 +152,68 @@ export default function AuthModal({ isOpen, onClose, redirectTo }: AuthModalProp
           
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
-              이메일
+              사용자 ID
             </label>
             <input
-              type="email"
-              name="email"
-              value={formData.email}
+              type="text"
+              name="userId"
+              value={formData.userId}
               onChange={handleInputChange}
               className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500"
-              placeholder="example@email.com"
+              placeholder="로그인에 사용할 ID"
               required
             />
           </div>
+
+          {isSignUp && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  학생 전화번호
+                </label>
+                <input
+                  type="tel"
+                  name="studentPhoneNumber"
+                  value={formData.studentPhoneNumber}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500"
+                  placeholder="010-0000-0000"
+                  required={isSignUp}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  학부모 전화번호
+                </label>
+                <input
+                  type="tel"
+                  name="parentPhoneNumber"
+                  value={formData.parentPhoneNumber}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500"
+                  placeholder="010-0000-0000"
+                  required={isSignUp}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  사용자 구분
+                </label>
+                <select
+                  name="userType"
+                  value={formData.userType}
+                  onChange={(e) => setFormData({ ...formData, userType: e.target.value as 'student' | 'parent' })}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required={isSignUp}
+                >
+                  <option value="student">학생</option>
+                  <option value="parent">학부모</option>
+                </select>
+              </div>
+            </>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -233,7 +264,7 @@ export default function AuthModal({ isOpen, onClose, redirectTo }: AuthModalProp
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setError('');
-                setFormData({ email: '', password: '', name: '', confirmPassword: '' });
+                setFormData({ userId: '', studentPhoneNumber: '', parentPhoneNumber: '', userType: 'student', password: '', name: '', confirmPassword: '' });
               }}
               className="ml-2 text-blue-400 hover:text-blue-300 font-medium"
             >

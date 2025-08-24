@@ -1,27 +1,32 @@
 'use client';
 
-import { useState } from 'react';
-import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { signIn, useSession } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import Form from '../../../components/ui/Form';
 import { useToast } from '../../../components/ui/Toast';
+import AuthRedirect from '../../../components/auth/AuthRedirect';
 
-export default function LoginPage() {
-  const [email, setEmail] = useState('');
+function LoginForm() {
+  const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
   const { showToast } = useToast();
+  
+  const callbackUrl = searchParams.get('callbackUrl') || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
-      setError('이메일과 비밀번호를 입력해주세요.');
+    if (!userId || !password) {
+      setError('사용자 ID와 비밀번호를 입력해주세요.');
       return;
     }
 
@@ -30,18 +35,19 @@ export default function LoginPage() {
 
     try {
       const result = await signIn('credentials', {
-        email,
+        userId,
         password,
         redirect: false,
+        callbackUrl,
       });
 
       if (result?.error) {
-        setError('이메일 또는 비밀번호가 잘못되었습니다.');
-      } else {
+        setError('사용자 ID 또는 비밀번호가 잘못되었습니다.');
+      } else if (result?.ok) {
         showToast('로그인에 성공했습니다!', 'success');
-        setTimeout(() => {
-          router.push('/');
-        }, 1000);
+        // Immediate redirect after successful login
+        router.push(callbackUrl);
+        router.refresh(); // Refresh to update session state
       }
     } catch (error) {
       setError('로그인 중 오류가 발생했습니다.');
@@ -51,7 +57,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center p-6">
+    <AuthRedirect>
+      <div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center p-6">
       <Card className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-semibold text-[var(--color-text-primary)] mb-2">
@@ -65,14 +72,14 @@ export default function LoginPage() {
         <Form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-              이메일
+              사용자 ID
             </label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
               className="w-full px-3 py-2 border border-[var(--color-border-primary)] rounded-lg bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:border-transparent"
-              placeholder="이메일을 입력하세요"
+              placeholder="사용자 ID를 입력하세요"
               required
             />
           </div>
@@ -115,7 +122,20 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
-      </Card>
-    </div>
+        </Card>
+      </div>
+    </AuthRedirect>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[var(--color-bg-primary)] flex items-center justify-center">
+        <div className="text-[var(--color-text-primary)]">로딩 중...</div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
