@@ -25,6 +25,8 @@
     "next": "15.4.6",
     "next-auth": "^4.24.11",
     "openai": "^4.104.0",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^3.11.174",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hot-toast": "^2.6.0",

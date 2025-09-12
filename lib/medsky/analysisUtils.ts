@@ -135,8 +135,8 @@ function identifyKeyAreas(
   const improvementAreas: string[] = [];
 
   // Analyze validation feedback patterns
-  const strongCategories = [];
-  const weakCategories = [];
+  const strongCategories: string[] = [];
+  const weakCategories: string[] = [];
 
   Object.entries(validationAnalysis).forEach(([type, result]) => {
     const feedbackCount = result.Feedbacks.length;
@@ -492,15 +492,4 @@ function evaluateCompetencyLevel(description: string): ProcessedAbility['compete
   return 'medium';
 }
 
-// ===========================
-// Export all utilities
-// ===========================
-
-export {
-  calculateAnalysisStatistics,
-  processActivities,
-  getActivityStatsByDomain,
-  processAcademics,
-  getAcademicStatsByCategory,
-  processDetailedAbilities
-};
+// Functions are already exported individually above

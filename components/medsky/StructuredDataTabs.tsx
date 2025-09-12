@@ -228,7 +228,7 @@ function ActivitiesTab({ activities }: ActivitiesTabProps) {
                     <h4 className="font-medium text-[var(--color-text-primary)] mb-2">주요 성과</h4>
                     <div className="flex flex-wrap gap-2">
                       {activity.highlights.map((highlight, idx) => (
-                        <Badge key={idx} variant="outline" size="sm">
+                        <Badge key={idx} variant="default" size="sm">
                           {highlight}
                         </Badge>
                       ))}
@@ -353,7 +353,7 @@ function AcademicsTab({ academics }: AcademicsTabProps) {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <Badge variant="outline" size="sm">
+                    <Badge variant="default" size="sm">
                       {academic.category}
                     </Badge>
                   </td>
@@ -523,7 +523,7 @@ function AbilitiesTab({ abilities }: AbilitiesTabProps) {
                     <h4 className="font-medium text-[var(--color-text-primary)] mb-2">역량 영역</h4>
                     <div className="flex flex-wrap gap-2">
                       {ability.skillAreas.map((skill, idx) => (
-                        <Badge key={idx} variant="outline" size="sm">
+                        <Badge key={idx} variant="default" size="sm">
                           {skill}
                         </Badge>
                       ))}

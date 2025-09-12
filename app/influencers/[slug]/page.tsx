@@ -12,6 +12,8 @@ import Modal from '../../../components/ui/Modal';
 import { useToast } from '../../../components/ui/Toast';
 import Skeleton from '../../../components/ui/Skeleton';
 import { MedskyAnalyzer } from '../../../components/medsky/MedskyAnalyzer';
+import { EnglishMemorizationTool } from '../../../components/terry/EnglishMemorizationTool';
+import { VocabularyMemoizer } from '../../../components/terry/VocabularyMemoizer';
 import ChatWidget from '../../../components/ChatWidget';
 
 interface Influencer {
@@ -466,8 +468,16 @@ export default function InfluencerDetailPage() {
                 </Card>
               )}
 
-              {/* AI Features Tab - Empty for all influencers */}
-              {activeTab === 'ai_features' && (
+              {/* AI Features Tab - Show Terry's memorization tool or coming soon */}
+              {activeTab === 'ai_features' && influencer.slug === 'terry' && (
+                <div className="space-y-6">
+                  <EnglishMemorizationTool />
+                  <VocabularyMemoizer />
+                </div>
+              )}
+
+              {/* AI Features Tab - Coming Soon for other influencers */}
+              {activeTab === 'ai_features' && influencer.slug !== 'terry' && (
                 <div className="space-y-6">
                   <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
                     <div className="text-center py-16">
