@@ -31,6 +31,7 @@ interface UserInfo {
   name: string;
   email: string;
   analyzedAt: string;
+  productId?: string;
 }
 
 interface ProcessingSession {
@@ -81,11 +82,22 @@ async function storeAnalysisForAdmin(sessionId: string, session: ProcessingSessi
       processingTime: session.lastUpdate.getTime() - session.startTime.getTime()
     };
 
-    // Store with yaktoon prefix and 30-day expiration
-    await client.set(`${YAKTOON_ANALYSIS_PREFIX}${sessionId}`, JSON.stringify(analysisData), { EX: 60 * 60 * 24 * 30 });
-    
-    // Also maintain a list of all analysis sessions for admin dashboard
-    await client.sAdd('yaktoon:analysis_sessions', sessionId);
+    // Batch writes to reduce round-trips
+    const ttl = 60 * 60 * 24 * 30;
+    const metadata = {
+      sessionId,
+      productId: session.userInfo.productId || null,
+      userId: session.userInfo.id,
+      name: session.userInfo.name,
+      email: session.userInfo.email,
+      createdAt: session.startTime.toISOString(),
+      completedAt: new Date().toISOString()
+    };
+    const multi = client.multi();
+    multi.set(`${YAKTOON_ANALYSIS_PREFIX}${sessionId}`, JSON.stringify(analysisData), { EX: ttl } as any);
+    multi.sAdd('yaktoon:analysis_sessions', sessionId);
+    multi.set(`analysis:${sessionId}:metadata`, JSON.stringify(metadata), { EX: ttl } as any);
+    await multi.exec();
     
     await client.quit();
     console.log(`✅ Analysis data stored for admin access: ${sessionId}`);

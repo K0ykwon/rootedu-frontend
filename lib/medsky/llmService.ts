@@ -7,7 +7,7 @@
  */
 
 import OpenAI from "openai";
-import { zodTextFormat } from "openai/helpers/zod";
+import { zodTextFormat, zodResponseFormat } from "openai/helpers/zod";
 import { Agent, setGlobalDispatcher } from 'undici';
 import { 
   CreativeActivities, 
@@ -41,7 +41,7 @@ interface LLMConfig {
 }
 
 const DEFAULT_CONFIG: Partial<LLMConfig> = {
-  model: 'gpt-4o-mini',
+  model: 'openai/gpt-5-mini',
 };
 
 function buildConfig(config: Partial<LLMConfig>): LLMConfig {
@@ -51,13 +51,9 @@ function buildConfig(config: Partial<LLMConfig>): LLMConfig {
   return { ...DEFAULT_CONFIG, ...config } as LLMConfig;
 }
 
-let __openaiClient: OpenAI | null = null;
-function getOpenAIClient(apiKey: string): OpenAI {
-  if (!__openaiClient) {
-    __openaiClient = new OpenAI({ apiKey, maxRetries: 1 });
-  }
-  return __openaiClient;
-}
+// Important: Do NOT singleton-cache the OpenAI client here.
+// The SDK may gate concurrency per client; creating a new client per request
+// allows true parallelism while still sharing the global Undici dispatcher.
 
 async function parseStructuredOutput<T>(
   config: Partial<LLMConfig>,
@@ -67,7 +63,37 @@ async function parseStructuredOutput<T>(
   schemaName: string
 ): Promise<T> {
   const resolved = buildConfig(config);
-  const openai = getOpenAIClient(resolved.apiKey);
+  const openai = new OpenAI({ apiKey: process.env.OPENROUTER_API_KEY, baseURL: process.env.OPENROUTER_BASE_URL });
+
+  // Toggle between Chat Completions structured output and Responses API via env
+  const useChatStructured = String(process.env.MEDSKY_USE_CHAT_STRUCTURED || '').toLowerCase();
+  const preferChat = useChatStructured === '1' || useChatStructured === 'true' || useChatStructured === 'yes';
+
+  if (preferChat) {
+    console.log('Using Chat Completions structured output');
+    const completion = await openai.chat.completions.create({
+      model: resolved.model!,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent }
+      ],
+      response_format: zodResponseFormat(zodSchema as any, schemaName),
+    });
+    const message: any = completion.choices?.[0]?.message;
+    const content = message?.content;
+    if (typeof content === 'string') {
+      return JSON.parse(content) as T;
+    }
+    if (Array.isArray(content)) {
+      const text = content.map((part: any) => (typeof part === 'string' ? part : part?.text || '')).join('');
+      if (text) {
+        return JSON.parse(text) as T;
+      }
+    }
+    throw new Error('Failed to parse structured JSON content from chat completion');
+  }
+
+  // Fallback to Responses API structured parsing
   const response = await openai.responses.parse({
     model: resolved.model!,
     input: [
@@ -81,28 +107,7 @@ async function parseStructuredOutput<T>(
   return response.output_parsed as T;
 }
 
-// Minimal bounded-concurrency runner (no deps)
-async function runWithLimit<T>(tasks: Array<() => Promise<T>>, limit: number): Promise<PromiseSettledResult<T>[]> {
-  const results: PromiseSettledResult<T>[] = new Array(tasks.length);
-  let next = 0;
-
-  async function worker() {
-    while (true) {
-      const i = next++;
-      if (i >= tasks.length) return;
-      try {
-        const value = await tasks[i]();
-        results[i] = { status: 'fulfilled', value } as PromiseFulfilledResult<T>;
-      } catch (err) {
-        results[i] = { status: 'rejected', reason: err } as PromiseRejectedResult;
-      }
-    }
-  }
-
-  const size = Math.max(1, Math.min(limit, tasks.length));
-  await Promise.all(Array.from({ length: size }, () => worker()));
-  return results;
-}
+// (Removed runWithLimit helper to keep implementation minimal)
 
 // ===========================
 // Data Extraction Functions
@@ -367,9 +372,8 @@ export async function runComprehensiveValidation(
       }
     }
 
-    const concurrency = parseInt(process.env.MEDSKY_LLM_CONCURRENCY || '15', 10);
-    console.log(`🚀 Starting ${factories.length} validation tasks with concurrency=${concurrency}...`);
-    const settled = await runWithLimit(factories, concurrency);
+    console.log(`🚀 Starting ${factories.length} validation tasks with Promise.allSettled (no cap)...`);
+    const settled = await Promise.allSettled(factories.map(fn => fn()));
     const endTime = Date.now();
     const duration = (endTime - startTime) / 1000;
 

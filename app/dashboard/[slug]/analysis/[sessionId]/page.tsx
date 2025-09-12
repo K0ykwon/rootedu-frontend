@@ -7,6 +7,8 @@ import { toast, Toaster } from 'react-hot-toast';
 import Card from '../../../../../components/ui/Card';
 import Button from '../../../../../components/ui/Button';
 import { ValidationResults } from '../../../../../components/medsky/ValidationResults';
+import { AnalysisOverview } from '../../../../../components/medsky/AnalysisOverview';
+import { StructuredDataTabs } from '../../../../../components/medsky/StructuredDataTabs';
 
 interface AnalysisResult {
   sessionId: string;
@@ -30,6 +32,7 @@ export default function AnalysisDetailPage() {
   const [loading, setLoading] = useState(true);
   const [hasLoadedResult, setHasLoadedResult] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeResultsTab, setActiveResultsTab] = useState<'overview' | 'structured' | 'detailed'>('overview');
 
   // Check if user has access to this analysis
   useEffect(() => {
@@ -42,9 +45,14 @@ export default function AnalysisDetailPage() {
 
     // Check if user is the right influencer or admin
     const userRole = (session.user as any)?.role;
+    const userType = (session.user as any)?.userType;
     const userId = (session.user as any)?.userId;
+    const influencerSlug = (session.user as any)?.influencerSlug;
     
-    if (userRole !== 'admin' && (userRole !== 'influencer' || userId !== slug)) {
+    // Allow access if admin or if influencer accessing their own dashboard
+    const isInfluencer = userType === 'influencer' && (influencerSlug === slug || userId === slug);
+    
+    if (userRole !== 'admin' && !isInfluencer) {
       router.push('/');
       return;
     }
@@ -176,13 +184,59 @@ export default function AnalysisDetailPage() {
                   </p>
                 </div>
 
-                <ValidationResults
-                  textSections={analysisResult.analysisData.textSections}
-                  extractedData={analysisResult.analysisData.extractedData}
-                  validationAnalysis={analysisResult.analysisData.validationAnalysis}
-                  activeFilters={['blue_highlight', 'red_line', 'blue_line', 'black_line', 'red_check']}
-                  onFilterChange={() => {}} // Read-only mode for dedicated page
-                />
+                {/* Results Tab Navigation */}
+                <Card className="p-1" glass={false}>
+                  <nav className="flex space-x-1">
+                    {[
+                      { id: 'overview', name: '종합 개요', icon: '📊', description: '핵심 통계 및 인사이트' },
+                      { id: 'structured', name: '구조화된 데이터', icon: '📋', description: '정리된 활동 및 성취 정보' },
+                      { id: 'detailed', name: '상세 분석', icon: '🔍', description: '원문 기반 세부 피드백' }
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveResultsTab(tab.id as any)}
+                        className={`
+                          flex-1 px-4 py-3 text-sm font-medium rounded-md transition-colors flex items-center justify-center space-x-2
+                          ${activeResultsTab === tab.id 
+                            ? 'bg-blue-500 text-white shadow-md' 
+                            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]'
+                          }
+                        `}
+                        title={tab.description}
+                      >
+                        <span>{tab.icon}</span>
+                        <span className="hidden md:inline">{tab.name}</span>
+                        <span className="md:hidden">{tab.name.split(' ')[0]}</span>
+                      </button>
+                    ))}
+                  </nav>
+                </Card>
+
+                {/* Tab Content */}
+                <div className="min-h-[600px]">
+                  {activeResultsTab === 'overview' && (
+                    <AnalysisOverview
+                      extractedData={analysisResult.analysisData.extractedData}
+                      validationAnalysis={analysisResult.analysisData.validationAnalysis}
+                    />
+                  )}
+
+                  {activeResultsTab === 'structured' && (
+                    <StructuredDataTabs
+                      extractedData={analysisResult.analysisData.extractedData}
+                    />
+                  )}
+
+                  {activeResultsTab === 'detailed' && (
+                    <ValidationResults
+                      textSections={analysisResult.analysisData.textSections}
+                      extractedData={analysisResult.analysisData.extractedData}
+                      validationAnalysis={analysisResult.analysisData.validationAnalysis}
+                      activeFilters={['blue_highlight', 'red_line', 'blue_line', 'black_line', 'red_check']}
+                      onFilterChange={() => {}} // Read-only mode for dedicated page
+                    />
+                  )}
+                </div>
 
                 {/* Summary Section */}
                 <div className="mt-8 bg-[var(--color-bg-secondary)] rounded-lg p-6">

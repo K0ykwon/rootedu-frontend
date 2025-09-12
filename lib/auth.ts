@@ -13,6 +13,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.userId || !credentials?.password) {
+          console.log('Missing credentials');
           return null;
         }
 
@@ -20,26 +21,53 @@ export const authOptions: NextAuthOptions = {
           const redis = await getRedisClient();
           
           try {
-            const userIdStr = await redis.get(`user:userId:${credentials.userId}`);
-            if (!userIdStr) {
-              await redis.quit();
-              return null;
+            // Prefer canonical lookup by mapping, then fall back to legacy direct key
+            let userData: Record<string, string> | undefined;
+
+            // 1) Canonical mapping: user:userId:<username> -> internal id
+            const mappedId = await redis.get(`user:userId:${credentials.userId}`);
+            console.log('userId mapping lookup:', mappedId ? 'hit' : 'miss');
+            if (mappedId) {
+              const mappedData = await redis.hGetAll(`user:${mappedId}`) as Record<string, string>;
+              if (mappedData && Object.keys(mappedData).length > 0) {
+                userData = mappedData;
+              }
             }
 
-            const raw = await redis.hGetAll(`user:${userIdStr}`) as Record<string, string>;
-            if (!raw || Object.keys(raw).length === 0 || !raw.passwordHash) {
+            // 2) Fallback to direct hash: user:<username>
+            if (!userData || Object.keys(userData).length === 0) {
+              const directData = await redis.hGetAll(`user:${credentials.userId}`) as Record<string, string>;
+              console.log('Direct lookup fallback:', directData && Object.keys(directData).length > 0 ? 'hit' : 'miss');
+              if (directData && Object.keys(directData).length > 0) {
+                userData = directData;
+              }
+            }
+            
+            // If still not found, try by email
+            if (!userData || Object.keys(userData).length === 0 || (!userData.password && !userData.passwordHash)) {
+              const emailData = await redis.hGetAll(`user:email:${credentials.userId}`) as Record<string, string>;
+              if (emailData?.userId) {
+                userData = await redis.hGetAll(`user:${emailData.userId}`) as Record<string, string>;
+                console.log('Email lookup found:', userData ? 'yes' : 'no');
+              }
+            }
+            
+            if (!userData || Object.keys(userData).length === 0) {
+              console.log('No user data found');
               await redis.quit();
               return null;
             }
             
-            const userData: Partial<RedisUser> = raw as unknown as Partial<RedisUser>;
-            const passwordHash: string = raw.passwordHash;
+            // Check password - handle both 'password' and 'passwordHash' fields
+            const passwordHash = userData.password || userData.passwordHash;
+            console.log('Password field found:', passwordHash ? 'yes' : 'no');
             if (!passwordHash) {
               await redis.quit();
               return null;
             }
 
             const isValidPassword = await bcrypt.compare(credentials.password, passwordHash);
+            console.log('Password validation result:', isValidPassword);
             if (!isValidPassword) {
               await redis.quit();
               return null;
@@ -47,14 +75,15 @@ export const authOptions: NextAuthOptions = {
 
             await redis.quit();
             return {
-              id: (userData.id as string) ?? userIdStr,
-              name: (userData.name as string) ?? '',
-              email: (userData.userId as string) ?? credentials.userId,
-              role: (userData.role as string) ?? undefined,
-              userId: (userData.userId as string) ?? credentials.userId,
-              studentPhoneNumber: (userData.studentPhoneNumber as string) ?? '',
-              parentPhoneNumber: (userData.parentPhoneNumber as string) ?? '',
-              userType: (userData.userType as string) ?? 'student',
+              id: userData.id ?? userData.userId ?? credentials.userId,
+              name: userData.name ?? '',
+              email: userData.email ?? userData.userId ?? credentials.userId,
+              role: userData.role ?? undefined,
+              userId: userData.userId ?? userData.id ?? credentials.userId,
+              studentPhoneNumber: userData.studentPhoneNumber ?? '',
+              parentPhoneNumber: userData.parentPhoneNumber ?? '',
+              userType: userData.type ?? userData.userType ?? 'student',
+              influencerSlug: userData.influencerSlug ?? undefined,
             };
             
           } catch (innerError) {
@@ -80,6 +109,7 @@ export const authOptions: NextAuthOptions = {
         token.studentPhoneNumber = (user as any).studentPhoneNumber;
         token.parentPhoneNumber = (user as any).parentPhoneNumber;
         token.userType = (user as any).userType;
+        token.influencerSlug = (user as any).influencerSlug;
       }
       return token;
     },
@@ -91,6 +121,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).studentPhoneNumber = token.studentPhoneNumber;
         (session.user as any).parentPhoneNumber = token.parentPhoneNumber;
         (session.user as any).userType = token.userType;
+        (session.user as any).influencerSlug = token.influencerSlug;
       }
       return session;
     },

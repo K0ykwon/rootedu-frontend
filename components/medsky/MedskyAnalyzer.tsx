@@ -13,16 +13,35 @@ import { ProcessingResult, ProcessingStatus, ValidationType, MedskyProps } from 
 import { PDFUploader } from './PDFUploader';
 import { ProcessingStatusDisplay } from './ProcessingStatusDisplay';
 import { ValidationResults } from './ValidationResults';
+import { AnalysisOverview } from './AnalysisOverview';
+import { StructuredDataTabs } from './StructuredDataTabs';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import { useMedskyAnalysis } from '@/lib/medsky/analysisContext';
 
 export function MedskyAnalyzer({ className, onComplete, onStatusChange }: MedskyProps) {
   const { data: session, status: sessionStatus } = useSession();
+  const { startAnalysis, updateProgress, completeAnalysis, failAnalysis } = useMedskyAnalysis();
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatus | null>(null);
   const [processingResult, setProcessingResult] = useState<ProcessingResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [activeResultsTab, setActiveResultsTab] = useState<'overview' | 'structured' | 'detailed'>('overview');
+
+  // Helper function to get progress percentage for stage
+  const getProgressForStage = (stage: string): number => {
+    switch (stage) {
+      case 'uploading': return 10;
+      case 'parsing': return 25;
+      case 'extracting': return 50;
+      case 'analyzing': return 75;
+      case 'validating': return 90;
+      case 'completed': return 100;
+      case 'error': return 0;
+      default: return 0;
+    }
+  };
 
   // Show loading while checking authentication
   if (sessionStatus === 'loading') {
@@ -71,6 +90,9 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
       progress: 0,
       message: '파일 업로드 중...'
     });
+    
+    // Start the toast notification
+    startAnalysis(file);
 
     try {
       const formData = new FormData();
@@ -103,10 +125,12 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
         message: errorMessage,
         error: errorMessage
       });
+      // Update toast with error
+      failAnalysis(errorMessage);
     } finally {
       setIsProcessing(false);
     }
-  }, [onComplete, onStatusChange]);
+  }, [onComplete, onStatusChange, startAnalysis, failAnalysis]);
 
   /**
    * Reset the analyzer to initial state
@@ -117,6 +141,7 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
     setProcessingResult(null);
     setError(null);
     setSessionId(null);
+    setActiveResultsTab('overview');
   }, []);
 
   /**
@@ -177,6 +202,10 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
         if (data.success && data.status) {
           setProcessingStatus(data.status);
           onStatusChange?.(data.status);
+          
+          // Update toast progress based on stage
+          const progress = getProgressForStage(data.status.stage);
+          updateProgress(progress, data.status.message || data.status.stage);
 
           if (data.status.stage === 'completed') {
             // Fetch final result when completed
@@ -188,6 +217,8 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
               if (resultData.success && resultData.result) {
                 setProcessingResult(resultData.result);
                 onComplete?.(resultData.result);
+                // Update toast with completion
+                completeAnalysis(resultData.result);
                 // Stop polling AFTER we have the result
                 isCancelled = true;
                 if (id) clearInterval(id);
@@ -202,7 +233,8 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
           }
           
           if (data.status.stage === 'error') {
-            // Stop polling on error
+            // Update toast with error and stop polling
+            failAnalysis(data.status.error || 'Processing failed');
             isCancelled = true;
             if (id) clearInterval(id);
             return;
@@ -225,7 +257,7 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
       isCancelled = true;
       if (id) clearInterval(id);
     };
-  }, [sessionId, onStatusChange, onComplete, processingResult]);
+  }, [sessionId, onStatusChange, onComplete, processingResult, updateProgress, completeAnalysis, failAnalysis]);
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-primary)]">
@@ -307,13 +339,59 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
             </Button>
           </div>
 
-          <ValidationResults
-            textSections={processingResult.textSections!}
-            extractedData={processingResult.extractedData}
-            validationAnalysis={processingResult.validationAnalysis}
-            activeFilters={['blue_highlight', 'red_line', 'blue_line', 'black_line', 'red_check']}
-            onFilterChange={() => {}} // Will be implemented in ValidationResults
-          />
+          {/* Results Tab Navigation */}
+          <Card className="p-1" glass={false}>
+            <nav className="flex space-x-1">
+              {[
+                { id: 'overview', name: '종합 개요', icon: '📊', description: '핵심 통계 및 인사이트' },
+                { id: 'structured', name: '구조화된 데이터', icon: '📋', description: '정리된 활동 및 성취 정보' },
+                { id: 'detailed', name: '상세 분석', icon: '🔍', description: '원문 기반 세부 피드백' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveResultsTab(tab.id as any)}
+                  className={`
+                    flex-1 px-4 py-3 text-sm font-medium rounded-md transition-colors flex items-center justify-center space-x-2
+                    ${activeResultsTab === tab.id 
+                      ? 'bg-blue-500 text-white shadow-md' 
+                      : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]'
+                    }
+                  `}
+                  title={tab.description}
+                >
+                  <span>{tab.icon}</span>
+                  <span className="hidden md:inline">{tab.name}</span>
+                  <span className="md:hidden">{tab.name.split(' ')[0]}</span>
+                </button>
+              ))}
+            </nav>
+          </Card>
+
+          {/* Tab Content */}
+          <div className="min-h-[600px]">
+            {activeResultsTab === 'overview' && (
+              <AnalysisOverview
+                extractedData={processingResult.extractedData}
+                validationAnalysis={processingResult.validationAnalysis}
+              />
+            )}
+
+            {activeResultsTab === 'structured' && (
+              <StructuredDataTabs
+                extractedData={processingResult.extractedData}
+              />
+            )}
+
+            {activeResultsTab === 'detailed' && (
+              <ValidationResults
+                textSections={processingResult.textSections!}
+                extractedData={processingResult.extractedData}
+                validationAnalysis={processingResult.validationAnalysis}
+                activeFilters={['blue_highlight', 'red_line', 'blue_line', 'black_line', 'red_check']}
+                onFilterChange={() => {}} // Will be implemented in ValidationResults
+              />
+            )}
+          </div>
         </div>
       )}
         </div>

@@ -8,11 +8,14 @@
     "start": "next start",
     "lint": "next lint",
     "seed": "npx tsx scripts/seed.ts",
-    "setup-vector-db": "npx tsx scripts/setup-vector-db.ts"
+    "setup-vector-db": "npx tsx scripts/setup-vector-db.ts",
+    "update-product": "npx tsx scripts/update-product-p1.ts"
   },
   "dependencies": {
     "@playwright/test": "^1.54.2",
     "@types/bcryptjs": "^2.4.6",
+    "@types/uuid": "^10.0.0",
+    "@upstash/redis": "^1.35.3",
     "bcryptjs": "^3.0.2",
     "chromadb": "^1.8.1",
     "cohere-ai": "^7.18.1",
@@ -27,6 +30,7 @@
     "react-hot-toast": "^2.6.0",
     "redis": "^5.8.1",
     "undici": "^7.15.0",
+    "uuid": "^11.1.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {

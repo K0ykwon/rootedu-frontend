@@ -21,7 +21,7 @@ const mockProofs: StudyProof[] = [
     id: '1',
     userId: 'user1',
     sessionId: 'session1',
-    photo: '/study-proof/planner1.jpg',
+    photo: '/study-proof/planner1.jpg', 
     description: '오늘도 계획대로 완료! 수학 미적분 3단원 끝냈어요 💪',
     subjects: [StudySubject.MATH, StudySubject.ENGLISH],
     studyHours: 6,

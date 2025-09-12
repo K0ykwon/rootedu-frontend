@@ -23,12 +23,12 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   const variantClasses = {
-    primary: 'metallic-button-green text-white border border-[rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(86,186,125,0.3)]',
-    secondary: 'metallic-button bg-[rgba(230,230,230,0.9)] text-[var(--color-bg-primary)] border border-[rgba(255,255,255,0.1)]',
-    outline: 'glass-card text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[rgba(255,255,255,0.05)]',
-    ghost: 'bg-transparent text-[var(--color-text-secondary)] hover:bg-[rgba(255,255,255,0.03)] hover:text-[var(--color-text-primary)]',
-    danger: 'metallic-button bg-gradient-to-r from-[var(--color-error)] to-red-600 text-white border border-[rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]',
-    success: 'metallic-button bg-gradient-to-r from-green-500 to-emerald-600 text-white border border-[rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)]'
+    primary: 'metallic-button-green text-white dark:text-white border border-[var(--color-border-primary)] hover:shadow-[0_0_20px_rgba(86,186,125,0.3)]',
+    secondary: 'metallic-button bg-[var(--color-bg-tertiary)] text-[var(--color-text-primary)] border border-[var(--color-border-primary)]',
+    outline: 'glass-card text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-tertiary)]',
+    ghost: 'bg-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-primary)]',
+    danger: 'metallic-button bg-gradient-to-r from-[var(--color-error)] to-red-600 text-white dark:text-white border border-[var(--color-border-primary)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]',
+    success: 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border border-[var(--color-border-primary)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:from-green-600 hover:to-emerald-700'
   };
 
   return (

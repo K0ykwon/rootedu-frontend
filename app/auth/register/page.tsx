@@ -14,7 +14,7 @@ export default function RegisterPage() {
   const [userId, setUserId] = useState('');
   const [studentPhoneNumber, setStudentPhoneNumber] = useState('');
   const [parentPhoneNumber, setParentPhoneNumber] = useState('');
-  const [userType, setUserType] = useState<'student' | 'parent'>('student');
+  const [userType, setUserType] = useState<'student' | 'parent'>('student'); 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);

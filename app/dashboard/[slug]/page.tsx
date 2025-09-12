@@ -8,6 +8,7 @@ import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import MedskyAnalysis from '../../../components/medsky/MedskyAnalysis';
 import { ValidationResults } from '../../../components/medsky/ValidationResults';
+import ProductBasedDashboard from './ProductBasedDashboard';
 
 interface AnalysisResult {
   id: string;
@@ -21,6 +22,15 @@ interface AnalysisResult {
   completedAt: string;
 }
 
+interface ChatHistory {
+  id: string;
+  analysisSessionId: string;
+  messageCount: number;
+  lastMessage: any;
+  createdAt: string;
+  lastMessageAt: string;
+}
+
 export default function InfluencerDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -28,6 +38,7 @@ export default function InfluencerDashboard() {
   const slug = params.slug as string;
 
   const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasLoadedResults, setHasLoadedResults] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
@@ -36,6 +47,8 @@ export default function InfluencerDashboard() {
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showChatHistory, setShowChatHistory] = useState(false);
+  const [viewMode, setViewMode] = useState<'products' | 'analysis'>('products');
 
   // Check if user has access to this dashboard
   useEffect(() => {
@@ -48,17 +61,37 @@ export default function InfluencerDashboard() {
 
     // Check if user is the right influencer or admin
     const userRole = (session.user as any)?.role;
+    const userType = (session.user as any)?.userType;
     const userId = (session.user as any)?.userId;
+    const userEmail = (session.user as any)?.email;
+    const influencerSlug = (session.user as any)?.influencerSlug;
     
-    if (userRole !== 'admin' && (userRole !== 'influencer' || userId !== slug)) {
-      router.push('/');
-      return;
+    // Special check for yaktoon dashboard - only yaktoon account can access
+    if (slug === 'yaktoon') {
+      const isYaktoon = userId === 'yaktoon' || userEmail === 'yaktoon@rootedu.com' || 
+                        userRole === 'admin' || influencerSlug === 'yaktoon';
+      if (!isYaktoon) {
+        toast.error('이 대시보드에 접근 권한이 없습니다.');
+        router.push('/');
+        return;
+      }
+    } else {
+      // Allow access if admin or if influencer accessing their own dashboard
+      const isInfluencer = userType === 'influencer' && (influencerSlug === slug || userId === slug);
+      if (userRole !== 'admin' && !isInfluencer) {
+        router.push('/');
+        return;
+      }
     }
 
     // Only load results once
     if (!hasLoadedResults) {
       setHasLoadedResults(true);
       loadAnalysisResults();
+      // Load chat history for yaktoon
+      if (slug === 'yaktoon') {
+        loadChatHistory();
+      }
     }
   }, [session, status, slug, hasLoadedResults]);
 
@@ -73,6 +106,18 @@ export default function InfluencerDashboard() {
       console.error('Failed to load analysis results:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadChatHistory = async () => {
+    try {
+      const response = await fetch(`/api/chat/history?influencerSlug=${slug}`);
+      if (response.ok) {
+        const data = await response.json();
+        setChatHistory(data.chatSessions || []);
+      }
+    } catch (error) {
+      console.error('Failed to load chat history:', error);
     }
   };
 
@@ -124,45 +169,80 @@ export default function InfluencerDashboard() {
     <div className="min-h-screen bg-[var(--color-bg-primary)]">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[var(--color-text-primary)] mb-2">
-            {slug} 대시보드
-          </h1>
-          <p className="text-[var(--color-text-secondary)]">
-            생활기록부 분석 및 학생 프로필 관리
-          </p>
-        </div>
-
-        {/* Analysis Tools Section */}
-        <Card className="mb-8">
-          <div className="p-6">
-            <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">
-              분석 도구
-            </h2>
-            <div className="flex gap-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-[var(--color-text-primary)] mb-2">
+                {slug} 대시보드
+              </h1>
+              <p className="text-[var(--color-text-secondary)]">
+                생활기록부 분석 및 학생 프로필 관리
+              </p>
+            </div>
+            <div className="flex gap-2">
               <Button
-                variant="primary"
-                onClick={() => setShowAnalysis(!showAnalysis)}
+                variant={viewMode === 'products' ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('products')}
               >
-                {showAnalysis ? '분석 도구 닫기' : '새 생활기록부 분석'}
+                제품별 보기 
+              </Button>
+              <Button
+                variant={viewMode === 'analysis' ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('analysis')}
+              >
+                분석별 보기
               </Button>
               <Button
                 variant="secondary"
-                onClick={loadAnalysisResults}
+                size="sm"
+                onClick={() => router.push(`/dashboard/${slug}/messages`)}
               >
-                결과 새로고침
+                고객 메시지 📬
               </Button>
             </div>
           </div>
-          
-          {showAnalysis && (
-            <div className="border-t border-[var(--color-border-primary)] p-6">
-              <MedskyAnalysis 
-                onAnalysisComplete={loadAnalysisResults} 
-                influencerSlug={slug}
-              />
-            </div>
-          )}
-        </Card>
+        </div>
+
+        {/* View Mode Based Content */}
+        {viewMode === 'products' ? (
+          <>
+            {/* Product-Based View */}
+            <ProductBasedDashboard influencerSlug={slug} />
+          </>
+        ) : (
+          <>
+            {/* Analysis Tools Section */}
+            <Card className="mb-8">
+              <div className="p-6">
+                <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">
+                  분석 도구
+                </h2>
+                <div className="flex gap-4">
+                  <Button
+                    variant="primary"
+                    onClick={() => setShowAnalysis(!showAnalysis)}
+                  >
+                    {showAnalysis ? '분석 도구 닫기' : '새 생활기록부 분석'}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={loadAnalysisResults}
+                  >
+                    결과 새로고침
+                  </Button>
+                </div>
+              </div>
+              
+              {showAnalysis && (
+                <div className="border-t border-[var(--color-border-primary)] p-6">
+                  <MedskyAnalysis 
+                    onAnalysisComplete={loadAnalysisResults} 
+                    influencerSlug={slug}
+                  />
+                </div>
+              )}
+            </Card>
 
         {/* Analysis Results Section */}
         <Card>
@@ -296,6 +376,84 @@ export default function InfluencerDashboard() {
             )}
           </div>
         </Card>
+          </>
+        )}
+
+        {/* Chat History Section - Only for Yaktoon (visible in both views) */}
+        {slug === 'yaktoon' && (
+          <Card className="mb-8">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
+                  채팅 기록
+                </h2>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowChatHistory(!showChatHistory)}
+                >
+                  {showChatHistory ? '채팅 기록 닫기' : '채팅 기록 보기'}
+                </Button>
+              </div>
+              
+              {showChatHistory && (
+                <div className="space-y-4">
+                  {chatHistory.length === 0 ? (
+                    <p className="text-[var(--color-text-secondary)] text-center py-8">
+                      아직 채팅 기록이 없습니다.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {chatHistory.map((chat) => (
+                        <div
+                          key={chat.id}
+                          className="bg-[var(--color-bg-secondary)] rounded-lg p-4 hover:bg-[var(--color-bg-tertiary)] transition-colors cursor-pointer"
+                          onClick={() => {
+                            // Navigate to chat with existing session
+                            router.push(`/dashboard/${slug}/chat?sessionId=${chat.analysisSessionId}`)
+                          }}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h4 className="text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                                세션 ID: {chat.analysisSessionId.substring(0, 8)}...
+                              </h4>
+                              <p className="text-xs text-[var(--color-text-secondary)] mb-2">
+                                메시지 수: {chat.messageCount}개 | 
+                                마지막 대화: {new Date(chat.lastMessageAt).toLocaleString('ko-KR')}
+                              </p>
+                              {chat.lastMessage && (
+                                <div className="bg-[var(--color-bg-primary)] rounded p-2">
+                                  <p className="text-xs text-[var(--color-text-tertiary)]">
+                                    마지막 메시지 ({chat.lastMessage.role === 'user' ? '사용자' : 'AI'}):
+                                  </p>
+                                  <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2 mt-1">
+                                    {chat.lastMessage.content}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="ml-4"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/dashboard/${slug}/chat?sessionId=${chat.analysisSessionId}`);
+                              }}
+                            >
+                              대화 계속
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
 
         {/* Analysis Details Modal */}
         {showAnalysisModal && selectedAnalysis && (

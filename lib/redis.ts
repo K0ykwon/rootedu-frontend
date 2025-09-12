@@ -67,9 +67,7 @@ export async function getRedisClient() {
     get(target, prop) {
       // Prevent quit/disconnect on the shared client
       if (prop === 'quit' || prop === 'disconnect') {
-        return async () => {
-          console.log('Redis: Skipping quit/disconnect on shared client');
-        };
+        return async () => {};
       }
       return target[prop as keyof typeof target];
     }

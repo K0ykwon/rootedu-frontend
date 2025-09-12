@@ -89,6 +89,14 @@ async function fixInfluencerAccounts() {
         await redis.del(`user:${existingUserId}`);
         await redis.del(`user:userId:${influencer.username}`);
       }
+
+      // Also remove legacy direct-hash key if present (e.g., user:yaktoon)
+      const legacyKey = `user:${influencer.username}`;
+      const legacyExists = await redis.exists(legacyKey);
+      if (legacyExists) {
+        console.log(`🧹 Removing legacy key: ${legacyKey}`);
+        await redis.del(legacyKey);
+      }
       
       // Generate new influencer user ID
       const influencerId = `influencer-${influencer.slug}-${Date.now()}`;

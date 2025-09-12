@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
     // Parse form data
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const productId = (formData.get('productId') as string | null) || undefined;
 
     if (!file) {
       return NextResponse.json(
@@ -83,7 +84,8 @@ export async function POST(request: NextRequest) {
       id: session.user.id,
       name: session.user.name || '',
       email: session.user.email || '',
-      analyzedAt: new Date().toISOString()
+      analyzedAt: new Date().toISOString(),
+      productId
     };
     startProcessingPipeline(sessionId, file, userInfo);
 

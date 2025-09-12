@@ -6,6 +6,8 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import BottomNav from "../components/ui/BottomNav";
 import ToastProvider from "../components/ui/Toast";
+import { MedskyAnalysisProvider } from "@/lib/medsky/analysisContext";
+import MedskyAnalysisToast from "@/components/MedskyAnalysisToast";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -29,16 +31,19 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AuthProvider>
-          <ToastProvider>
-            <div className="min-h-screen flex flex-col">
-              <Header />
-              <main className="flex-1 pb-16 md:pb-0">
-                {children}
-              </main>
-              <Footer />
-              <BottomNav />
-            </div>
-          </ToastProvider>
+          <MedskyAnalysisProvider>
+            <ToastProvider>
+              <div className="min-h-screen flex flex-col">
+                <Header />
+                <main className="flex-1 pb-16 md:pb-0">
+                  {children}
+                </main>
+                <Footer />
+                <BottomNav />
+              </div>
+              <MedskyAnalysisToast />
+            </ToastProvider>
+          </MedskyAnalysisProvider>
         </AuthProvider>
       </body>
     </html>
