@@ -13,6 +13,7 @@ import { useToast } from '../../../components/ui/Toast';
 import Skeleton from '../../../components/ui/Skeleton';
 import { MedskyAnalyzer } from '../../../components/medsky/MedskyAnalyzer';
 import ChatWidget from '../../../components/ChatWidget';
+import GilpumKoreanAIFeatures from '../../../components/kor.artis/free_features';
 
 interface Influencer {
   id: string;
@@ -467,7 +468,12 @@ export default function InfluencerDetailPage() {
               )}
 
               {/* AI Features Tab - Empty for all influencers */}
-              {activeTab === 'ai_features' && (
+              {activeTab === 'ai_features' && influencer.slug === 'kor.artis' && (
+                <GilpumKoreanAIFeatures />
+              )}
+
+              {/* AI Features Tab - Coming Soon for other influencers */}
+              {activeTab === 'ai_features' && influencer.slug !== 'kor.artis' && (
                 <div className="space-y-6">
                   <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
                     <div className="text-center py-16">

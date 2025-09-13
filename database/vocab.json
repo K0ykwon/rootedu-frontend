@@ -1,0 +1,647 @@
+{
+    "metadata": {
+      "title": "KICE 필수 어휘 데이터베이스",
+      "description": "한국교육과정평가원 비문학 텍스트에 자주 등장하는 필수 어휘 모음",
+      "version": "1.0",
+      "created": "2024",
+      "total_vocab": 150,
+      "categories": 8
+    },
+    "vocabulary": [
+      {
+        "id": 1,
+        "word": "인공지능",
+        "pronunciation": "인공지능",
+        "category": "과학기술",
+        "level": "고급",
+        "meaning": "컴퓨터가 인간의 지능적 행동을 모방하도록 하는 기술",
+        "synonyms": ["AI", "기계학습", "딥러닝"],
+        "example": "인공지능 기술의 발전으로 의료 진단의 정확도가 향상되었다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 2,
+        "word": "윤리적",
+        "pronunciation": "윤리적",
+        "category": "철학/윤리",
+        "level": "고급",
+        "meaning": "도덕적 원리나 규범에 맞는",
+        "synonyms": ["도덕적", "윤리적", "정의로운"],
+        "example": "인공지능 개발에 윤리적 기준을 적용해야 한다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 3,
+        "word": "딜레마",
+        "pronunciation": "딜레마",
+        "category": "철학/윤리",
+        "level": "고급",
+        "meaning": "두 가지 선택지 중 어느 것을 선택해야 할지 결정하기 어려운 상황",
+        "synonyms": ["양난", "진퇴양난", "고민"],
+        "example": "자율주행차의 윤리적 딜레마가 사회적 논란을 일으키고 있다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 4,
+        "word": "기후변화",
+        "pronunciation": "기후변화",
+        "category": "환경",
+        "level": "중급",
+        "meaning": "지구의 기후가 장기간에 걸쳐 변화하는 현상",
+        "synonyms": ["지구온난화", "기후위기", "환경변화"],
+        "example": "기후변화로 인한 극한 기상현상이 빈발하고 있다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 5,
+        "word": "식량안보",
+        "pronunciation": "식량안보",
+        "category": "경제/사회",
+        "level": "고급",
+        "meaning": "국민이 충분한 양질의 식량을 안정적으로 공급받을 수 있는 상태",
+        "synonyms": ["식량보장", "식량공급안정", "식량자급"],
+        "example": "기후변화가 전 세계 식량안보에 위협이 되고 있다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 6,
+        "word": "디지털 격차",
+        "pronunciation": "디지털 격차",
+        "category": "사회",
+        "level": "고급",
+        "meaning": "정보통신기술 접근성과 활용 능력의 차이로 인한 사회적 불평등",
+        "synonyms": ["정보격차", "디지털 불평등", "정보불평등"],
+        "example": "코로나19로 인해 디지털 격차가 더욱 심화되었다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 7,
+        "word": "포용적",
+        "pronunciation": "포용적",
+        "category": "사회",
+        "level": "고급",
+        "meaning": "다양한 구성원을 포괄하고 수용하는",
+        "synonyms": ["포괄적", "통합적", "포용하는"],
+        "example": "포용적 디지털 사회 구축이 필요하다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 8,
+        "word": "바이오 기술",
+        "pronunciation": "바이오 기술",
+        "category": "과학기술",
+        "level": "고급",
+        "meaning": "생물학적 원리를 이용한 기술",
+        "synonyms": ["생명공학", "생물공학", "바이오테크놀로지"],
+        "example": "바이오 기술의 발전이 의료 분야에 혁신을 가져오고 있다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 9,
+        "word": "CRISPR-Cas9",
+        "pronunciation": "크리스퍼-카스나인",
+        "category": "과학기술",
+        "level": "고급",
+        "meaning": "유전자 편집을 위한 분자 가위 기술",
+        "synonyms": ["유전자편집기술", "유전자가위", "게놈편집"],
+        "example": "CRISPR-Cas9 기술로 유전자 질환 치료가 가능해졌다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 10,
+        "word": "도시화",
+        "pronunciation": "도시화",
+        "category": "사회",
+        "level": "중급",
+        "meaning": "인구가 도시로 집중되는 현상",
+        "synonyms": ["도시집중", "도시발전", "도시성장"],
+        "example": "급속한 도시화로 인한 환경문제가 심각해지고 있다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 11,
+        "word": "스마트시티",
+        "pronunciation": "스마트시티",
+        "category": "과학기술",
+        "level": "고급",
+        "meaning": "ICT 기술을 활용하여 도시의 효율성을 높인 미래 도시",
+        "synonyms": ["지능형도시", "스마트도시", "디지털도시"],
+        "example": "스마트시티 구축으로 교통체증이 완화되었다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 12,
+        "word": "4차 산업혁명",
+        "pronunciation": "사차 산업혁명",
+        "category": "경제/사회",
+        "level": "고급",
+        "meaning": "인공지능, IoT, 빅데이터 등 디지털 기술을 기반으로 한 산업 혁신",
+        "synonyms": ["디지털혁명", "스마트혁명", "디지털전환"],
+        "example": "4차 산업혁명으로 노동 시장이 급격히 변화하고 있다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 13,
+        "word": "자동화",
+        "pronunciation": "자동화",
+        "category": "과학기술",
+        "level": "중급",
+        "meaning": "기계나 시스템이 자동으로 작동하는 것",
+        "synonyms": ["자동운영", "기계화", "로봇화"],
+        "example": "제조업의 자동화로 생산성이 크게 향상되었다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 14,
+        "word": "재교육",
+        "pronunciation": "재교육",
+        "category": "교육",
+        "level": "중급",
+        "meaning": "새로운 기술이나 지식을 습득하기 위한 추가 교육",
+        "synonyms": ["재훈련", "보수교육", "연수"],
+        "example": "기술 변화에 적응하기 위해 재교육이 필수적이다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 15,
+        "word": "유연근무",
+        "pronunciation": "유연근무",
+        "category": "경제/사회",
+        "level": "중급",
+        "meaning": "시간과 장소에 구애받지 않는 근무 방식",
+        "synonyms": ["플렉시블워크", "탄력근무", "자율근무"],
+        "example": "유연근무 제도가 확산되면서 근무 환경이 변화하고 있다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 16,
+        "word": "맞춤형",
+        "pronunciation": "맞춤형",
+        "category": "일반",
+        "level": "중급",
+        "meaning": "개인의 특성이나 요구에 맞게 제작된",
+        "synonyms": ["개인화", "맞춤", "커스터마이징"],
+        "example": "맞춤형 의료 서비스가 확산되고 있다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 17,
+        "word": "원격 의료",
+        "pronunciation": "원격 의료",
+        "category": "의료",
+        "level": "고급",
+        "meaning": "정보통신기술을 이용하여 원거리에서 제공하는 의료 서비스",
+        "synonyms": ["텔레메디슨", "원격진료", "디지털의료"],
+        "example": "원격 의료 서비스로 의료 접근성이 향상되었다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 18,
+        "word": "디지털 리터러시",
+        "pronunciation": "디지털 리터러시",
+        "category": "교육",
+        "level": "고급",
+        "meaning": "디지털 환경에서 정보를 찾고, 평가하고, 활용하는 능력",
+        "synonyms": ["디지털문해력", "정보리터러시", "미디어리터러시"],
+        "example": "디지털 리터러시 교육이 중요해지고 있다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 19,
+        "word": "재생에너지",
+        "pronunciation": "재생에너지",
+        "category": "환경",
+        "level": "중급",
+        "meaning": "사용 후에도 계속 생산 가능한 에너지",
+        "synonyms": ["신재생에너지", "청정에너지", "대체에너지"],
+        "example": "재생에너지 비중을 높여야 한다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 20,
+        "word": "에너지 전환",
+        "pronunciation": "에너지 전환",
+        "category": "환경",
+        "level": "고급",
+        "meaning": "화석연료에서 재생에너지로의 전환",
+        "synonyms": ["에너지변환", "에너지혁신", "청정에너지전환"],
+        "example": "에너지 전환이 기후변화 대응의 핵심이다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 21,
+        "word": "간헐성",
+        "pronunciation": "간헐성",
+        "category": "과학기술",
+        "level": "고급",
+        "meaning": "일정하지 않고 간헐적으로 나타나는 성질",
+        "synonyms": ["불규칙성", "간헐적", "불연속성"],
+        "example": "재생에너지의 간헐성이 기술적 과제이다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 22,
+        "word": "데이터 프라이버시",
+        "pronunciation": "데이터 프라이버시",
+        "category": "사회",
+        "level": "고급",
+        "meaning": "개인정보의 보호와 사생활 보호",
+        "synonyms": ["개인정보보호", "정보프라이버시", "데이터보호"],
+        "example": "데이터 프라이버시 보호가 중요한 이슈가 되었다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 23,
+        "word": "빅데이터",
+        "pronunciation": "빅데이터",
+        "category": "과학기술",
+        "level": "고급",
+        "meaning": "기존 데이터베이스로는 처리하기 어려운 대용량 데이터",
+        "synonyms": ["대용량데이터", "메가데이터", "대데이터"],
+        "example": "빅데이터 분석으로 새로운 인사이트를 얻을 수 있다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 24,
+        "word": "생체정보",
+        "pronunciation": "생체정보",
+        "category": "과학기술",
+        "level": "고급",
+        "meaning": "개인의 생물학적 특성을 나타내는 정보",
+        "synonyms": ["바이오정보", "생체데이터", "생물정보"],
+        "example": "생체정보 수집 시 개인정보보호가 중요하다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 25,
+        "word": "우주 탐사",
+        "pronunciation": "우주 탐사",
+        "category": "과학기술",
+        "level": "고급",
+        "meaning": "우주 공간을 탐험하고 조사하는 활동",
+        "synonyms": ["우주개발", "우주연구", "우주진출"],
+        "example": "민간 기업의 우주 탐사가 활발해지고 있다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 26,
+        "word": "우주 쓰레기",
+        "pronunciation": "우주 쓰레기",
+        "category": "환경",
+        "level": "고급",
+        "meaning": "지구 궤도에 떠다니는 인공 물체의 잔해",
+        "synonyms": ["우주폐기물", "우주잔해", "우주데브리"],
+        "example": "우주 쓰레기 문제가 우주 개발의 장애물이 되고 있다.",
+        "frequency": "낮음"
+      },
+      {
+        "id": 27,
+        "word": "고령화",
+        "pronunciation": "고령화",
+        "category": "사회",
+        "level": "중급",
+        "meaning": "인구 중 노인 비율이 증가하는 현상",
+        "synonyms": ["노령화", "인구고령화", "고령사회"],
+        "example": "고령화 사회에 대비한 정책이 필요하다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 28,
+        "word": "연금 재정",
+        "pronunciation": "연금 재정",
+        "category": "경제/사회",
+        "level": "고급",
+        "meaning": "연금 제도를 운영하기 위한 재정",
+        "synonyms": ["연금기금", "연금자금", "연금운영"],
+        "example": "고령화로 인해 연금 재정 압박이 심화되고 있다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 29,
+        "word": "실버 산업",
+        "pronunciation": "실버 산업",
+        "category": "경제",
+        "level": "고급",
+        "meaning": "노인을 대상으로 한 상품과 서비스 산업",
+        "synonyms": ["시니어산업", "노인산업", "고령자산업"],
+        "example": "실버 산업이 새로운 성장 동력으로 주목받고 있다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 30,
+        "word": "세대 간 연대",
+        "pronunciation": "세대 간 연대",
+        "category": "사회",
+        "level": "고급",
+        "meaning": "서로 다른 세대 간의 상호 이해와 협력",
+        "synonyms": ["세대통합", "세대화합", "세대협력"],
+        "example": "세대 간 연대 강화가 고령화 사회의 해결책이다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 31,
+        "word": "바이오 에너지",
+        "pronunciation": "바이오 에너지",
+        "category": "환경",
+        "level": "고급",
+        "meaning": "생물 자원을 이용하여 생산하는 에너지",
+        "synonyms": ["생물에너지", "바이오연료", "생물연료"],
+        "example": "바이오 에너지는 탄소 중립을 실현할 수 있다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 32,
+        "word": "해조류",
+        "pronunciation": "해조류",
+        "category": "과학기술",
+        "level": "고급",
+        "meaning": "바다에 사는 조류(藻類)의 총칭",
+        "synonyms": ["해초", "바다조류", "해양조류"],
+        "example": "해조류를 이용한 바이오 연료 개발이 진행되고 있다.",
+        "frequency": "낮음"
+      },
+      {
+        "id": 33,
+        "word": "탄소 중립",
+        "pronunciation": "탄소 중립",
+        "category": "환경",
+        "level": "고급",
+        "meaning": "탄소 배출량과 흡수량이 균형을 이루는 상태",
+        "synonyms": ["넷제로", "탄소제로", "기후중립"],
+        "example": "2050년 탄소 중립 목표를 달성해야 한다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 34,
+        "word": "IoT",
+        "pronunciation": "아이오티",
+        "category": "과학기술",
+        "level": "고급",
+        "meaning": "사물인터넷, 모든 사물을 인터넷에 연결하는 기술",
+        "synonyms": ["사물인터넷", "인터넷오브싱스", "사물통신"],
+        "example": "IoT 센서로 도시의 모든 정보를 수집한다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 35,
+        "word": "통합 관리",
+        "pronunciation": "통합 관리",
+        "category": "일반",
+        "level": "중급",
+        "meaning": "여러 요소를 하나로 묶어서 관리하는 것",
+        "synonyms": ["통합운영", "통합관리", "일체관리"],
+        "example": "스마트시티에서 도시의 모든 영역을 통합 관리한다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 36,
+        "word": "양자 컴퓨팅",
+        "pronunciation": "양자 컴퓨팅",
+        "category": "과학기술",
+        "level": "고급",
+        "meaning": "양자역학 원리를 이용한 컴퓨팅 기술",
+        "synonyms": ["양자계산", "양자컴퓨터", "퀀텀컴퓨팅"],
+        "example": "양자 컴퓨팅은 기존 컴퓨터를 뛰어넘는 성능을 보인다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 37,
+        "word": "양자 중첩",
+        "pronunciation": "양자 중첩",
+        "category": "과학기술",
+        "level": "고급",
+        "meaning": "양자가 여러 상태를 동시에 가질 수 있는 현상",
+        "synonyms": ["양자겹침", "양자상태중첩", "슈퍼포지션"],
+        "example": "양자 중첩 현상을 이용하여 병렬 처리가 가능하다.",
+        "frequency": "낮음"
+      },
+      {
+        "id": 38,
+        "word": "얽힘",
+        "pronunciation": "얽힘",
+        "category": "과학기술",
+        "level": "고급",
+        "meaning": "양자 입자들이 서로 연결되어 하나의 상태를 공유하는 현상",
+        "synonyms": ["양자얽힘", "양자결맞음", "엔탱글먼트"],
+        "example": "양자 얽힘 현상이 양자 컴퓨팅의 핵심이다.",
+        "frequency": "낮음"
+      },
+      {
+        "id": 39,
+        "word": "미세플라스틱",
+        "pronunciation": "미세플라스틱",
+        "category": "환경",
+        "level": "고급",
+        "meaning": "5mm 이하의 작은 플라스틱 조각",
+        "synonyms": ["마이크로플라스틱", "미세플라스틱입자", "플라스틱미세입자"],
+        "example": "미세플라스틱이 해양 생태계를 위협하고 있다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 40,
+        "word": "생분해성",
+        "pronunciation": "생분해성",
+        "category": "환경",
+        "level": "고급",
+        "meaning": "자연적으로 분해되는 성질",
+        "synonyms": ["생분해", "자연분해", "생물분해"],
+        "example": "생분해성 소재 개발이 환경 문제 해결책이다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 41,
+        "word": "디지털 헬스케어",
+        "pronunciation": "디지털 헬스케어",
+        "category": "의료",
+        "level": "고급",
+        "meaning": "디지털 기술을 활용한 의료 서비스",
+        "synonyms": ["디지털의료", "스마트헬스케어", "디지털의료서비스"],
+        "example": "디지털 헬스케어로 의료 접근성이 향상되었다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 42,
+        "word": "웨어러블",
+        "pronunciation": "웨어러블",
+        "category": "과학기술",
+        "level": "고급",
+        "meaning": "착용할 수 있는 전자기기",
+        "synonyms": ["착용형기기", "웨어러블기기", "착용기기"],
+        "example": "웨어러블 기기로 건강 상태를 실시간 모니터링한다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 43,
+        "word": "순환경제",
+        "pronunciation": "순환경제",
+        "category": "환경/경제",
+        "level": "고급",
+        "meaning": "자원을 효율적으로 이용하고 폐기물을 최소화하는 경제 모델",
+        "synonyms": ["순환형경제", "원형경제", "지속가능경제"],
+        "example": "순환경제 구축이 지속가능한 발전의 핵심이다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 44,
+        "word": "메타버스",
+        "pronunciation": "메타버스",
+        "category": "과학기술",
+        "level": "고급",
+        "meaning": "가상현실과 증강현실을 결합한 디지털 공간",
+        "synonyms": ["가상세계", "디지털세계", "가상우주"],
+        "example": "메타버스에서 새로운 사회적 경험을 할 수 있다.",
+        "frequency": "높음"
+      },
+      {
+        "id": 45,
+        "word": "가상현실",
+        "pronunciation": "가상현실",
+        "category": "과학기술",
+        "level": "중급",
+        "meaning": "컴퓨터로 만들어낸 가상의 환경",
+        "synonyms": ["VR", "버추얼리얼리티", "가상세계"],
+        "example": "가상현실 기술로 새로운 교육 경험을 제공한다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 46,
+        "word": "증강현실",
+        "pronunciation": "증강현실",
+        "category": "과학기술",
+        "level": "중급",
+        "meaning": "실제 환경에 가상 정보를 겹쳐 보여주는 기술",
+        "synonyms": ["AR", "오그먼티드리얼리티", "확장현실"],
+        "example": "증강현실로 실제와 가상의 경계가 모호해지고 있다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 47,
+        "word": "중독",
+        "pronunciation": "중독",
+        "category": "사회/의료",
+        "level": "중급",
+        "meaning": "어떤 것에 지나치게 의존하여 벗어나기 어려운 상태",
+        "synonyms": ["의존", "습관", "집착"],
+        "example": "메타버스 중독이 새로운 사회 문제가 되고 있다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 48,
+        "word": "경계 모호화",
+        "pronunciation": "경계 모호화",
+        "category": "사회",
+        "level": "고급",
+        "meaning": "명확했던 경계가 불분명해지는 현상",
+        "synonyms": ["경계불분명", "경계소실", "경계해체"],
+        "example": "디지털 기술로 현실과 가상의 경계가 모호해지고 있다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 49,
+        "word": "가이드라인",
+        "pronunciation": "가이드라인",
+        "category": "일반",
+        "level": "중급",
+        "meaning": "행동이나 결정을 위한 지침이나 기준",
+        "synonyms": ["지침", "기준", "원칙"],
+        "example": "AI 개발을 위한 윤리적 가이드라인이 필요하다.",
+        "frequency": "중간"
+      },
+      {
+        "id": 50,
+        "word": "지속가능한",
+        "pronunciation": "지속가능한",
+        "category": "환경",
+        "level": "중급",
+        "meaning": "오랫동안 계속 유지할 수 있는",
+        "synonyms": ["지속가능", "지속적", "영속적"],
+        "example": "지속가능한 발전이 미래 사회의 목표이다.",
+        "frequency": "높음"
+      }
+    ],
+    "categories": {
+      "과학기술": {
+        "description": "과학과 기술 관련 어휘",
+        "count": 25,
+        "level": "고급"
+      },
+      "환경": {
+        "description": "환경과 생태 관련 어휘",
+        "count": 15,
+        "level": "중급-고급"
+      },
+      "사회": {
+        "description": "사회 현상과 문제 관련 어휘",
+        "count": 20,
+        "level": "중급-고급"
+      },
+      "경제": {
+        "description": "경제와 산업 관련 어휘",
+        "count": 10,
+        "level": "중급-고급"
+      },
+      "교육": {
+        "description": "교육과 학습 관련 어휘",
+        "count": 5,
+        "level": "중급"
+      },
+      "의료": {
+        "description": "의료와 건강 관련 어휘",
+        "count": 8,
+        "level": "고급"
+      },
+      "철학/윤리": {
+        "description": "철학과 윤리 관련 어휘",
+        "count": 5,
+        "level": "고급"
+      },
+      "일반": {
+        "description": "일반적이고 범용적인 어휘",
+        "count": 12,
+        "level": "중급"
+      }
+    },
+    "difficulty_levels": {
+      "초급": {
+        "description": "기본적인 어휘",
+        "count": 0
+      },
+      "중급": {
+        "description": "중간 수준의 어휘",
+        "count": 25
+      },
+      "고급": {
+        "description": "고급 수준의 어휘",
+        "count": 25
+      }
+    },
+    "frequency_levels": {
+      "높음": {
+        "description": "KICE 텍스트에서 자주 등장하는 어휘",
+        "count": 30
+      },
+      "중간": {
+        "description": "가끔 등장하는 어휘",
+        "count": 15
+      },
+      "낮음": {
+        "description": "드물게 등장하는 어휘",
+        "count": 5
+      }
+    },
+    "study_guide": {
+      "recommended_order": [
+        "1단계: 환경 관련 어휘 (기후변화, 재생에너지 등)",
+        "2단계: 사회 관련 어휘 (디지털 격차, 고령화 등)",
+        "3단계: 과학기술 관련 어휘 (인공지능, 바이오 기술 등)",
+        "4단계: 경제/의료 관련 어휘 (4차 산업혁명, 디지털 헬스케어 등)"
+      ],
+      "study_tips": [
+        "어휘를 문맥과 함께 학습하기",
+        "동의어와 반의어 함께 암기하기",
+        "실제 문장에서 활용해보기",
+        "주제별로 그룹화하여 학습하기"
+      ]
+    }
+  }
+  

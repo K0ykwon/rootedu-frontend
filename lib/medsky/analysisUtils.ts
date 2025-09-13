@@ -493,14 +493,5 @@ function evaluateCompetencyLevel(description: string): ProcessedAbility['compete
 }
 
 // ===========================
-// Export all utilities
+// All utilities are exported individually above
 // ===========================
-
-export {
-  calculateAnalysisStatistics,
-  processActivities,
-  getActivityStatsByDomain,
-  processAcademics,
-  getAcademicStatsByCategory,
-  processDetailedAbilities
-};
