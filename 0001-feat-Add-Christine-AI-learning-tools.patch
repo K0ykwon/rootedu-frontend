@@ -1,0 +1,3636 @@
+From 31e30fe7bd3ac2efe977105d1fc3ef11f8af42e7 Mon Sep 17 00:00:00 2001
+From: ssssanghyun <ahstmxj1597@yonsei.ac.kr>
+Date: Mon, 15 Sep 2025 17:47:08 +0900
+Subject: [PATCH] feat: Add Christine AI learning tools
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Added ChristineAILearningTool component
+- Integrated Christine's AI features in influencer page
+- Added API endpoint for Christine-specific functionality
+- Enhanced tab navigation to support Christine's AI tools
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+---
+ .../christine/core-phrase/route.ts            | 358 +++++++++
+ .../influencers/christine/roleplay/route.ts   | 378 +++++++++
+ .../influencers/christine/vocabulary/route.ts | 508 +++++++++++++
+ app/influencers/[slug]/page.tsx               |  10 +-
+ .../christine/ChristineAILearningTool.tsx     | 299 ++++++++
+ components/christine/ChristineVocabulary.tsx  | 715 ++++++++++++++++++
+ .../christine/CorePhrasePatternPractice.tsx   | 662 ++++++++++++++++
+ components/christine/RolePlayConversation.tsx | 601 +++++++++++++++
+ 8 files changed, 3530 insertions(+), 1 deletion(-)
+ create mode 100644 app/api/influencers/christine/core-phrase/route.ts
+ create mode 100644 app/api/influencers/christine/roleplay/route.ts
+ create mode 100644 app/api/influencers/christine/vocabulary/route.ts
+ create mode 100644 components/christine/ChristineAILearningTool.tsx
+ create mode 100644 components/christine/ChristineVocabulary.tsx
+ create mode 100644 components/christine/CorePhrasePatternPractice.tsx
+ create mode 100644 components/christine/RolePlayConversation.tsx
+
+diff --git a/app/api/influencers/christine/core-phrase/route.ts b/app/api/influencers/christine/core-phrase/route.ts
+new file mode 100644
+index 0000000..c7bd377
+--- /dev/null
++++ b/app/api/influencers/christine/core-phrase/route.ts
+@@ -0,0 +1,358 @@
++import { NextRequest, NextResponse } from 'next/server';
++import { getRedisClient } from '@/lib/redis';
++import OpenAI from 'openai';
++
++const openai = new OpenAI({
++  apiKey: process.env.OPENAI_API_KEY,
++});
++
++interface PracticeQuestion {
++  id: string;
++  type: 'fill_blank' | 'complete_sentence' | 'variation';
++  originalPhrase: string;
++  question: string;
++  answer: string;
++  options?: string[];
++  explanation?: string;
++}
++
++interface PracticeProgress {
++  monthKey: string;
++  weekKey: string;
++  completedQuestions: string[];
++  score: number;
++  lastStudied: number;
++}
++
++export async function GET(request: NextRequest): Promise<NextResponse> {
++  try {
++    const url = new URL(request.url);
++    const userId = url.searchParams.get('userId');
++    const action = url.searchParams.get('action');
++    const month = url.searchParams.get('month');
++    const week = url.searchParams.get('week');
++
++    if (!userId) {
++      return NextResponse.json({
++        success: false,
++        error: '사용자 ID가 필요합니다.'
++      }, { status: 400 });
++    }
++
++    switch (action) {
++      case 'progress':
++        return await getProgress(userId, month!, week!);
++      default:
++        return NextResponse.json({
++          success: false,
++          error: '지원하지 않는 액션입니다.'
++        }, { status: 400 });
++    }
++
++  } catch (error) {
++    console.error('Core phrase GET error:', error);
++    return NextResponse.json({
++      success: false,
++      error: '서버 오류가 발생했습니다.'
++    }, { status: 500 });
++  }
++}
++
++export async function POST(request: NextRequest): Promise<NextResponse> {
++  try {
++    const body = await request.json();
++    const { action, userId } = body;
++
++    if (!userId) {
++      return NextResponse.json({
++        success: false,
++        error: '사용자 ID가 필요합니다.'
++      }, { status: 400 });
++    }
++
++    switch (action) {
++      case 'generate_questions':
++        return await generateQuestions(body);
++      case 'calculate_results':
++        return await calculateResults(body);
++      default:
++        return NextResponse.json({
++          success: false,
++          error: '지원하지 않는 액션입니다.'
++        }, { status: 400 });
++    }
++
++  } catch (error) {
++    console.error('Core phrase API error:', error);
++    return NextResponse.json({
++      success: false,
++      error: '서버 오류가 발생했습니다.'
++    }, { status: 500 });
++  }
++}
++
++async function getProgress(userId: string, month: string, week: string): Promise<NextResponse> {
++  try {
++    const redis = await getRedisClient();
++    const progressKey = `christine:core_phrase:${userId}:${month}:${week}`;
++
++    const progressData = await redis.hGetAll(progressKey);
++    await redis.quit();
++
++    if (Object.keys(progressData).length === 0) {
++      return NextResponse.json({
++        success: true,
++        progress: null
++      });
++    }
++
++    const progress: PracticeProgress = {
++      monthKey: month,
++      weekKey: week,
++      completedQuestions: JSON.parse(progressData.completedQuestions || '[]'),
++      score: parseInt(progressData.score || '0'),
++      lastStudied: parseInt(progressData.lastStudied || '0')
++    };
++
++    return NextResponse.json({
++      success: true,
++      progress
++    });
++
++  } catch (error) {
++    console.error('Get progress error:', error);
++    return NextResponse.json({
++      success: false,
++      error: '진도를 가져오는 중 오류가 발생했습니다.'
++    }, { status: 500 });
++  }
++}
++
++async function generateQuestions(requestData: any): Promise<NextResponse> {
++  const { userId, month, week, phrases, count = 10 } = requestData;
++
++  try {
++    // Generate questions using AI
++    const questions = await generateQuestionsWithAI(phrases, count, month, week);
++
++    return NextResponse.json({
++      success: true,
++      questions,
++      message: `${questions.length}개의 문제가 생성되었습니다.`
++    });
++
++  } catch (error) {
++    console.error('Generate questions error:', error);
++    return NextResponse.json({
++      success: false,
++      error: '문제 생성 중 오류가 발생했습니다.'
++    }, { status: 500 });
++  }
++}
++
++async function calculateResults(requestData: any): Promise<NextResponse> {
++  const { userId, month, week, questions, userAnswers } = requestData;
++
++  try {
++    let correctCount = 0;
++    const completedQuestions: string[] = [];
++
++    // Calculate score
++    for (const question of questions) {
++      const userAnswer = userAnswers[question.id];
++      if (userAnswer) {
++        completedQuestions.push(question.id);
++
++        // Check if answer is correct
++        if (question.options) {
++          // Multiple choice - check exact match
++          if (userAnswer === question.answer) {
++            correctCount++;
++          }
++        } else {
++          // Text input - check similarity or exact match
++          const similarity = calculateStringSimilarity(userAnswer.toLowerCase().trim(), question.answer.toLowerCase().trim());
++          if (similarity > 0.8) { // 80% similarity threshold
++            correctCount++;
++          }
++        }
++      }
++    }
++
++    const score = Math.round((correctCount / questions.length) * 100);
++
++    // Save progress to Redis
++    const redis = await getRedisClient();
++    const progressKey = `christine:core_phrase:${userId}:${month}:${week}`;
++
++    const progress: PracticeProgress = {
++      monthKey: month,
++      weekKey: week,
++      completedQuestions,
++      score,
++      lastStudied: Date.now()
++    };
++
++    await redis.hSet(progressKey, {
++      completedQuestions: JSON.stringify(completedQuestions),
++      score: score.toString(),
++      lastStudied: Date.now().toString()
++    });
++
++    await redis.quit();
++
++    return NextResponse.json({
++      success: true,
++      progress,
++      correctCount,
++      totalQuestions: questions.length,
++      message: `${correctCount}/${questions.length} 정답! ${score}점을 획득했습니다.`
++    });
++
++  } catch (error) {
++    console.error('Calculate results error:', error);
++    return NextResponse.json({
++      success: false,
++      error: '결과 계산 중 오류가 발생했습니다.'
++    }, { status: 500 });
++  }
++}
++
++async function generateQuestionsWithAI(phrases: string[], count: number, month: string, week: string): Promise<PracticeQuestion[]> {
++  try {
++    const completion = await openai.chat.completions.create({
++      model: 'gpt-4o-mini',
++      messages: [
++        {
++          role: 'system',
++          content: `You are Christine, an expert English conversation teacher specializing in practical English patterns for Korean learners.
++
++Create ${count} diverse practice questions based on the given phrases from ${month} ${week} curriculum.
++
++Generate 3 types of questions:
++1. Fill-in-blank: Remove 1-2 key words and provide multiple choice options
++2. Complete sentence: Give a situation and ask to complete using the pattern
++3. Variation: Ask for alternative ways to express the same meaning
++
++For each question, provide:
++- type: "fill_blank", "complete_sentence", or "variation"
++- originalPhrase: the source phrase
++- question: the question text in Korean
++- answer: the correct answer
++- options: array of 4 choices (for multiple choice questions)
++- explanation: helpful tip in Korean
++
++Respond in JSON format:
++{
++  "questions": [
++    {
++      "type": "fill_blank",
++      "originalPhrase": "I'd like to check in.",
++      "question": "다음 빈칸에 알맞은 단어를 선택하세요: I'd ____ to check in.",
++      "answer": "like",
++      "options": ["like", "want", "need", "wish"],
++      "explanation": "'I'd like to'는 정중한 요청 표현입니다."
++    }
++  ]
++}`
++        },
++        {
++          role: 'user',
++          content: `Create practice questions for these phrases:
++${phrases.join('\n')}
++
++Theme: ${month} ${week}
++Focus on practical usage and natural conversation patterns.`
++        }
++      ],
++      max_tokens: 2000,
++      temperature: 0.7,
++    });
++
++    const response = completion.choices[0]?.message?.content;
++
++    if (!response) {
++      throw new Error('AI response is empty');
++    }
++
++    const aiData = JSON.parse(response);
++
++    return aiData.questions.map((q: any, index: number) => ({
++      id: `${Date.now()}-${index}`,
++      type: q.type,
++      originalPhrase: q.originalPhrase,
++      question: q.question,
++      answer: q.answer,
++      options: q.options,
++      explanation: q.explanation
++    }));
++
++  } catch (error) {
++    console.error('AI question generation error:', error);
++
++    // Fallback questions
++    return generateFallbackQuestions(phrases, count);
++  }
++}
++
++function generateFallbackQuestions(phrases: string[], count: number): PracticeQuestion[] {
++  const fallbackQuestions: PracticeQuestion[] = [];
++
++  for (let i = 0; i < Math.min(count, phrases.length); i++) {
++    const phrase = phrases[i];
++    const words = phrase.split(' ');
++
++    if (words.length >= 3) {
++      // Generate fill-in-blank question
++      const keyWordIndex = Math.floor(words.length / 2);
++      const keyWord = words[keyWordIndex];
++      const questionPhrase = words.map((w, idx) => idx === keyWordIndex ? '____' : w).join(' ');
++
++      fallbackQuestions.push({
++        id: `fallback-${Date.now()}-${i}`,
++        type: 'fill_blank',
++        originalPhrase: phrase,
++        question: `다음 빈칸에 알맞은 단어를 선택하세요: "${questionPhrase}"`,
++        answer: keyWord,
++        options: [keyWord, 'is', 'the', 'can'].filter((w, idx, arr) => arr.indexOf(w) === idx),
++        explanation: '문맥에 맞는 단어를 선택해주세요.'
++      });
++    }
++  }
++
++  return fallbackQuestions;
++}
++
++function calculateStringSimilarity(str1: string, str2: string): number {
++  if (str1 === str2) return 1;
++  if (str1.includes(str2) || str2.includes(str1)) return 0.9;
++
++  // Simple Levenshtein distance approximation
++  const longer = str1.length > str2.length ? str1 : str2;
++  const shorter = str1.length > str2.length ? str2 : str1;
++
++  if (longer.length === 0) return 1;
++
++  const distance = levenshteinDistance(longer, shorter);
++  return (longer.length - distance) / longer.length;
++}
++
++function levenshteinDistance(str1: string, str2: string): number {
++  const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
++
++  for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
++  for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
++
++  for (let j = 1; j <= str2.length; j++) {
++    for (let i = 1; i <= str1.length; i++) {
++      const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
++      matrix[j][i] = Math.min(
++        matrix[j][i - 1] + 1,
++        matrix[j - 1][i] + 1,
++        matrix[j - 1][i - 1] + indicator
++      );
++    }
++  }
++
++  return matrix[str2.length][str1.length];
++}
+\ No newline at end of file
+diff --git a/app/api/influencers/christine/roleplay/route.ts b/app/api/influencers/christine/roleplay/route.ts
+new file mode 100644
+index 0000000..b340585
+--- /dev/null
++++ b/app/api/influencers/christine/roleplay/route.ts
+@@ -0,0 +1,378 @@
++import { NextRequest, NextResponse } from 'next/server';
++import { getRedisClient } from '@/lib/redis';
++import { v4 as uuidv4 } from 'uuid';
++import OpenAI from 'openai';
++
++const openai = new OpenAI({
++  apiKey: process.env.OPENAI_API_KEY,
++});
++
++interface ConversationMessage {
++  id: string;
++  role: 'user' | 'ai' | 'system';
++  content: string;
++  timestamp: number;
++  feedback?: MessageFeedback;
++}
++
++interface MessageFeedback {
++  score: number;
++  naturalness: string;
++  suggestions: string[];
++  improvedVersion?: string;
++}
++
++interface ConversationSession {
++  id: string;
++  scenario: string;
++  context: string;
++  difficulty: string;
++  messages: ConversationMessage[];
++  totalScore: number;
++  completedTurns: number;
++  startTime: number;
++}
++
++const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
++
++export async function POST(request: NextRequest): Promise<NextResponse> {
++  try {
++    const body = await request.json();
++    const { action, userId } = body;
++
++    if (!userId) {
++      return NextResponse.json({
++        success: false,
++        error: '사용자 ID가 필요합니다.'
++      }, { status: 400 });
++    }
++
++    switch (action) {
++      case 'start_conversation':
++        return await startConversation(body);
++      case 'send_message':
++        return await sendMessage(body);
++      case 'get_feedback':
++        return await getFeedback(body);
++      default:
++        return NextResponse.json({
++          success: false,
++          error: '지원하지 않는 액션입니다.'
++        }, { status: 400 });
++    }
++
++  } catch (error) {
++    console.error('Roleplay API error:', error);
++    return NextResponse.json({
++      success: false,
++      error: '서버 오류가 발생했습니다.'
++    }, { status: 500 });
++  }
++}
++
++async function startConversation(requestData: any): Promise<NextResponse> {
++  const { userId, scenario, context, difficulty = 'intermediate' } = requestData;
++
++  try {
++    const sessionId = uuidv4();
++    const now = Date.now();
++
++    // Generate initial AI message
++    const initialMessage = await generateInitialMessage(scenario, context, difficulty);
++
++    const session: ConversationSession = {
++      id: sessionId,
++      scenario,
++      context,
++      difficulty,
++      messages: [
++        {
++          id: uuidv4(),
++          role: 'system',
++          content: `🎭 Role-play 시작: ${context}`,
++          timestamp: now
++        },
++        {
++          id: uuidv4(),
++          role: 'ai',
++          content: initialMessage,
++          timestamp: now + 1000
++        }
++      ],
++      totalScore: 0,
++      completedTurns: 0,
++      startTime: now
++    };
++
++    // Save session to Redis
++    const redis = await getRedisClient();
++    await redis.setEx(
++      `christine:roleplay:${sessionId}`,
++      SESSION_TIMEOUT / 1000,
++      JSON.stringify(session)
++    );
++    await redis.quit();
++
++    return NextResponse.json({
++      success: true,
++      session,
++      message: '새로운 Role-play 세션이 시작되었습니다.'
++    });
++
++  } catch (error) {
++    console.error('Start conversation error:', error);
++    return NextResponse.json({
++      success: false,
++      error: '대화 시작 중 오류가 발생했습니다.'
++    }, { status: 500 });
++  }
++}
++
++async function sendMessage(requestData: any): Promise<NextResponse> {
++  const { userId, sessionId, message } = requestData;
++
++  try {
++    const redis = await getRedisClient();
++    const sessionKey = `christine:roleplay:${sessionId}`;
++    const sessionData = await redis.get(sessionKey);
++
++    if (!sessionData) {
++      await redis.quit();
++      return NextResponse.json({
++        success: false,
++        error: '세션을 찾을 수 없습니다.'
++      }, { status: 404 });
++    }
++
++    const session: ConversationSession = JSON.parse(sessionData);
++    const now = Date.now();
++
++    // Add user message
++    const userMessage: ConversationMessage = {
++      id: uuidv4(),
++      role: 'user',
++      content: message,
++      timestamp: now
++    };
++
++    session.messages.push(userMessage);
++
++    // Generate AI response
++    const aiResponse = await generateAIResponse(session, message);
++
++    const aiMessage: ConversationMessage = {
++      id: uuidv4(),
++      role: 'ai',
++      content: aiResponse,
++      timestamp: now + 1000
++    };
++
++    session.messages.push(aiMessage);
++    session.completedTurns++;
++
++    // Update session in Redis
++    await redis.setEx(sessionKey, SESSION_TIMEOUT / 1000, JSON.stringify(session));
++    await redis.quit();
++
++    return NextResponse.json({
++      success: true,
++      session,
++      message: '메시지가 전송되었습니다.'
++    });
++
++  } catch (error) {
++    console.error('Send message error:', error);
++    return NextResponse.json({
++      success: false,
++      error: '메시지 전송 중 오류가 발생했습니다.'
++    }, { status: 500 });
++  }
++}
++
++async function getFeedback(requestData: any): Promise<NextResponse> {
++  const { userId, sessionId, messageId } = requestData;
++
++  try {
++    const redis = await getRedisClient();
++    const sessionKey = `christine:roleplay:${sessionId}`;
++    const sessionData = await redis.get(sessionKey);
++
++    if (!sessionData) {
++      await redis.quit();
++      return NextResponse.json({
++        success: false,
++        error: '세션을 찾을 수 없습니다.'
++      }, { status: 404 });
++    }
++
++    const session: ConversationSession = JSON.parse(sessionData);
++    const message = session.messages.find(m => m.id === messageId && m.role === 'user');
++
++    if (!message) {
++      await redis.quit();
++      return NextResponse.json({
++        success: false,
++        error: '메시지를 찾을 수 없습니다.'
++      }, { status: 404 });
++    }
++
++    // Generate feedback
++    const feedback = await generateMessageFeedback(session, message.content);
++
++    // Update message with feedback
++    message.feedback = feedback;
++
++    // Update session in Redis
++    await redis.setEx(sessionKey, SESSION_TIMEOUT / 1000, JSON.stringify(session));
++    await redis.quit();
++
++    return NextResponse.json({
++      success: true,
++      session,
++      feedback,
++      message: '피드백이 생성되었습니다.'
++    });
++
++  } catch (error) {
++    console.error('Get feedback error:', error);
++    return NextResponse.json({
++      success: false,
++      error: '피드백 생성 중 오류가 발생했습니다.'
++    }, { status: 500 });
++  }
++}
++
++async function generateInitialMessage(scenario: string, context: string, difficulty: string): Promise<string> {
++  try {
++    const completion = await openai.chat.completions.create({
++      model: 'gpt-4o-mini',
++      messages: [
++        {
++          role: 'system',
++          content: `You are Christine, a friendly and experienced English conversation teacher. You're helping Korean students practice English through role-play scenarios.
++
++Scenario: ${scenario}
++Context: ${context}
++Difficulty: ${difficulty}
++
++Generate a natural opening message to start the conversation. Use appropriate level of English for ${difficulty} learners. Be encouraging and set the scene clearly.
++
++Response should be 1-2 sentences, natural and conversational.`
++        }
++      ],
++      max_tokens: 200,
++      temperature: 0.8,
++    });
++
++    return completion.choices[0]?.message?.content || "Hello! Let's start our role-play practice. How can I help you today?";
++
++  } catch (error) {
++    console.error('Initial message generation error:', error);
++    return "Hello! Let's start our role-play practice. How can I help you today?";
++  }
++}
++
++async function generateAIResponse(session: ConversationSession, userMessage: string): Promise<string> {
++  try {
++    // Get recent conversation history
++    const recentMessages = session.messages
++      .filter(m => m.role !== 'system')
++      .slice(-6) // Last 6 messages for context
++      .map(m => `${m.role === 'user' ? 'Student' : 'Christine'}: ${m.content}`)
++      .join('\n');
++
++    const completion = await openai.chat.completions.create({
++      model: 'gpt-4o-mini',
++      messages: [
++        {
++          role: 'system',
++          content: `You are Christine, a patient and encouraging English conversation teacher conducting a role-play session.
++
++Scenario: ${session.scenario}
++Context: ${session.context}
++Difficulty: ${session.difficulty}
++
++Guidelines:
++- Respond naturally to continue the conversation
++- Match the scenario and context
++- Use appropriate difficulty level for ${session.difficulty} learners
++- Be encouraging and helpful
++- Keep responses 1-3 sentences
++- Stay in character for the role-play scenario
++
++Recent conversation:
++${recentMessages}
++
++Student just said: ${userMessage}
++
++Respond as Christine in the role-play scenario:`
++        }
++      ],
++      max_tokens: 300,
++      temperature: 0.8,
++    });
++
++    return completion.choices[0]?.message?.content || "That's great! Please continue.";
++
++  } catch (error) {
++    console.error('AI response generation error:', error);
++    return "That sounds good. What would you like to say next?";
++  }
++}
++
++async function generateMessageFeedback(session: ConversationSession, userMessage: string): Promise<MessageFeedback> {
++  try {
++    const completion = await openai.chat.completions.create({
++      model: 'gpt-4o-mini',
++      messages: [
++        {
++          role: 'system',
++          content: `You are Christine, an expert English teacher providing feedback on student conversation.
++
++Analyze this student message in the context of the role-play scenario and provide constructive feedback.
++
++Scenario: ${session.scenario}
++Context: ${session.context}
++Student message: "${userMessage}"
++
++Provide feedback in this JSON format:
++{
++  "score": 8,
++  "naturalness": "자연스러운 표현입니다. 원어민이 실제로 사용하는 표현이에요.",
++  "suggestions": ["Consider using 'I'd like to' instead of 'I want to' for more politeness", "Try adding 'please' to make it sound more polite"],
++  "improvedVersion": "I'd like to check in, please."
++}
++
++Score: 1-10 (naturalness and appropriateness)
++Naturalness: Korean explanation of how natural the expression sounds
++Suggestions: 2-3 practical improvement tips in English
++ImprovedVersion: (optional) better version if significant improvement is needed`
++        }
++      ],
++      max_tokens: 500,
++      temperature: 0.3,
++    });
++
++    const response = completion.choices[0]?.message?.content;
++
++    if (response) {
++      return JSON.parse(response);
++    }
++
++    throw new Error('Empty AI response');
++
++  } catch (error) {
++    console.error('Feedback generation error:', error);
++
++    // Fallback feedback
++    return {
++      score: 7,
++      naturalness: '좋은 표현입니다! 계속 연습하면 더욱 자연스러워질 거예요.',
++      suggestions: [
++        '더 다양한 표현을 사용해보세요.',
++        '문장을 조금 더 길게 만들어보면 좋겠어요.'
++      ],
++      improvedVersion: userMessage
++    };
++  }
++}
+\ No newline at end of file
+diff --git a/app/api/influencers/christine/vocabulary/route.ts b/app/api/influencers/christine/vocabulary/route.ts
+new file mode 100644
+index 0000000..bb9f459
+--- /dev/null
++++ b/app/api/influencers/christine/vocabulary/route.ts
+@@ -0,0 +1,508 @@
++import { NextRequest, NextResponse } from 'next/server';
++import { getRedisClient } from '@/lib/redis';
++import OpenAI from 'openai';
++
++const openai = new OpenAI({
++  apiKey: process.env.OPENAI_API_KEY,
++});
++
++// SRS intervals in days
++const SRS_INTERVALS = [1, 3, 7, 14, 30];
++
++interface VocabularyWord {
++  id: string;
++  word: string;
++  meaning: string;
++  category: 'travel' | 'smalltalk' | 'business';
++  subcategory: string;
++  pronunciation: string;
++  example: string;
++  translation: string;
++  difficulty: 'basic' | 'intermediate' | 'advanced';
++  createdAt: number;
++  nextReviewDate: number;
++  interval: number;
++  easinessFactor: number;
++  correctCount: number;
++  incorrectCount: number;
++  lastReviewed?: number;
++}
++
++interface StudyProgress {
++  totalWords: number;
++  todayStudied: number;
++  dueCount: number;
++  studyStreak: number;
++  categoryProgress: {
++    travel: number;
++    smalltalk: number;
++    business: number;
++  };
++}
++
++export async function GET(request: NextRequest): Promise<NextResponse> {
++  try {
++    const url = new URL(request.url);
++    const userId = url.searchParams.get('userId');
++    const action = url.searchParams.get('action');
++
++    if (!userId) {
++      return NextResponse.json({
++        success: false,
++        error: '사용자 ID가 필요합니다.'
++      }, { status: 400 });
++    }
++
++    switch (action) {
++      case 'progress':
++        return await getProgress(userId);
++      case 'due_words':
++        return await getDueWords(userId);
++      default:
++        return NextResponse.json({
++          success: false,
++          error: '지원하지 않는 액션입니다.'
++        }, { status: 400 });
++    }
++
++  } catch (error) {
++    console.error('Vocabulary GET error:', error);
++    return NextResponse.json({
++      success: false,
++      error: '서버 오류가 발생했습니다.'
++    }, { status: 500 });
++  }
++}
++
++export async function POST(request: NextRequest): Promise<NextResponse> {
++  try {
++    const body = await request.json();
++    const { action, userId } = body;
++
++    if (!userId) {
++      return NextResponse.json({
++        success: false,
++        error: '사용자 ID가 필요합니다.'
++      }, { status: 400 });
++    }
++
++    switch (action) {
++      case 'generate_study_words':
++        return await generateStudyWords(body);
++      case 'get_due_words':
++        return await getDueWords(userId);
++      case 'check_answer':
++        return await checkAnswer(body);
++      default:
++        return NextResponse.json({
++          success: false,
++          error: '지원하지 않는 액션입니다.'
++        }, { status: 400 });
++    }
++
++  } catch (error) {
++    console.error('Vocabulary API error:', error);
++    return NextResponse.json({
++      success: false,
++      error: '서버 오류가 발생했습니다.'
++    }, { status: 500 });
++  }
++}
++
++async function getProgress(userId: string): Promise<NextResponse> {
++  try {
++    const redis = await getRedisClient();
++
++    // Get all user's vocabulary words
++    const allWordIds = await redis.sMembers(`christine:vocab:${userId}:all`);
++    const now = Date.now();
++    let dueCount = 0;
++    const categoryProgress = { travel: 0, smalltalk: 0, business: 0 };
++
++    // Check due words and categorize
++    for (const wordId of allWordIds) {
++      const wordKey = `christine:vocab:${userId}:word:${wordId}`;
++      const wordData = await redis.hGetAll(wordKey);
++
++      if (wordData.word) {
++        const category = wordData.category as keyof typeof categoryProgress;
++        if (categoryProgress[category] !== undefined) {
++          categoryProgress[category]++;
++        }
++
++        const nextReviewDate = parseInt(wordData.nextReviewDate);
++        if (nextReviewDate <= now) {
++          dueCount++;
++        }
++      }
++    }
++
++    // Get today's studied count
++    const today = new Date().toDateString();
++    const todayStudied = await redis.sCard(`christine:vocab:${userId}:studied:${today}`);
++
++    // Calculate study streak (simplified)
++    const studyStreak = 1; // TODO: Implement proper streak calculation
++
++    const progress: StudyProgress = {
++      totalWords: allWordIds.length,
++      todayStudied,
++      dueCount,
++      studyStreak,
++      categoryProgress
++    };
++
++    await redis.quit();
++
++    return NextResponse.json({
++      success: true,
++      progress
++    });
++
++  } catch (error) {
++    console.error('Get progress error:', error);
++    return NextResponse.json({
++      success: false,
++      error: '진도를 가져오는 중 오류가 발생했습니다.'
++    }, { status: 500 });
++  }
++}
++
++async function generateStudyWords(requestData: any): Promise<NextResponse> {
++  const { userId, category, subcategory, count = 10 } = requestData;
++
++  try {
++    // Generate vocabulary words using AI
++    const words = await generateVocabularyWithAI(category, subcategory, count);
++
++    // Save words to Redis
++    const redis = await getRedisClient();
++
++    for (const word of words) {
++      const wordKey = `christine:vocab:${userId}:word:${word.id}`;
++      await redis.hSet(wordKey, {
++        ...word,
++        createdAt: word.createdAt.toString(),
++        nextReviewDate: word.nextReviewDate.toString(),
++        interval: word.interval.toString(),
++        easinessFactor: word.easinessFactor.toString(),
++        correctCount: word.correctCount.toString(),
++        incorrectCount: word.incorrectCount.toString(),
++      });
++
++      // Add to user's word list
++      await redis.sAdd(`christine:vocab:${userId}:all`, word.id);
++
++      // Add to category-specific list
++      await redis.sAdd(`christine:vocab:${userId}:category:${category}`, word.id);
++    }
++
++    await redis.quit();
++
++    return NextResponse.json({
++      success: true,
++      words,
++      message: `${words.length}개의 새로운 단어가 생성되었습니다.`
++    });
++
++  } catch (error) {
++    console.error('Generate study words error:', error);
++    return NextResponse.json({
++      success: false,
++      error: '단어 생성 중 오류가 발생했습니다.'
++    }, { status: 500 });
++  }
++}
++
++async function getDueWords(userId: string): Promise<NextResponse> {
++  try {
++    const redis = await getRedisClient();
++    const now = Date.now();
++
++    // Get all user's words
++    const allWordIds = await redis.sMembers(`christine:vocab:${userId}:all`);
++    const dueWords: VocabularyWord[] = [];
++
++    for (const wordId of allWordIds) {
++      const wordKey = `christine:vocab:${userId}:word:${wordId}`;
++      const wordData = await redis.hGetAll(wordKey);
++
++      if (wordData.word && parseInt(wordData.nextReviewDate) <= now) {
++        dueWords.push({
++          id: wordData.id,
++          word: wordData.word,
++          meaning: wordData.meaning,
++          category: wordData.category as any,
++          subcategory: wordData.subcategory,
++          pronunciation: wordData.pronunciation,
++          example: wordData.example,
++          translation: wordData.translation,
++          difficulty: wordData.difficulty as any,
++          createdAt: parseInt(wordData.createdAt),
++          nextReviewDate: parseInt(wordData.nextReviewDate),
++          interval: parseInt(wordData.interval),
++          easinessFactor: parseFloat(wordData.easinessFactor),
++          correctCount: parseInt(wordData.correctCount),
++          incorrectCount: parseInt(wordData.incorrectCount),
++          lastReviewed: wordData.lastReviewed ? parseInt(wordData.lastReviewed) : undefined
++        });
++      }
++    }
++
++    await redis.quit();
++
++    // Limit to 10 words and shuffle
++    const selectedWords = dueWords
++      .sort(() => Math.random() - 0.5)
++      .slice(0, 10);
++
++    return NextResponse.json({
++      success: true,
++      words: selectedWords
++    });
++
++  } catch (error) {
++    console.error('Get due words error:', error);
++    return NextResponse.json({
++      success: false,
++      error: '복습할 단어를 가져오는 중 오류가 발생했습니다.'
++    }, { status: 500 });
++  }
++}
++
++async function checkAnswer(requestData: any): Promise<NextResponse> {
++  const { userId, wordId, userAnswer, timeSpent } = requestData;
++
++  try {
++    const redis = await getRedisClient();
++    const wordKey = `christine:vocab:${userId}:word:${wordId}`;
++    const wordData = await redis.hGetAll(wordKey);
++
++    if (!wordData.word) {
++      await redis.quit();
++      return NextResponse.json({
++        success: false,
++        error: '단어를 찾을 수 없습니다.'
++      }, { status: 404 });
++    }
++
++    // Check if answer is correct
++    const correctAnswer = wordData.meaning.toLowerCase();
++    const userAnswerNorm = userAnswer.toLowerCase().trim();
++    const isCorrect = correctAnswer.includes(userAnswerNorm) || userAnswerNorm.includes(correctAnswer);
++
++    // Update SRS data
++    const updatedWord = await updateSRSData(redis, userId, wordId, isCorrect);
++
++    // Record today's study
++    const today = new Date().toDateString();
++    await redis.sAdd(`christine:vocab:${userId}:studied:${today}`, wordId);
++
++    await redis.quit();
++
++    return NextResponse.json({
++      success: true,
++      isCorrect,
++      correctAnswer: wordData.meaning,
++      updatedWord,
++      message: isCorrect ? '정답입니다!' : '다시 한번 연습해보세요!'
++    });
++
++  } catch (error) {
++    console.error('Check answer error:', error);
++    return NextResponse.json({
++      success: false,
++      error: '답변 확인 중 오류가 발생했습니다.'
++    }, { status: 500 });
++  }
++}
++
++async function generateVocabularyWithAI(category: string, subcategory: string | undefined, count: number): Promise<VocabularyWord[]> {
++  try {
++    const categoryMap = {
++      travel: '여행',
++      smalltalk: '일상 대화',
++      business: '비즈니스'
++    };
++
++    const completion = await openai.chat.completions.create({
++      model: 'gpt-4o-mini',
++      messages: [
++        {
++          role: 'system',
++          content: `You are Christine, an expert English vocabulary teacher for Korean learners.
++
++Create ${count} practical English vocabulary words for the category: ${categoryMap[category as keyof typeof categoryMap] || category}${subcategory ? ` (${subcategory})` : ''}.
++
++For each word, provide:
++1. English word
++2. Korean meaning
++3. Pronunciation (IPA or simple phonetic)
++4. Example sentence in English
++5. Korean translation of example
++6. Difficulty level (basic/intermediate/advanced)
++
++Response format (JSON only):
++{
++  "words": [
++    {
++      "word": "reservation",
++      "meaning": "예약",
++      "pronunciation": "ˌrezərˈveɪʃən",
++      "example": "I have a reservation under Kim.",
++      "translation": "김씨 이름으로 예약했습니다.",
++      "difficulty": "intermediate"
++    }
++  ]
++}
++
++Focus on:
++- Practical, commonly used words
++- Words appropriate for the category
++- Clear, natural example sentences
++- Accurate Korean translations`
++        }
++      ],
++      max_tokens: 2000,
++      temperature: 0.8,
++    });
++
++    const response = completion.choices[0]?.message?.content;
++
++    if (!response) {
++      throw new Error('AI response is empty');
++    }
++
++    const aiData = JSON.parse(response);
++    const now = Date.now();
++
++    return aiData.words.map((word: any, index: number) => ({
++      id: `${Date.now()}-${index}`,
++      word: word.word,
++      meaning: word.meaning,
++      category: category as any,
++      subcategory: subcategory || 'general',
++      pronunciation: word.pronunciation,
++      example: word.example,
++      translation: word.translation,
++      difficulty: word.difficulty,
++      createdAt: now,
++      nextReviewDate: now + (24 * 60 * 60 * 1000), // Review tomorrow
++      interval: 1,
++      easinessFactor: 2.5,
++      correctCount: 0,
++      incorrectCount: 0
++    }));
++
++  } catch (error) {
++    console.error('AI vocabulary generation error:', error);
++
++    // Fallback words
++    const fallbackWords = [
++      {
++        word: 'hello',
++        meaning: '안녕하세요',
++        pronunciation: 'həˈloʊ',
++        example: 'Hello, how are you?',
++        translation: '안녕하세요, 어떻게 지내세요?',
++        difficulty: 'basic'
++      },
++      {
++        word: 'thank you',
++        meaning: '감사합니다',
++        pronunciation: 'θæŋk juː',
++        example: 'Thank you very much.',
++        translation: '정말 감사합니다.',
++        difficulty: 'basic'
++      },
++      {
++        word: 'excuse me',
++        meaning: '실례합니다',
++        pronunciation: 'ɪkˈskjuːs miː',
++        example: 'Excuse me, where is the bathroom?',
++        translation: '실례합니다, 화장실이 어디인가요?',
++        difficulty: 'basic'
++      }
++    ];
++
++    const now = Date.now();
++
++    return fallbackWords.slice(0, count).map((word, index) => ({
++      id: `${Date.now()}-${index}`,
++      word: word.word,
++      meaning: word.meaning,
++      category: category as any,
++      subcategory: subcategory || 'general',
++      pronunciation: word.pronunciation,
++      example: word.example,
++      translation: word.translation,
++      difficulty: word.difficulty as any,
++      createdAt: now,
++      nextReviewDate: now + (24 * 60 * 60 * 1000),
++      interval: 1,
++      easinessFactor: 2.5,
++      correctCount: 0,
++      incorrectCount: 0
++    }));
++  }
++}
++
++async function updateSRSData(redis: any, userId: string, wordId: string, isCorrect: boolean): Promise<VocabularyWord> {
++  const wordKey = `christine:vocab:${userId}:word:${wordId}`;
++  const wordData = await redis.hGetAll(wordKey);
++
++  if (!wordData.word) throw new Error('Word not found');
++
++  const correctCount = parseInt(wordData.correctCount) + (isCorrect ? 1 : 0);
++  const incorrectCount = parseInt(wordData.incorrectCount) + (isCorrect ? 0 : 1);
++  let easinessFactor = parseFloat(wordData.easinessFactor);
++  let interval = parseInt(wordData.interval);
++
++  // SRS algorithm (SM-2 based)
++  if (isCorrect) {
++    if (correctCount === 1) {
++      interval = 1;
++    } else if (correctCount === 2) {
++      interval = 3;
++    } else {
++      interval = Math.round(interval * easinessFactor);
++    }
++    easinessFactor = easinessFactor + (0.1 - (5 - 4) * (0.08 + (5 - 4) * 0.02));
++  } else {
++    interval = 1;
++    easinessFactor = Math.max(1.3, easinessFactor - 0.2);
++  }
++
++  const nextReviewDate = Date.now() + (interval * 24 * 60 * 60 * 1000);
++  const now = Date.now();
++
++  const updatedData = {
++    correctCount: correctCount.toString(),
++    incorrectCount: incorrectCount.toString(),
++    easinessFactor: easinessFactor.toString(),
++    interval: interval.toString(),
++    nextReviewDate: nextReviewDate.toString(),
++    lastReviewed: now.toString()
++  };
++
++  await redis.hSet(wordKey, updatedData);
++
++  return {
++    id: wordData.id,
++    word: wordData.word,
++    meaning: wordData.meaning,
++    category: wordData.category as any,
++    subcategory: wordData.subcategory,
++    pronunciation: wordData.pronunciation,
++    example: wordData.example,
++    translation: wordData.translation,
++    difficulty: wordData.difficulty as any,
++    createdAt: parseInt(wordData.createdAt),
++    nextReviewDate,
++    interval,
++    easinessFactor,
++    correctCount,
++    incorrectCount,
++    lastReviewed: now
++  };
++}
+\ No newline at end of file
+diff --git a/app/influencers/[slug]/page.tsx b/app/influencers/[slug]/page.tsx
+index f420262..acbb796 100644
+--- a/app/influencers/[slug]/page.tsx
++++ b/app/influencers/[slug]/page.tsx
+@@ -14,6 +14,7 @@ import Skeleton from '../../../components/ui/Skeleton';
+ import { MedskyAnalyzer } from '../../../components/medsky/MedskyAnalyzer';
+ import { EnglishMemorizationTool } from '../../../components/terry/EnglishMemorizationTool';
+ import { VocabularyMemoizer } from '../../../components/terry/VocabularyMemoizer';
++import { ChristineAILearningTool } from '../../../components/christine/ChristineAILearningTool';
+ import ChatWidget from '../../../components/ChatWidget';
+ 
+ interface Influencer {
+@@ -476,8 +477,15 @@ export default function InfluencerDetailPage() {
+                 </div>
+               )}
+ 
++              {/* AI Features Tab - Christine's AI learning tools */}
++              {activeTab === 'ai_features' && influencer.slug === 'christine' && (
++                <div className="space-y-6">
++                  <ChristineAILearningTool />
++                </div>
++              )}
++
+               {/* AI Features Tab - Coming Soon for other influencers */}
+-              {activeTab === 'ai_features' && influencer.slug !== 'terry' && (
++              {activeTab === 'ai_features' && influencer.slug !== 'terry' && influencer.slug !== 'christine' && (
+                 <div className="space-y-6">
+                   <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
+                     <div className="text-center py-16">
+diff --git a/components/christine/ChristineAILearningTool.tsx b/components/christine/ChristineAILearningTool.tsx
+new file mode 100644
+index 0000000..cb5b940
+--- /dev/null
++++ b/components/christine/ChristineAILearningTool.tsx
+@@ -0,0 +1,299 @@
++'use client';
++
++/**
++ * Christine AI Learning Tool
++ *
++ * 3가지 핵심 기능:
++ * 1. Core Phrase 패턴 연습 - 보유 데이터 기반 빈칸/문장 생성 연습
++ * 2. Role-play 대화 - 상황 입력 기반 자연스러운 대화 루틴 습득
++ * 3. 단어 암기 시스템 - SRS 기반 체계적 단어 학습
++ */
++
++import React, { useState, useEffect } from 'react';
++import { useSession, signIn } from 'next-auth/react';
++import Card from '@/components/ui/Card';
++import Button from '@/components/ui/Button';
++import Badge from '@/components/ui/Badge';
++import { CorePhrasePatternPractice } from './CorePhrasePatternPractice';
++import { RolePlayConversation } from './RolePlayConversation';
++import { ChristineVocabulary } from './ChristineVocabulary';
++
++type ToolType = 'menu' | 'core-phrase' | 'role-play' | 'vocabulary';
++
++export function ChristineAILearningTool() {
++  const { data: session, status: sessionStatus } = useSession();
++  const [currentTool, setCurrentTool] = useState<ToolType>('menu');
++
++  // Show loading while checking authentication
++  if (sessionStatus === 'loading') {
++    return (
++      <div className="flex items-center justify-center py-8">
++        <div className="text-[var(--color-text-primary)]">로딩 중...</div>
++      </div>
++    );
++  }
++
++  // Show sign-in prompt if not authenticated
++  if (!session) {
++    return (
++      <Card className="p-8 text-center" glass={false}>
++        <div className="space-y-4">
++          <span className="text-6xl">🔒</span>
++          <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
++            로그인이 필요합니다
++          </h2>
++          <p className="text-[var(--color-text-secondary)]">
++            Christine의 무료 AI 영어 학습 도구를 이용하려면 먼저 로그인해주세요.
++          </p>
++          <Button
++            onClick={() => signIn()}
++            variant="primary"
++            size="lg"
++          >
++            로그인하기
++          </Button>
++        </div>
++      </Card>
++    );
++  }
++
++  // Render tool selection menu
++  if (currentTool === 'menu') {
++    return (
++      <div className="space-y-6">
++        {/* Header */}
++        <Card className="p-6" glass={false}>
++          <div className="text-center space-y-4">
++            <div className="w-24 h-24 mx-auto bg-gradient-to-br from-pink-500/20 to-purple-500/20 rounded-full flex items-center justify-center">
++              <span className="text-5xl">💬</span>
++            </div>
++            <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
++              Christine AI 영어 학습 도구
++            </h2>
++            <p className="text-[var(--color-text-secondary)] max-w-2xl mx-auto">
++              Christine과 함께하는 실용적인 영어 회화 학습!
++              체계적인 패턴 연습부터 실전 대화까지 완벽 마스터하세요.
++            </p>
++            <div className="flex flex-wrap justify-center gap-2">
++              <Badge variant="primary" size="sm">무료 제공</Badge>
++              <Badge variant="success" size="sm">AI 맞춤 학습</Badge>
++              <Badge variant="warning" size="sm">실전 회화 특화</Badge>
++            </div>
++          </div>
++        </Card>
++
++        {/* Tool Selection */}
++        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
++          {/* Core Phrase Pattern Practice */}
++          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" glass={false}
++                onClick={() => setCurrentTool('core-phrase')}>
++            <div className="text-center space-y-4">
++              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full flex items-center justify-center">
++                <span className="text-3xl">📝</span>
++              </div>
++              <h3 className="text-xl font-semibold text-[var(--color-text-primary)]">
++                Core Phrase 패턴 연습
++              </h3>
++              <p className="text-[var(--color-text-secondary)]">
++                여행, 스몰토크, 비즈니스 핵심 패턴을 체계적으로 연습하고 변형 학습하세요.
++              </p>
++              <div className="flex flex-wrap justify-center gap-2">
++                <Badge variant="info" size="sm">패턴 변형</Badge>
++                <Badge variant="success" size="sm">빈칸 채우기</Badge>
++                <Badge variant="warning" size="sm">문장 생성</Badge>
++              </div>
++              <Button variant="primary" className="w-full">
++                📝 패턴 연습 시작하기
++              </Button>
++            </div>
++          </Card>
++
++          {/* Role-play Conversation */}
++          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" glass={false}
++                onClick={() => setCurrentTool('role-play')}>
++            <div className="text-center space-y-4">
++              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-green-500/20 to-teal-500/20 rounded-full flex items-center justify-center">
++                <span className="text-3xl">🎭</span>
++              </div>
++              <h3 className="text-xl font-semibold text-[var(--color-text-primary)]">
++                Role-play 대화 연습
++              </h3>
++              <p className="text-[var(--color-text-secondary)]">
++                상황을 입력하면 AI가 맞춤형 대화를 생성해 자연스러운 회화 루틴을 습득하세요.
++              </p>
++              <div className="flex flex-wrap justify-center gap-2">
++                <Badge variant="primary" size="sm">상황별 대화</Badge>
++                <Badge variant="success" size="sm">실시간 피드백</Badge>
++                <Badge variant="warning" size="sm">자연스러운 표현</Badge>
++              </div>
++              <Button variant="primary" className="w-full">
++                🎭 Role-play 시작하기
++              </Button>
++            </div>
++          </Card>
++
++          {/* Vocabulary Memorization */}
++          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" glass={false}
++                onClick={() => setCurrentTool('vocabulary')}>
++            <div className="text-center space-y-4">
++              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center">
++                <span className="text-3xl">📚</span>
++              </div>
++              <h3 className="text-xl font-semibold text-[var(--color-text-primary)]">
++                실용 단어 암기 시스템
++              </h3>
++              <p className="text-[var(--color-text-secondary)]">
++                여행, 비즈니스, 일상 회화에 꼭 필요한 단어들을 체계적으로 암기하세요.
++              </p>
++              <div className="flex flex-wrap justify-center gap-2">
++                <Badge variant="primary" size="sm">SRS 복습</Badge>
++                <Badge variant="success" size="sm">실용 단어</Badge>
++                <Badge variant="warning" size="sm">상황별 분류</Badge>
++              </div>
++              <Button variant="primary" className="w-full">
++                📚 단어 암기 시작하기
++              </Button>
++            </div>
++          </Card>
++        </div>
++
++        {/* Features Comparison */}
++        <Card className="p-6" glass={false}>
++          <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
++            💡 도구별 특징 비교
++          </h3>
++          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
++            <div>
++              <h4 className="font-medium text-blue-600 dark:text-blue-400 mb-3">📝 Core Phrase 패턴 연습</h4>
++              <ul className="space-y-2 text-sm text-[var(--color-text-secondary)]">
++                <li>• 3개월차 체계적 커리큘럼 기반</li>
++                <li>• 여행/스몰토크/비즈니스 핵심 패턴</li>
++                <li>• AI 자동 변형 문제 생성</li>
++                <li>• 빈칸 채우기 + 문장 완성</li>
++                <li>• 단계별 난이도 조절</li>
++              </ul>
++            </div>
++            <div>
++              <h4 className="font-medium text-green-600 dark:text-green-400 mb-3">🎭 Role-play 대화 연습</h4>
++              <ul className="space-y-2 text-sm text-[var(--color-text-secondary)]">
++                <li>• 사용자 입력 상황 기반 대화 생성</li>
++                <li>• AI와 실시간 대화 연습</li>
++                <li>• 자연스러운 표현 학습</li>
++                <li>• 맞춤형 피드백 제공</li>
++                <li>• 실전 회화 능력 향상</li>
++              </ul>
++            </div>
++            <div>
++              <h4 className="font-medium text-purple-600 dark:text-purple-400 mb-3">📚 실용 단어 암기</h4>
++              <ul className="space-y-2 text-sm text-[var(--color-text-secondary)]">
++                <li>• SRS 알고리즘 기반 효율적 암기</li>
++                <li>• 상황별 분류된 실용 단어</li>
++                <li>• 문맥 중심 예문 제공</li>
++                <li>• 개인 맞춤 복습 일정</li>
++                <li>• 진도 추적 및 성취 분석</li>
++              </ul>
++            </div>
++          </div>
++        </Card>
++
++        {/* Christine's Specialties */}
++        <Card className="p-6 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20" glass={false}>
++          <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
++            <span>💎</span> Christine만의 특별함
++          </h3>
++          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
++            <div>
++              <h4 className="font-medium text-pink-600 dark:text-pink-400 mb-2">🌟 실전 중심 학습</h4>
++              <p className="text-sm text-[var(--color-text-secondary)]">
++                교과서적인 영어가 아닌, 실제 원어민들이 사용하는 자연스러운 표현을 중심으로 학습합니다.
++              </p>
++            </div>
++            <div>
++              <h4 className="font-medium text-purple-600 dark:text-purple-400 mb-2">🎯 상황별 맞춤 학습</h4>
++              <p className="text-sm text-[var(--color-text-secondary)]">
++                여행, 비즈니스, 일상 대화 등 구체적인 상황에 따라 필요한 표현을 효과적으로 학습할 수 있습니다.
++              </p>
++            </div>
++            <div>
++              <h4 className="font-medium text-pink-600 dark:text-pink-400 mb-2">🤖 AI 맞춤형 피드백</h4>
++              <p className="text-sm text-[var(--color-text-secondary)]">
++                개인의 학습 수준과 약점을 분석해 맞춤형 문제와 피드백을 제공합니다.
++              </p>
++            </div>
++            <div>
++              <h4 className="font-medium text-purple-600 dark:text-purple-400 mb-2">📈 체계적 진도 관리</h4>
++              <p className="text-sm text-[var(--color-text-secondary)]">
++                학습 진도와 성취도를 체계적으로 추적하여 효과적인 학습 경로를 제시합니다.
++              </p>
++            </div>
++          </div>
++        </Card>
++      </div>
++    );
++  }
++
++  // Render Core Phrase Pattern Practice
++  if (currentTool === 'core-phrase') {
++    return (
++      <div className="space-y-4">
++        <div className="flex items-center gap-4">
++          <Button
++            onClick={() => setCurrentTool('menu')}
++            variant="outline"
++            size="sm"
++          >
++            ← 도구 선택으로
++          </Button>
++          <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
++            📝 Core Phrase 패턴 연습
++          </h2>
++        </div>
++        <CorePhrasePatternPractice />
++      </div>
++    );
++  }
++
++  // Render Role-play Conversation
++  if (currentTool === 'role-play') {
++    return (
++      <div className="space-y-4">
++        <div className="flex items-center gap-4">
++          <Button
++            onClick={() => setCurrentTool('menu')}
++            variant="outline"
++            size="sm"
++          >
++            ← 도구 선택으로
++          </Button>
++          <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
++            🎭 Role-play 대화 연습
++          </h2>
++        </div>
++        <RolePlayConversation />
++      </div>
++    );
++  }
++
++  // Render Vocabulary Memorization
++  if (currentTool === 'vocabulary') {
++    return (
++      <div className="space-y-4">
++        <div className="flex items-center gap-4">
++          <Button
++            onClick={() => setCurrentTool('menu')}
++            variant="outline"
++            size="sm"
++          >
++            ← 도구 선택으로
++          </Button>
++          <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
++            📚 실용 단어 암기 시스템
++          </h2>
++        </div>
++        <ChristineVocabulary />
++      </div>
++    );
++  }
++
++  return null;
++}
+\ No newline at end of file
+diff --git a/components/christine/ChristineVocabulary.tsx b/components/christine/ChristineVocabulary.tsx
+new file mode 100644
+index 0000000..1f3298c
+--- /dev/null
++++ b/components/christine/ChristineVocabulary.tsx
+@@ -0,0 +1,715 @@
++'use client';
++
++/**
++ * Christine Vocabulary Memorization Component
++ *
++ * Christine의 실용 단어 암기 시스템:
++ * - SRS 알고리즘 기반 효율적 암기
++ * - 상황별 분류된 실용 단어 (여행/스몰토크/비즈니스)
++ * - 문맥 중심 예문 제공
++ * - 개인 맞춤 복습 일정
++ */
++
++import React, { useState, useEffect, useCallback } from 'react';
++import { useSession } from 'next-auth/react';
++import Card from '@/components/ui/Card';
++import Button from '@/components/ui/Button';
++import Badge from '@/components/ui/Badge';
++
++interface VocabularyWord {
++  id: string;
++  word: string;
++  meaning: string;
++  category: 'travel' | 'smalltalk' | 'business';
++  subcategory: string;
++  pronunciation: string;
++  example: string;
++  translation: string;
++  difficulty: 'basic' | 'intermediate' | 'advanced';
++  createdAt: number;
++  nextReviewDate: number;
++  interval: number;
++  easinessFactor: number;
++  correctCount: number;
++  incorrectCount: number;
++  lastReviewed?: number;
++}
++
++interface StudyProgress {
++  totalWords: number;
++  todayStudied: number;
++  dueCount: number;
++  studyStreak: number;
++  categoryProgress: {
++    travel: number;
++    smalltalk: number;
++    business: number;
++  };
++}
++
++interface StudySession {
++  word: VocabularyWord;
++  userAnswer: string;
++  isCorrect: boolean;
++  timeSpent: number;
++}
++
++type StudyMode = 'dashboard' | 'category_selection' | 'study' | 'review' | 'results';
++
++// Vocabulary categories with subcategories
++const VOCABULARY_CATEGORIES = {
++  travel: {
++    name: '여행 영어',
++    icon: '✈️',
++    color: 'blue',
++    subcategories: {
++      airport: '공항',
++      hotel: '호텔',
++      restaurant: '레스토랑',
++      shopping: '쇼핑',
++      transportation: '교통',
++      emergency: '응급상황'
++    }
++  },
++  smalltalk: {
++    name: '일상 대화',
++    icon: '💬',
++    color: 'green',
++    subcategories: {
++      weather: '날씨',
++      hobbies: '취미',
++      work: '직장',
++      family: '가족',
++      food: '음식',
++      entertainment: '엔터테인먼트'
++    }
++  },
++  business: {
++    name: '비즈니스 영어',
++    icon: '💼',
++    color: 'purple',
++    subcategories: {
++      meetings: '회의',
++      presentations: '발표',
++      emails: '이메일',
++      negotiations: '협상',
++      networking: '네트워킹',
++      reports: '보고서'
++    }
++  }
++};
++
++export function ChristineVocabulary() {
++  const { data: session } = useSession();
++  const [mode, setMode] = useState<StudyMode>('dashboard');
++  const [selectedCategory, setSelectedCategory] = useState<keyof typeof VOCABULARY_CATEGORIES | null>(null);
++  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
++  const [studyWords, setStudyWords] = useState<VocabularyWord[]>([]);
++  const [currentWordIndex, setCurrentWordIndex] = useState(0);
++  const [userAnswer, setUserAnswer] = useState('');
++  const [showAnswer, setShowAnswer] = useState(false);
++  const [studySession, setStudySession] = useState<StudySession[]>([]);
++  const [progress, setProgress] = useState<StudyProgress | null>(null);
++  const [loading, setLoading] = useState(false);
++  const [error, setError] = useState<string | null>(null);
++  const [sessionStartTime, setSessionStartTime] = useState(0);
++
++  const userId = session?.user?.name || 'anonymous';
++
++  // Load study progress
++  const loadProgress = useCallback(async () => {
++    try {
++      const response = await fetch(`/api/influencers/christine/vocabulary?action=progress&userId=${userId}`);
++      const data = await response.json();
++
++      if (data.success) {
++        setProgress(data.progress);
++      }
++    } catch (err) {
++      console.error('Progress loading error:', err);
++    }
++  }, [userId]);
++
++  // Load study words for selected category
++  const loadStudyWords = async (category: string, subcategory?: string, studyType: 'new' | 'review' = 'new') => {
++    try {
++      setLoading(true);
++      setError(null);
++
++      const response = await fetch('/api/influencers/christine/vocabulary', {
++        method: 'POST',
++        headers: {
++          'Content-Type': 'application/json',
++        },
++        body: JSON.stringify({
++          action: studyType === 'new' ? 'generate_study_words' : 'get_due_words',
++          userId,
++          category,
++          subcategory,
++          count: 10
++        }),
++      });
++
++      const data = await response.json();
++
++      if (data.success) {
++        setStudyWords(data.words || []);
++        setMode('study');
++        setCurrentWordIndex(0);
++        setUserAnswer('');
++        setShowAnswer(false);
++        setStudySession([]);
++        setSessionStartTime(Date.now());
++      } else {
++        setError(data.error || 'Failed to load words');
++      }
++    } catch (err) {
++      setError('단어 로딩 중 오류가 발생했습니다.');
++    } finally {
++      setLoading(false);
++    }
++  };
++
++  // Submit answer and get feedback
++  const submitAnswer = async () => {
++    if (!userAnswer.trim() || !studyWords[currentWordIndex]) return;
++
++    const currentWord = studyWords[currentWordIndex];
++    const startTime = sessionStartTime;
++    const timeSpent = Date.now() - startTime;
++
++    try {
++      setLoading(true);
++
++      const response = await fetch('/api/influencers/christine/vocabulary', {
++        method: 'POST',
++        headers: {
++          'Content-Type': 'application/json',
++        },
++        body: JSON.stringify({
++          action: 'check_answer',
++          userId,
++          wordId: currentWord.id,
++          userAnswer: userAnswer.trim(),
++          timeSpent
++        }),
++      });
++
++      const data = await response.json();
++
++      if (data.success) {
++        const sessionItem: StudySession = {
++          word: currentWord,
++          userAnswer: userAnswer.trim(),
++          isCorrect: data.isCorrect,
++          timeSpent
++        };
++
++        setStudySession(prev => [...prev, sessionItem]);
++        setShowAnswer(true);
++
++        // Update word's SRS data
++        if (data.updatedWord) {
++          setStudyWords(prev =>
++            prev.map(w => w.id === currentWord.id ? data.updatedWord : w)
++          );
++        }
++      } else {
++        setError(data.error || 'Failed to check answer');
++      }
++    } catch (err) {
++      setError('답변 확인 중 오류가 발생했습니다.');
++    } finally {
++      setLoading(false);
++    }
++  };
++
++  // Move to next word
++  const nextWord = () => {
++    if (currentWordIndex < studyWords.length - 1) {
++      setCurrentWordIndex(currentWordIndex + 1);
++      setUserAnswer('');
++      setShowAnswer(false);
++      setSessionStartTime(Date.now());
++    } else {
++      // Study session completed
++      setMode('results');
++    }
++  };
++
++  // Load initial progress
++  useEffect(() => {
++    if (session) {
++      loadProgress();
++    }
++  }, [session, loadProgress]);
++
++  // Render dashboard
++  if (mode === 'dashboard') {
++    return (
++      <div className="space-y-6">
++        {/* Header */}
++        <Card className="p-6" glass={false}>
++          <div className="text-center space-y-4">
++            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center">
++              <span className="text-4xl">📚</span>
++            </div>
++            <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
++              Christine 실용 단어 암기
++            </h2>
++            <p className="text-[var(--color-text-secondary)] max-w-2xl mx-auto">
++              SRS(간격 반복) 시스템으로 효율적인 단어 암기!
++              실제 상황에서 바로 사용할 수 있는 실용적인 단어들을 체계적으로 학습하세요.
++            </p>
++            <div className="flex flex-wrap justify-center gap-2">
++              <Badge variant="primary" size="sm">SRS 알고리즘</Badge>
++              <Badge variant="success" size="sm">실용 중심</Badge>
++              <Badge variant="warning" size="sm">상황별 분류</Badge>
++            </div>
++          </div>
++        </Card>
++
++        {/* Progress Overview */}
++        {progress && (
++          <Card className="p-6" glass={false}>
++            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
++              📊 학습 현황
++            </h3>
++            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
++              <div className="text-center p-4 bg-[var(--color-bg-secondary)] rounded-lg">
++                <div className="text-2xl font-bold text-blue-600">{progress.totalWords}</div>
++                <div className="text-sm text-[var(--color-text-secondary)]">총 학습 단어</div>
++              </div>
++              <div className="text-center p-4 bg-[var(--color-bg-secondary)] rounded-lg">
++                <div className="text-2xl font-bold text-green-600">{progress.todayStudied}</div>
++                <div className="text-sm text-[var(--color-text-secondary)]">오늘 학습</div>
++              </div>
++              <div className="text-center p-4 bg-[var(--color-bg-secondary)] rounded-lg">
++                <div className="text-2xl font-bold text-orange-600">{progress.dueCount}</div>
++                <div className="text-sm text-[var(--color-text-secondary)]">복습 예정</div>
++              </div>
++              <div className="text-center p-4 bg-[var(--color-bg-secondary)] rounded-lg">
++                <div className="text-2xl font-bold text-purple-600">{progress.studyStreak}</div>
++                <div className="text-sm text-[var(--color-text-secondary)]">연속 학습일</div>
++              </div>
++            </div>
++          </Card>
++        )}
++
++        {/* Quick Actions */}
++        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
++          {/* New Words */}
++          <Card className="p-6" glass={false}>
++            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
++              🌟 새로운 단어 학습
++            </h3>
++            <p className="text-[var(--color-text-secondary)] mb-4">
++              상황별로 분류된 실용적인 새 단어들을 학습해보세요.
++            </p>
++            <Button
++              onClick={() => setMode('category_selection')}
++              variant="primary"
++              className="w-full"
++            >
++              📝 새 단어 학습 시작
++            </Button>
++          </Card>
++
++          {/* Review */}
++          <Card className="p-6" glass={false}>
++            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
++              🔄 복습하기
++            </h3>
++            {progress && progress.dueCount > 0 ? (
++              <div className="space-y-4">
++                <p className="text-[var(--color-text-secondary)]">
++                  {progress.dueCount}개의 단어가 복습을 기다리고 있습니다.
++                </p>
++                <Button
++                  onClick={() => loadStudyWords('all', undefined, 'review')}
++                  variant="outline"
++                  className="w-full bg-yellow-50 border-yellow-300 hover:bg-yellow-100"
++                >
++                  📝 복습 시작하기
++                </Button>
++              </div>
++            ) : (
++              <div className="space-y-4">
++                <p className="text-[var(--color-text-secondary)]">
++                  복습할 단어가 없습니다. 훌륭해요! 🎉
++                </p>
++                <div className="text-center py-4">
++                  <span className="text-3xl">✅</span>
++                </div>
++              </div>
++            )}
++          </Card>
++        </div>
++
++        {/* Category Progress */}
++        {progress && (
++          <Card className="p-6" glass={false}>
++            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
++              📈 카테고리별 진도
++            </h3>
++            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
++              {Object.entries(VOCABULARY_CATEGORIES).map(([categoryKey, categoryData]) => {
++                const categoryProgress = progress.categoryProgress[categoryKey as keyof typeof progress.categoryProgress] || 0;
++                return (
++                  <div
++                    key={categoryKey}
++                    className={`p-4 rounded-lg border border-${categoryData.color}-200 dark:border-${categoryData.color}-800 bg-${categoryData.color}-50 dark:bg-${categoryData.color}-900/20`}
++                  >
++                    <div className="flex items-center gap-2 mb-2">
++                      <span className="text-xl">{categoryData.icon}</span>
++                      <h4 className={`font-medium text-${categoryData.color}-700 dark:text-${categoryData.color}-200`}>
++                        {categoryData.name}
++                      </h4>
++                    </div>
++                    <div className={`text-2xl font-bold text-${categoryData.color}-600 dark:text-${categoryData.color}-300`}>
++                      {categoryProgress}개
++                    </div>
++                    <div className={`text-sm text-${categoryData.color}-600 dark:text-${categoryData.color}-400`}>
++                      학습 완료
++                    </div>
++                  </div>
++                );
++              })}
++            </div>
++          </Card>
++        )}
++      </div>
++    );
++  }
++
++  // Render category selection
++  if (mode === 'category_selection') {
++    return (
++      <div className="space-y-6">
++        <Card className="p-6" glass={false}>
++          <div className="flex justify-between items-center mb-4">
++            <h3 className="text-xl font-semibold text-[var(--color-text-primary)]">
++              카테고리 선택
++            </h3>
++            <Button
++              onClick={() => setMode('dashboard')}
++              variant="outline"
++              size="sm"
++            >
++              ← 대시보드로
++            </Button>
++          </div>
++          <p className="text-[var(--color-text-secondary)] mb-6">
++            학습하고 싶은 분야를 선택해주세요. 각 분야별로 실무에서 자주 사용되는 단어들을 준비했습니다.
++          </p>
++
++          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
++            {Object.entries(VOCABULARY_CATEGORIES).map(([categoryKey, categoryData]) => (
++              <Card
++                key={categoryKey}
++                className={`p-6 cursor-pointer transition-all duration-200 ${
++                  selectedCategory === categoryKey
++                    ? `ring-2 ring-${categoryData.color}-500 bg-${categoryData.color}-50 dark:bg-${categoryData.color}-900/20`
++                    : 'hover:shadow-md'
++                }`}
++                glass={false}
++                onClick={() => {
++                  setSelectedCategory(categoryKey as keyof typeof VOCABULARY_CATEGORIES);
++                  setSelectedSubcategory(null);
++                }}
++              >
++                <div className="text-center space-y-4">
++                  <div className="text-4xl">{categoryData.icon}</div>
++                  <h4 className="text-lg font-semibold text-[var(--color-text-primary)]">
++                    {categoryData.name}
++                  </h4>
++                  <div className="flex flex-wrap gap-1 justify-center">
++                    {Object.values(categoryData.subcategories).map((sub, idx) => (
++                      <Badge key={idx} variant="info" size="sm">
++                        {sub}
++                      </Badge>
++                    ))}
++                  </div>
++                </div>
++              </Card>
++            ))}
++          </div>
++
++          {/* Subcategory Selection */}
++          {selectedCategory && (
++            <Card className="p-6 mt-6" glass={false}>
++              <h4 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
++                세부 분야 선택 (선택사항)
++              </h4>
++              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
++                <Button
++                  variant={selectedSubcategory === null ? 'primary' : 'outline'}
++                  size="sm"
++                  onClick={() => setSelectedSubcategory(null)}
++                  className="text-sm"
++                >
++                  전체
++                </Button>
++                {Object.entries(VOCABULARY_CATEGORIES[selectedCategory].subcategories).map(([subKey, subName]) => (
++                  <Button
++                    key={subKey}
++                    variant={selectedSubcategory === subKey ? 'primary' : 'outline'}
++                    size="sm"
++                    onClick={() => setSelectedSubcategory(subKey)}
++                    className="text-sm"
++                  >
++                    {subName}
++                  </Button>
++                ))}
++              </div>
++            </Card>
++          )}
++
++          {/* Start Button */}
++          {selectedCategory && (
++            <Card className="p-6 text-center" glass={false}>
++              <Button
++                onClick={() => loadStudyWords(selectedCategory, selectedSubcategory || undefined)}
++                disabled={loading}
++                variant="primary"
++                size="lg"
++              >
++                {loading ? 'AI 단어 생성 중...' : '🚀 단어 학습 시작하기'}
++              </Button>
++            </Card>
++          )}
++        </Card>
++
++        {error && (
++          <Card className="p-4 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
++            <p className="text-red-800 dark:text-red-200 text-sm">{error}</p>
++          </Card>
++        )}
++      </div>
++    );
++  }
++
++  // Render study session
++  if (mode === 'study' && studyWords.length > 0) {
++    const currentWord = studyWords[currentWordIndex];
++    const progressPercent = Math.round(((currentWordIndex + 1) / studyWords.length) * 100);
++
++    return (
++      <div className="space-y-6">
++        {/* Progress Header */}
++        <Card className="p-4" glass={false}>
++          <div className="flex justify-between items-center mb-2">
++            <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
++              📚 단어 학습 진행 중
++            </h3>
++            <Button
++              onClick={() => setMode('dashboard')}
++              variant="outline"
++              size="sm"
++            >
++              대시보드로
++            </Button>
++          </div>
++          <div className="w-full bg-[var(--color-bg-tertiary)] rounded-full h-2 mb-2">
++            <div
++              className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-300"
++              style={{ width: `${progressPercent}%` }}
++            />
++          </div>
++          <p className="text-sm text-[var(--color-text-secondary)]">
++            {currentWordIndex + 1} / {studyWords.length} ({progressPercent}% 완료)
++          </p>
++        </Card>
++
++        {/* Word Card */}
++        <Card className="p-8 text-center" glass={false}>
++          <div className="space-y-6">
++            {/* Category Badge */}
++            <div className="flex justify-center">
++              <Badge variant="primary" size="sm">
++                {currentWord.category === 'travel' ? '여행' :
++                 currentWord.category === 'smalltalk' ? '일상 대화' : '비즈니스'} • {currentWord.subcategory}
++              </Badge>
++            </div>
++
++            {/* Word */}
++            <div>
++              <h2 className="text-4xl font-bold text-[var(--color-text-primary)] mb-2">
++                {currentWord.word}
++              </h2>
++              <p className="text-lg text-[var(--color-text-secondary)]">
++                [{currentWord.pronunciation}]
++              </p>
++            </div>
++
++            {/* Example Sentence */}
++            <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg">
++              <p className="text-lg font-medium text-[var(--color-text-primary)] mb-2">
++                "{currentWord.example}"
++              </p>
++              <p className="text-sm text-[var(--color-text-tertiary)]">
++                {currentWord.translation}
++              </p>
++            </div>
++
++            {!showAnswer ? (
++              // Answer Input
++              <div className="space-y-4">
++                <h4 className="font-medium text-[var(--color-text-primary)]">
++                  ✍️ 이 단어의 뜻을 한글로 입력하세요:
++                </h4>
++                <input
++                  type="text"
++                  value={userAnswer}
++                  onChange={(e) => setUserAnswer(e.target.value)}
++                  placeholder="단어의 뜻을 입력하세요..."
++                  className="w-full p-4 border rounded-lg text-center bg-[var(--color-bg-primary)] text-lg"
++                  disabled={loading}
++                  onKeyPress={(e) => {
++                    if (e.key === 'Enter') {
++                      submitAnswer();
++                    }
++                  }}
++                />
++                <Button
++                  onClick={submitAnswer}
++                  disabled={loading || !userAnswer.trim()}
++                  variant="primary"
++                  size="lg"
++                >
++                  {loading ? '확인 중...' : '✅ 답안 확인'}
++                </Button>
++              </div>
++            ) : (
++              // Answer Result
++              <div className="space-y-4">
++                <div className={`p-4 rounded-lg ${
++                  studySession[studySession.length - 1]?.isCorrect
++                    ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
++                    : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
++                }`}>
++                  <div className="text-center">
++                    <h4 className={`text-xl font-semibold mb-2 ${
++                      studySession[studySession.length - 1]?.isCorrect
++                        ? 'text-green-700 dark:text-green-200'
++                        : 'text-red-700 dark:text-red-200'
++                    }`}>
++                      {studySession[studySession.length - 1]?.isCorrect ? '정답! 🎉' : '틀렸습니다 😅'}
++                    </h4>
++                    <p className="text-lg font-medium text-[var(--color-text-primary)] mb-2">
++                      정답: {currentWord.meaning}
++                    </p>
++                    <p className={`text-sm ${
++                      studySession[studySession.length - 1]?.isCorrect
++                        ? 'text-green-600 dark:text-green-300'
++                        : 'text-red-600 dark:text-red-300'
++                    }`}>
++                      입력한 답: {userAnswer}
++                    </p>
++                  </div>
++                </div>
++
++                <Button
++                  onClick={nextWord}
++                  variant="primary"
++                  size="lg"
++                >
++                  {currentWordIndex < studyWords.length - 1 ? '다음 단어 →' : '완료! 결과 보기 🎉'}
++                </Button>
++              </div>
++            )}
++          </div>
++        </Card>
++      </div>
++    );
++  }
++
++  // Render results
++  if (mode === 'results') {
++    const correctAnswers = studySession.filter(s => s.isCorrect).length;
++    const totalAnswers = studySession.length;
++    const accuracy = totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0;
++
++    return (
++      <Card className="p-8 text-center" glass={false}>
++        <div className="space-y-6">
++          <span className="text-6xl">🎉</span>
++          <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
++            단어 학습 완료!
++          </h2>
++
++          {/* Score */}
++          <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 rounded-lg">
++            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">
++              📊 학습 결과
++            </h3>
++            <p className="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-2">
++              {correctAnswers}/{totalAnswers}
++            </p>
++            <p className="text-xl font-semibold text-purple-700 dark:text-purple-300 mb-1">
++              정확도: {accuracy}%
++            </p>
++            <p className="text-sm text-[var(--color-text-secondary)]">
++              총 학습 시간: {Math.round(studySession.reduce((sum, s) => sum + s.timeSpent, 0) / 1000)}초
++            </p>
++          </div>
++
++          {/* Detailed Results */}
++          <div className="max-h-60 overflow-y-auto">
++            <div className="space-y-2">
++              {studySession.map((session, index) => (
++                <div
++                  key={index}
++                  className={`flex items-center justify-between p-3 rounded-lg ${
++                    session.isCorrect
++                      ? 'bg-green-50 dark:bg-green-900/20'
++                      : 'bg-red-50 dark:bg-red-900/20'
++                  }`}
++                >
++                  <div className="flex items-center gap-3">
++                    <span className={`text-lg ${session.isCorrect ? '✅' : '❌'}`}>
++                      {session.isCorrect ? '✅' : '❌'}
++                    </span>
++                    <div className="text-left">
++                      <p className="font-medium text-[var(--color-text-primary)]">
++                        {session.word.word}
++                      </p>
++                      <p className="text-sm text-[var(--color-text-secondary)]">
++                        정답: {session.word.meaning} | 입력: {session.userAnswer}
++                      </p>
++                    </div>
++                  </div>
++                  <p className="text-xs text-[var(--color-text-tertiary)]">
++                    {Math.round(session.timeSpent / 1000)}초
++                  </p>
++                </div>
++              ))}
++            </div>
++          </div>
++
++          {/* Action Buttons */}
++          <div className="flex flex-col sm:flex-row gap-4 justify-center">
++            <Button
++              onClick={() => setMode('category_selection')}
++              variant="outline"
++            >
++              다른 카테고리 학습
++            </Button>
++            <Button
++              onClick={() => setMode('dashboard')}
++              variant="primary"
++            >
++              대시보드로 돌아가기
++            </Button>
++          </div>
++        </div>
++      </Card>
++    );
++  }
++
++  return (
++    <div className="text-center py-8">
++      <div className="text-[var(--color-text-primary)]">로딩 중...</div>
++    </div>
++  );
++}
+\ No newline at end of file
+diff --git a/components/christine/CorePhrasePatternPractice.tsx b/components/christine/CorePhrasePatternPractice.tsx
+new file mode 100644
+index 0000000..9caeb47
+--- /dev/null
++++ b/components/christine/CorePhrasePatternPractice.tsx
+@@ -0,0 +1,662 @@
++'use client';
++
++/**
++ * Core Phrase Pattern Practice Component
++ *
++ * Christine의 핵심 패턴 연습 기능:
++ * - 3개월차 커리큘럼 기반 (여행/스몰토크/비즈니스)
++ * - AI 자동 변형 문제 생성
++ * - 빈칸 채우기 + 문장 완성
++ * - 단계별 난이도 조절
++ */
++
++import React, { useState, useEffect, useCallback } from 'react';
++import { useSession } from 'next-auth/react';
++import Card from '@/components/ui/Card';
++import Button from '@/components/ui/Button';
++import Badge from '@/components/ui/Badge';
++
++// Core Phrase Data Structure
++const CORE_PHRASES = {
++  '1개월차': {
++    name: '여행 (Travel)',
++    icon: '✈️',
++    weeks: {
++      '1주차': {
++        name: '공항 (Airport)',
++        icon: '🛫',
++        phrases: [
++          "I'd like to check in.",
++          "Can I get a window seat?",
++          "How many bags can I check in?",
++          "Do I need to pay for overweight luggage?",
++          "Where is gate 12?"
++        ]
++      },
++      '2주차': {
++        name: '기내 (On the Plane)',
++        icon: '✈️',
++        phrases: [
++          "Could I get some water?",
++          "Can I have a blanket?",
++          "Excuse me, that's my seat.",
++          "Can we switch seats?",
++          "How long is the flight?"
++        ]
++      },
++      '3주차': {
++        name: '호텔 (Hotel)',
++        icon: '🏨',
++        phrases: [
++          "I have a reservation.",
++          "Can I check out late?",
++          "Could I get extra towels?",
++          "The air conditioner isn't working.",
++          "Is breakfast included?"
++        ]
++      },
++      '4주차': {
++        name: '카페·레스토랑·쇼핑',
++        icon: '🛍️',
++        phrases: [
++          "Can I get an iced latte?",
++          "Do you have a table for two?",
++          "What do you recommend?",
++          "How much is this?",
++          "Do you have it in another size?"
++        ]
++      }
++    }
++  },
++  '2개월차': {
++    name: '스몰토크 (Small Talk)',
++    icon: '💬',
++    weeks: {
++      '1주차': {
++        name: '날씨 (Weather)',
++        icon: '🌤️',
++        phrases: [
++          "It's chilly today.",
++          "Feels like autumn already.",
++          "This weather makes me sleepy.",
++          "It's perfect for a walk.",
++          "You must be cold."
++        ]
++      },
++      '2주차': {
++        name: '근황 (Catching Up)',
++        icon: '👥',
++        phrases: [
++          "I've been busy with work.",
++          "I just got back from a trip.",
++          "My son started school.",
++          "I've been working on my cooking.",
++          "Nothing much, same as usual."
++        ]
++      },
++      '3주차': {
++        name: '칭찬·공감 (Compliments & Empathy)',
++        icon: '👏',
++        phrases: [
++          "I love your outfit.",
++          "That's impressive!",
++          "That sounds fun.",
++          "I know what you mean.",
++          "No way!"
++        ]
++      },
++      '4주차': {
++        name: '대화 이어가기·마무리 (Conversation Flow)',
++        icon: '🔄',
++        phrases: [
++          "By the way, …",
++          "Speaking of that, …",
++          "It was nice chatting.",
++          "I'll let you go now.",
++          "Let's grab coffee sometime."
++        ]
++      }
++    }
++  },
++  '3개월차': {
++    name: '회사 (Work & Business)',
++    icon: '💼',
++    weeks: {
++      '1주차': {
++        name: '회의 시작·동의/비동의',
++        icon: '🤝',
++        phrases: [
++          "Shall we get started?",
++          "I agree with you.",
++          "I'm not sure about that.",
++          "Can we try another option?",
++          "Let's hear from others."
++        ]
++      },
++      '2주차': {
++        name: '의견 제시·대안 제안',
++        icon: '💡',
++        phrases: [
++          "In my opinion, …",
++          "I suggest we …",
++          "What if we …?",
++          "That might work.",
++          "We need more data."
++        ]
++      },
++      '3주차': {
++        name: '일정·시간 협의',
++        icon: '📅',
++        phrases: [
++          "When is the deadline?",
++          "Can we move the meeting?",
++          "Let's set a timeline.",
++          "I'm available on Monday.",
++          "Does that work for you?"
++        ]
++      },
++      '4주차': {
++        name: '네트워킹·인사',
++        icon: '🤝',
++        phrases: [
++          "Nice to meet you.",
++          "What do you do?",
++          "It was great talking with you.",
++          "Let's keep in touch.",
++          "See you at the next meeting."
++        ]
++      }
++    }
++  }
++};
++
++interface PracticeQuestion {
++  id: string;
++  type: 'fill_blank' | 'complete_sentence' | 'variation';
++  originalPhrase: string;
++  question: string;
++  answer: string;
++  options?: string[];
++  explanation?: string;
++}
++
++interface PracticeProgress {
++  monthKey: string;
++  weekKey: string;
++  completedQuestions: string[];
++  score: number;
++}
++
++type PracticeMode = 'selection' | 'practice' | 'results';
++
++export function CorePhrasePatternPractice() {
++  const { data: session } = useSession();
++  const [mode, setMode] = useState<PracticeMode>('selection');
++  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
++  const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
++  const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
++  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
++  const [userAnswers, setUserAnswers] = useState<{[key: string]: string}>({});
++  const [loading, setLoading] = useState(false);
++  const [error, setError] = useState<string | null>(null);
++  const [progress, setProgress] = useState<PracticeProgress | null>(null);
++
++  const userId = session?.user?.name || 'anonymous';
++
++  // Load practice progress
++  const loadProgress = useCallback(async () => {
++    if (!selectedMonth || !selectedWeek) return;
++
++    try {
++      const response = await fetch(
++        `/api/influencers/christine/core-phrase?action=progress&userId=${userId}&month=${selectedMonth}&week=${selectedWeek}`
++      );
++      const data = await response.json();
++
++      if (data.success && data.progress) {
++        setProgress(data.progress);
++      }
++    } catch (err) {
++      console.error('Progress loading error:', err);
++    }
++  }, [userId, selectedMonth, selectedWeek]);
++
++  // Generate practice questions
++  const generateQuestions = async () => {
++    if (!selectedMonth || !selectedWeek) return;
++
++    try {
++      setLoading(true);
++      setError(null);
++
++      const monthData = CORE_PHRASES[selectedMonth as keyof typeof CORE_PHRASES];
++      const weekData = monthData.weeks[selectedWeek as keyof typeof monthData.weeks];
++      const phrases = weekData.phrases;
++
++      const response = await fetch('/api/influencers/christine/core-phrase', {
++        method: 'POST',
++        headers: {
++          'Content-Type': 'application/json',
++        },
++        body: JSON.stringify({
++          action: 'generate_questions',
++          userId,
++          month: selectedMonth,
++          week: selectedWeek,
++          phrases,
++          count: 10
++        }),
++      });
++
++      const data = await response.json();
++
++      if (data.success) {
++        setQuestions(data.questions || []);
++        setMode('practice');
++        setCurrentQuestionIndex(0);
++        setUserAnswers({});
++      } else {
++        setError(data.error || 'Failed to generate questions');
++      }
++    } catch (err) {
++      setError('문제 생성 중 오류가 발생했습니다.');
++    } finally {
++      setLoading(false);
++    }
++  };
++
++  // Handle answer selection
++  const handleAnswer = (questionId: string, answer: string) => {
++    setUserAnswers(prev => ({
++      ...prev,
++      [questionId]: answer
++    }));
++  };
++
++  // Move to next question
++  const nextQuestion = () => {
++    if (currentQuestionIndex < questions.length - 1) {
++      setCurrentQuestionIndex(currentQuestionIndex + 1);
++    } else {
++      // All questions completed - show results
++      calculateAndShowResults();
++    }
++  };
++
++  // Calculate results
++  const calculateAndShowResults = async () => {
++    try {
++      const response = await fetch('/api/influencers/christine/core-phrase', {
++        method: 'POST',
++        headers: {
++          'Content-Type': 'application/json',
++        },
++        body: JSON.stringify({
++          action: 'calculate_results',
++          userId,
++          month: selectedMonth,
++          week: selectedWeek,
++          questions,
++          userAnswers
++        }),
++      });
++
++      const data = await response.json();
++
++      if (data.success) {
++        setProgress(data.progress);
++        setMode('results');
++      } else {
++        setError(data.error || 'Failed to calculate results');
++      }
++    } catch (err) {
++      setError('결과 계산 중 오류가 발생했습니다.');
++    }
++  };
++
++  // Reset to selection
++  const resetToSelection = () => {
++    setMode('selection');
++    setSelectedMonth(null);
++    setSelectedWeek(null);
++    setQuestions([]);
++    setCurrentQuestionIndex(0);
++    setUserAnswers({});
++    setError(null);
++    setProgress(null);
++  };
++
++  // Load progress when selection changes
++  useEffect(() => {
++    if (selectedMonth && selectedWeek) {
++      loadProgress();
++    }
++  }, [selectedMonth, selectedWeek, loadProgress]);
++
++  // Render month/week selection
++  if (mode === 'selection') {
++    return (
++      <div className="space-y-6">
++        {/* Header */}
++        <Card className="p-6" glass={false}>
++          <div className="text-center space-y-4">
++            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full flex items-center justify-center">
++              <span className="text-4xl">📝</span>
++            </div>
++            <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
++              Core Phrase 패턴 연습
++            </h2>
++            <p className="text-[var(--color-text-secondary)] max-w-2xl mx-auto">
++              Christine의 체계적인 3개월 커리큘럼으로 실전 영어 패턴을 마스터하세요!
++              각 상황별 핵심 표현을 다양한 방식으로 연습할 수 있습니다.
++            </p>
++          </div>
++        </Card>
++
++        {/* Month Selection */}
++        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
++          {Object.entries(CORE_PHRASES).map(([monthKey, monthData]) => (
++            <Card
++              key={monthKey}
++              className={`p-6 cursor-pointer transition-all duration-200 ${
++                selectedMonth === monthKey
++                  ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20'
++                  : 'hover:shadow-md'
++              }`}
++              glass={false}
++              onClick={() => {
++                setSelectedMonth(monthKey);
++                setSelectedWeek(null);
++              }}
++            >
++              <div className="text-center space-y-3">
++                <div className="text-4xl">{monthData.icon}</div>
++                <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
++                  {monthKey}
++                </h3>
++                <p className="text-[var(--color-text-secondary)]">
++                  {monthData.name}
++                </p>
++              </div>
++            </Card>
++          ))}
++        </div>
++
++        {/* Week Selection */}
++        {selectedMonth && (
++          <Card className="p-6" glass={false}>
++            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4 text-center">
++              {CORE_PHRASES[selectedMonth as keyof typeof CORE_PHRASES].name} - 주차 선택
++            </h3>
++            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
++              {Object.entries(CORE_PHRASES[selectedMonth as keyof typeof CORE_PHRASES].weeks).map(([weekKey, weekData]) => (
++                <Card
++                  key={weekKey}
++                  className={`p-4 cursor-pointer transition-all duration-200 ${
++                    selectedWeek === weekKey
++                      ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-900/20'
++                      : 'hover:shadow-sm bg-[var(--color-bg-secondary)]'
++                  }`}
++                  glass={false}
++                  onClick={() => setSelectedWeek(weekKey)}
++                >
++                  <div className="text-center space-y-2">
++                    <div className="text-2xl">{weekData.icon}</div>
++                    <h4 className="font-medium text-[var(--color-text-primary)]">
++                      {weekKey}
++                    </h4>
++                    <p className="text-sm text-[var(--color-text-secondary)]">
++                      {weekData.name}
++                    </p>
++                    <Badge variant="info" size="sm">
++                      {weekData.phrases.length}개 패턴
++                    </Badge>
++                  </div>
++                </Card>
++              ))}
++            </div>
++          </Card>
++        )}
++
++        {/* Start Practice Button */}
++        {selectedMonth && selectedWeek && (
++          <Card className="p-6 text-center" glass={false}>
++            <div className="space-y-4">
++              <h4 className="text-lg font-semibold text-[var(--color-text-primary)]">
++                준비 완료! 패턴 연습을 시작하시겠습니까?
++              </h4>
++              {progress && (
++                <div className="text-sm text-[var(--color-text-secondary)]">
++                  이전 점수: {progress.score}점 ({progress.completedQuestions.length}문제 완료)
++                </div>
++              )}
++              <Button
++                onClick={generateQuestions}
++                disabled={loading}
++                variant="primary"
++                size="lg"
++              >
++                {loading ? 'AI 문제 생성 중...' : '🚀 패턴 연습 시작하기'}
++              </Button>
++            </div>
++          </Card>
++        )}
++
++        {error && (
++          <Card className="p-4 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
++            <p className="text-red-800 dark:text-red-200 text-sm">{error}</p>
++          </Card>
++        )}
++      </div>
++    );
++  }
++
++  // Render practice session
++  if (mode === 'practice' && questions.length > 0) {
++    const currentQuestion = questions[currentQuestionIndex];
++    const progressPercent = Math.round(((currentQuestionIndex + 1) / questions.length) * 100);
++
++    // Get current week name safely
++    const getCurrentWeekName = () => {
++      if (!selectedMonth || !selectedWeek) return '패턴 연습';
++      const monthData = CORE_PHRASES[selectedMonth as keyof typeof CORE_PHRASES];
++      if (!monthData) return '패턴 연습';
++      const weekData = monthData.weeks[selectedWeek as keyof typeof monthData.weeks];
++      return weekData ? weekData.name : '패턴 연습';
++    };
++
++    return (
++      <div className="space-y-6">
++        {/* Progress Header */}
++        <Card className="p-4" glass={false}>
++          <div className="flex justify-between items-center mb-2">
++            <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
++              📝 {selectedMonth} - {getCurrentWeekName()}
++            </h3>
++            <Button
++              onClick={resetToSelection}
++              variant="outline"
++              size="sm"
++            >
++              선택으로 돌아가기
++            </Button>
++          </div>
++          <div className="w-full bg-[var(--color-bg-tertiary)] rounded-full h-2 mb-2">
++            <div
++              className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-300"
++              style={{ width: `${progressPercent}%` }}
++            />
++          </div>
++          <p className="text-sm text-[var(--color-text-secondary)]">
++            {currentQuestionIndex + 1} / {questions.length} ({progressPercent}% 완료)
++          </p>
++        </Card>
++
++        {/* Question Card */}
++        <Card className="p-8" glass={false}>
++          <div className="space-y-6">
++            <div className="text-center">
++              <Badge
++                variant={
++                  currentQuestion.type === 'fill_blank' ? 'primary' :
++                  currentQuestion.type === 'complete_sentence' ? 'success' : 'warning'
++                }
++                size="sm"
++                className="mb-4"
++              >
++                {currentQuestion.type === 'fill_blank' ? '빈칸 채우기' :
++                 currentQuestion.type === 'complete_sentence' ? '문장 완성' : '패턴 변형'}
++              </Badge>
++              <h4 className="text-xl font-semibold text-[var(--color-text-primary)] mb-4">
++                문제 {currentQuestionIndex + 1}
++              </h4>
++            </div>
++
++            {/* Original Phrase */}
++            <div className="bg-[var(--color-bg-secondary)] p-4 rounded-lg text-center">
++              <p className="text-sm text-[var(--color-text-secondary)] mb-1">원본 패턴:</p>
++              <p className="text-lg font-medium text-[var(--color-text-primary)]">
++                "{currentQuestion.originalPhrase}"
++              </p>
++            </div>
++
++            {/* Question */}
++            <div className="text-center">
++              <p className="text-lg text-[var(--color-text-primary)] mb-6">
++                {currentQuestion.question}
++              </p>
++
++              {/* Answer Options */}
++              {currentQuestion.options ? (
++                <div className="grid grid-cols-1 gap-3 max-w-md mx-auto">
++                  {currentQuestion.options.map((option, index) => (
++                    <Button
++                      key={index}
++                      onClick={() => handleAnswer(currentQuestion.id, option)}
++                      variant={userAnswers[currentQuestion.id] === option ? 'primary' : 'outline'}
++                      className="text-left justify-start"
++                    >
++                      {index + 1}. {option}
++                    </Button>
++                  ))}
++                </div>
++              ) : (
++                <div className="max-w-md mx-auto">
++                  <textarea
++                    value={userAnswers[currentQuestion.id] || ''}
++                    onChange={(e) => handleAnswer(currentQuestion.id, e.target.value)}
++                    placeholder="답을 입력하세요..."
++                    className="w-full p-4 border rounded-lg resize-none h-24 bg-[var(--color-bg-primary)]"
++                  />
++                </div>
++              )}
++            </div>
++
++            {/* Explanation */}
++            {currentQuestion.explanation && (
++              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
++                <p className="text-sm text-yellow-800 dark:text-yellow-200">
++                  💡 <strong>힌트:</strong> {currentQuestion.explanation}
++                </p>
++              </div>
++            )}
++
++            {/* Next Button */}
++            <div className="text-center">
++              <Button
++                onClick={nextQuestion}
++                disabled={!userAnswers[currentQuestion.id]}
++                variant="primary"
++                size="lg"
++              >
++                {currentQuestionIndex < questions.length - 1 ? '다음 문제 →' : '완료! 결과 보기 🎉'}
++              </Button>
++            </div>
++          </div>
++        </Card>
++      </div>
++    );
++  }
++
++  // Render results
++  if (mode === 'results' && progress) {
++    return (
++      <Card className="p-8 text-center" glass={false}>
++        <div className="space-y-6">
++          <span className="text-6xl">🎉</span>
++          <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
++            패턴 연습 완료!
++          </h2>
++
++          {/* Score */}
++          <div className="bg-gradient-to-br from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 p-6 rounded-lg">
++            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">
++              📊 최종 점수
++            </h3>
++            <p className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-2">
++              {progress.score}점
++            </p>
++            <p className="text-sm text-[var(--color-text-secondary)]">
++              {progress.completedQuestions.length}문제 완료
++            </p>
++          </div>
++
++          {/* Performance Analysis */}
++          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
++            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
++              <h4 className="font-medium text-blue-700 dark:text-blue-200 mb-1">정확도</h4>
++              <p className="text-xl font-bold text-blue-600 dark:text-blue-300">
++                {Math.round((progress.score / questions.length) * 10)}%
++              </p>
++            </div>
++            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
++              <h4 className="font-medium text-green-700 dark:text-green-200 mb-1">완료 문제</h4>
++              <p className="text-xl font-bold text-green-600 dark:text-green-300">
++                {progress.completedQuestions.length}개
++              </p>
++            </div>
++            <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
++              <h4 className="font-medium text-purple-700 dark:text-purple-200 mb-1">패턴 습득</h4>
++              <p className="text-xl font-bold text-purple-600 dark:text-purple-300">
++                {(() => {
++                  if (!selectedMonth || !selectedWeek) return 0;
++                  const monthData = CORE_PHRASES[selectedMonth as keyof typeof CORE_PHRASES];
++                  if (!monthData) return 0;
++                  const weekData = monthData.weeks[selectedWeek as keyof typeof monthData.weeks];
++                  return weekData ? weekData.phrases.length : 0;
++                })()}개
++              </p>
++            </div>
++          </div>
++
++          {/* Action Buttons */}
++          <div className="flex flex-col sm:flex-row gap-4 justify-center">
++            <Button
++              onClick={() => {
++                setMode('practice');
++                setCurrentQuestionIndex(0);
++                setUserAnswers({});
++                generateQuestions();
++              }}
++              variant="outline"
++            >
++              다시 연습하기
++            </Button>
++            <Button
++              onClick={resetToSelection}
++              variant="primary"
++            >
++              다른 패턴 선택하기
++            </Button>
++          </div>
++        </div>
++      </Card>
++    );
++  }
++
++  return (
++    <div className="text-center py-8">
++      <div className="text-[var(--color-text-primary)]">로딩 중...</div>
++    </div>
++  );
++}
+\ No newline at end of file
+diff --git a/components/christine/RolePlayConversation.tsx b/components/christine/RolePlayConversation.tsx
+new file mode 100644
+index 0000000..6c46580
+--- /dev/null
++++ b/components/christine/RolePlayConversation.tsx
+@@ -0,0 +1,601 @@
++'use client';
++
++/**
++ * Role-play Conversation Component
++ *
++ * Christine의 Role-play 대화 연습 기능:
++ * - 사용자 입력 상황 기반 AI 대화 생성
++ * - 실시간 대화 연습
++ * - 자연스러운 표현 학습
++ * - 맞춤형 피드백 제공
++ */
++
++import React, { useState, useEffect, useRef } from 'react';
++import { useSession } from 'next-auth/react';
++import Card from '@/components/ui/Card';
++import Button from '@/components/ui/Button';
++import Badge from '@/components/ui/Badge';
++
++interface ConversationMessage {
++  id: string;
++  role: 'user' | 'ai' | 'system';
++  content: string;
++  timestamp: number;
++  feedback?: MessageFeedback;
++}
++
++interface MessageFeedback {
++  score: number;
++  naturalness: string;
++  suggestions: string[];
++  improvedVersion?: string;
++}
++
++interface ConversationSession {
++  id: string;
++  scenario: string;
++  context: string;
++  messages: ConversationMessage[];
++  totalScore: number;
++  completedTurns: number;
++}
++
++type ConversationMode = 'setup' | 'conversation' | 'feedback' | 'summary';
++
++// Predefined scenarios for quick start
++const QUICK_SCENARIOS = [
++  {
++    title: '공항에서 체크인하기',
++    icon: '✈️',
++    scenario: 'airport_checkin',
++    context: '당신은 해외여행을 위해 공항에 도착했습니다. 항공사 카운터에서 체크인을 하려고 합니다.',
++    difficulty: 'beginner'
++  },
++  {
++    title: '레스토랑에서 주문하기',
++    icon: '🍽️',
++    scenario: 'restaurant_order',
++    context: '당신은 외국 레스토랑에서 식사를 하려고 합니다. 서버와 대화하며 메뉴를 주문해보세요.',
++    difficulty: 'beginner'
++  },
++  {
++    title: '회사 동료와 스몰토크',
++    icon: '💼',
++    scenario: 'office_smalltalk',
++    context: '새로운 직장에서 동료와 처음 만났습니다. 자연스럽게 인사를 나누고 친해져보세요.',
++    difficulty: 'intermediate'
++  },
++  {
++    title: '호텔에서 문제 해결하기',
++    icon: '🏨',
++    scenario: 'hotel_complaint',
++    context: '호텔 방에 문제가 있어서 프런트 데스크에 도움을 요청해야 합니다.',
++    difficulty: 'intermediate'
++  },
++  {
++    title: '비즈니스 미팅 진행',
++    icon: '🤝',
++    scenario: 'business_meeting',
++    context: '중요한 비즈니스 미팅에서 당신의 의견을 제시하고 협의해야 합니다.',
++    difficulty: 'advanced'
++  },
++  {
++    title: '의견이 다를 때 대화하기',
++    icon: '💭',
++    scenario: 'disagreement_discussion',
++    context: '동료나 친구와 의견이 다른 상황에서 예의 바르게 자신의 생각을 전달해보세요.',
++    difficulty: 'advanced'
++  }
++];
++
++export function RolePlayConversation() {
++  const { data: session } = useSession();
++  const [mode, setMode] = useState<ConversationMode>('setup');
++  const [customScenario, setCustomScenario] = useState('');
++  const [selectedScenario, setSelectedScenario] = useState<typeof QUICK_SCENARIOS[0] | null>(null);
++  const [currentSession, setCurrentSession] = useState<ConversationSession | null>(null);
++  const [userInput, setUserInput] = useState('');
++  const [loading, setLoading] = useState(false);
++  const [error, setError] = useState<string | null>(null);
++  const messagesEndRef = useRef<HTMLDivElement>(null);
++
++  const userId = session?.user?.name || 'anonymous';
++
++  // Auto scroll to bottom of messages
++  const scrollToBottom = () => {
++    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
++  };
++
++  useEffect(() => {
++    scrollToBottom();
++  }, [currentSession?.messages]);
++
++  // Start new conversation session
++  const startConversation = async () => {
++    if (!selectedScenario && !customScenario.trim()) {
++      setError('시나리오를 선택하거나 직접 입력해주세요.');
++      return;
++    }
++
++    try {
++      setLoading(true);
++      setError(null);
++
++      const scenario = selectedScenario || {
++        title: '사용자 정의 시나리오',
++        scenario: 'custom',
++        context: customScenario.trim(),
++        difficulty: 'intermediate'
++      };
++
++      const response = await fetch('/api/influencers/christine/roleplay', {
++        method: 'POST',
++        headers: {
++          'Content-Type': 'application/json',
++        },
++        body: JSON.stringify({
++          action: 'start_conversation',
++          userId,
++          scenario: scenario.scenario,
++          context: scenario.context,
++          difficulty: scenario.difficulty
++        }),
++      });
++
++      const data = await response.json();
++
++      if (data.success) {
++        setCurrentSession(data.session);
++        setMode('conversation');
++      } else {
++        setError(data.error || 'Failed to start conversation');
++      }
++    } catch (err) {
++      setError('대화 시작 중 오류가 발생했습니다.');
++    } finally {
++      setLoading(false);
++    }
++  };
++
++  // Send user message
++  const sendMessage = async () => {
++    if (!userInput.trim() || !currentSession) return;
++
++    try {
++      setLoading(true);
++      setError(null);
++
++      const response = await fetch('/api/influencers/christine/roleplay', {
++        method: 'POST',
++        headers: {
++          'Content-Type': 'application/json',
++        },
++        body: JSON.stringify({
++          action: 'send_message',
++          userId,
++          sessionId: currentSession.id,
++          message: userInput.trim()
++        }),
++      });
++
++      const data = await response.json();
++
++      if (data.success) {
++        setCurrentSession(data.session);
++        setUserInput('');
++
++        // Check if conversation should end
++        if (data.session.completedTurns >= 6) { // End after 6 turns
++          setTimeout(() => {
++            setMode('summary');
++          }, 2000);
++        }
++      } else {
++        setError(data.error || 'Failed to send message');
++      }
++    } catch (err) {
++      setError('메시지 전송 중 오류가 발생했습니다.');
++    } finally {
++      setLoading(false);
++    }
++  };
++
++  // Get feedback for a specific message
++  const getFeedback = async (messageId: string) => {
++    if (!currentSession) return;
++
++    try {
++      setLoading(true);
++
++      const response = await fetch('/api/influencers/christine/roleplay', {
++        method: 'POST',
++        headers: {
++          'Content-Type': 'application/json',
++        },
++        body: JSON.stringify({
++          action: 'get_feedback',
++          userId,
++          sessionId: currentSession.id,
++          messageId
++        }),
++      });
++
++      const data = await response.json();
++
++      if (data.success) {
++        setCurrentSession(data.session);
++      } else {
++        setError(data.error || 'Failed to get feedback');
++      }
++    } catch (err) {
++      setError('피드백 요청 중 오류가 발생했습니다.');
++    } finally {
++      setLoading(false);
++    }
++  };
++
++  // Reset to setup
++  const resetToSetup = () => {
++    setMode('setup');
++    setCurrentSession(null);
++    setSelectedScenario(null);
++    setCustomScenario('');
++    setUserInput('');
++    setError(null);
++  };
++
++  // Render setup mode
++  if (mode === 'setup') {
++    return (
++      <div className="space-y-6">
++        {/* Header */}
++        <Card className="p-6" glass={false}>
++          <div className="text-center space-y-4">
++            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-green-500/20 to-teal-500/20 rounded-full flex items-center justify-center">
++              <span className="text-4xl">🎭</span>
++            </div>
++            <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
++              Role-play 대화 연습
++            </h2>
++            <p className="text-[var(--color-text-secondary)] max-w-2xl mx-auto">
++              실제 상황을 시뮬레이션하여 자연스러운 영어 대화 능력을 기를 수 있습니다.
++              AI와 함께 다양한 상황에서 대화를 연습해보세요!
++            </p>
++          </div>
++        </Card>
++
++        {/* Quick Scenarios */}
++        <Card className="p-6" glass={false}>
++          <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
++            🚀 빠른 시작 - 추천 시나리오
++          </h3>
++          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
++            {QUICK_SCENARIOS.map((scenario, index) => (
++              <Card
++                key={index}
++                className={`p-4 cursor-pointer transition-all duration-200 ${
++                  selectedScenario === scenario
++                    ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-900/20'
++                    : 'hover:shadow-sm bg-[var(--color-bg-secondary)]'
++                }`}
++                glass={false}
++                onClick={() => {
++                  setSelectedScenario(scenario);
++                  setCustomScenario('');
++                }}
++              >
++                <div className="space-y-3">
++                  <div className="flex items-center gap-2">
++                    <span className="text-2xl">{scenario.icon}</span>
++                    <Badge
++                      variant={
++                        scenario.difficulty === 'beginner' ? 'success' :
++                        scenario.difficulty === 'intermediate' ? 'warning' : 'danger'
++                      }
++                      size="sm"
++                    >
++                      {scenario.difficulty === 'beginner' ? '초급' :
++                       scenario.difficulty === 'intermediate' ? '중급' : '고급'}
++                    </Badge>
++                  </div>
++                  <h4 className="font-medium text-[var(--color-text-primary)]">
++                    {scenario.title}
++                  </h4>
++                  <p className="text-sm text-[var(--color-text-secondary)]">
++                    {scenario.context}
++                  </p>
++                </div>
++              </Card>
++            ))}
++          </div>
++        </Card>
++
++        {/* Custom Scenario */}
++        <Card className="p-6" glass={false}>
++          <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
++            ✏️ 사용자 정의 시나리오
++          </h3>
++          <div className="space-y-4">
++            <textarea
++              value={customScenario}
++              onChange={(e) => {
++                setCustomScenario(e.target.value);
++                if (e.target.value.trim()) {
++                  setSelectedScenario(null);
++                }
++              }}
++              placeholder="원하는 상황을 자세히 설명해주세요. 예: '카페에서 친구와 만나서 최근 근황을 나누는 상황', '온라인 쇼핑몰에 전화해서 반품 문의를 하는 상황' 등"
++              className="w-full p-4 border rounded-lg resize-none h-24 bg-[var(--color-bg-primary)]"
++            />
++            <p className="text-sm text-[var(--color-text-tertiary)]">
++              💡 구체적이고 상세한 상황 설명일수록 더 맞춤형 대화를 연습할 수 있습니다.
++            </p>
++          </div>
++        </Card>
++
++        {/* Start Button */}
++        <Card className="p-6 text-center" glass={false}>
++          <div className="space-y-4">
++            <h4 className="text-lg font-semibold text-[var(--color-text-primary)]">
++              {selectedScenario ? selectedScenario.title : customScenario ? '사용자 정의 시나리오' : '시나리오를 선택해주세요'}
++            </h4>
++            {(selectedScenario || customScenario) && (
++              <p className="text-sm text-[var(--color-text-secondary)] max-w-2xl mx-auto">
++                {selectedScenario ? selectedScenario.context : customScenario}
++              </p>
++            )}
++            <Button
++              onClick={startConversation}
++              disabled={loading || (!selectedScenario && !customScenario.trim())}
++              variant="primary"
++              size="lg"
++            >
++              {loading ? 'AI 준비 중...' : '🎭 Role-play 시작하기'}
++            </Button>
++          </div>
++        </Card>
++
++        {error && (
++          <Card className="p-4 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
++            <p className="text-red-800 dark:text-red-200 text-sm">{error}</p>
++          </Card>
++        )}
++      </div>
++    );
++  }
++
++  // Render conversation mode
++  if (mode === 'conversation' && currentSession) {
++    return (
++      <div className="space-y-6">
++        {/* Header */}
++        <Card className="p-4" glass={false}>
++          <div className="flex justify-between items-center">
++            <div>
++              <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
++                🎭 {selectedScenario?.title || '사용자 정의 시나리오'}
++              </h3>
++              <p className="text-sm text-[var(--color-text-secondary)]">
++                진행: {currentSession.completedTurns}/6 턴
++              </p>
++            </div>
++            <Button
++              onClick={resetToSetup}
++              variant="outline"
++              size="sm"
++            >
++              새 시나리오 선택
++            </Button>
++          </div>
++        </Card>
++
++        {/* Conversation Area */}
++        <Card className="p-6" glass={false}>
++          <div className="space-y-4 max-h-96 overflow-y-auto">
++            {currentSession.messages.map((message) => (
++              <div
++                key={message.id}
++                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
++              >
++                <div
++                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
++                    message.role === 'user'
++                      ? 'bg-blue-500 text-white'
++                      : message.role === 'system'
++                      ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 text-sm'
++                      : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]'
++                  }`}
++                >
++                  <p>{message.content}</p>
++
++                  {/* Feedback section for user messages */}
++                  {message.role === 'user' && (
++                    <div className="mt-2">
++                      {message.feedback ? (
++                        <div className="text-xs bg-white/20 p-2 rounded mt-2">
++                          <div className="flex items-center gap-1 mb-1">
++                            <span>점수: {message.feedback.score}/10</span>
++                            <Badge variant="success" size="sm">피드백</Badge>
++                          </div>
++                          <p className="mb-1">{message.feedback.naturalness}</p>
++                          {message.feedback.suggestions.length > 0 && (
++                            <div>
++                              <p className="text-xs opacity-75 mb-1">개선 제안:</p>
++                              <ul className="text-xs opacity-75">
++                                {message.feedback.suggestions.map((suggestion, idx) => (
++                                  <li key={idx}>• {suggestion}</li>
++                                ))}
++                              </ul>
++                            </div>
++                          )}
++                          {message.feedback.improvedVersion && (
++                            <p className="text-xs bg-white/10 p-1 rounded mt-1">
++                              개선: "{message.feedback.improvedVersion}"
++                            </p>
++                          )}
++                        </div>
++                      ) : (
++                        <Button
++                          onClick={() => getFeedback(message.id)}
++                          variant="outline"
++                          size="sm"
++                          className="text-xs mt-2 opacity-75 hover:opacity-100"
++                        >
++                          피드백 요청
++                        </Button>
++                      )}
++                    </div>
++                  )}
++                </div>
++              </div>
++            ))}
++            <div ref={messagesEndRef} />
++          </div>
++
++          {/* Input Area */}
++          <div className="mt-6 space-y-4">
++            <div className="flex gap-3">
++              <textarea
++                value={userInput}
++                onChange={(e) => setUserInput(e.target.value)}
++                placeholder="영어로 답변을 입력하세요..."
++                className="flex-1 p-3 border rounded-lg resize-none h-20 bg-[var(--color-bg-primary)]"
++                disabled={loading}
++                onKeyPress={(e) => {
++                  if (e.key === 'Enter' && !e.shiftKey) {
++                    e.preventDefault();
++                    sendMessage();
++                  }
++                }}
++              />
++              <Button
++                onClick={sendMessage}
++                disabled={loading || !userInput.trim()}
++                variant="primary"
++                className="h-20"
++              >
++                {loading ? '전송 중...' : '전송'}
++              </Button>
++            </div>
++
++            <div className="text-xs text-[var(--color-text-tertiary)] text-center">
++              💡 Enter를 눌러 전송, Shift+Enter로 줄바꿈
++            </div>
++          </div>
++        </Card>
++
++        {error && (
++          <Card className="p-4 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
++            <p className="text-red-800 dark:text-red-200 text-sm">{error}</p>
++          </Card>
++        )}
++      </div>
++    );
++  }
++
++  // Render summary mode
++  if (mode === 'summary' && currentSession) {
++    const userMessages = currentSession.messages.filter(m => m.role === 'user');
++    const avgScore = userMessages.reduce((sum, msg) => sum + (msg.feedback?.score || 0), 0) / userMessages.length;
++
++    return (
++      <Card className="p-8 text-center" glass={false}>
++        <div className="space-y-6">
++          <span className="text-6xl">🎉</span>
++          <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
++            대화 연습 완료!
++          </h2>
++
++          {/* Final Score */}
++          <div className="bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 p-6 rounded-lg">
++            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">
++              📊 종합 평가
++            </h3>
++            <p className="text-4xl font-bold text-green-600 dark:text-green-400 mb-2">
++              {Math.round(avgScore * 10)}/100
++            </p>
++            <p className="text-sm text-[var(--color-text-secondary)]">
++              총 {currentSession.completedTurns}턴 완료
++            </p>
++          </div>
++
++          {/* Detailed Analysis */}
++          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
++            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
++              <h4 className="font-medium text-blue-700 dark:text-blue-200 mb-1">자연스러움</h4>
++              <p className="text-xl font-bold text-blue-600 dark:text-blue-300">
++                {avgScore >= 8 ? '매우 좋음' : avgScore >= 6 ? '좋음' : '보통'}
++              </p>
++            </div>
++            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
++              <h4 className="font-medium text-green-700 dark:text-green-200 mb-1">참여도</h4>
++              <p className="text-xl font-bold text-green-600 dark:text-green-300">
++                {currentSession.completedTurns}/6턴
++              </p>
++            </div>
++            <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
++              <h4 className="font-medium text-purple-700 dark:text-purple-200 mb-1">표현력</h4>
++              <p className="text-xl font-bold text-purple-600 dark:text-purple-300">
++                {userMessages.length}개 표현
++              </p>
++            </div>
++          </div>
++
++          {/* Recommendations */}
++          <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg text-left">
++            <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">
++              💡 다음 단계 추천
++            </h4>
++            <ul className="text-sm text-yellow-700 dark:text-yellow-100 space-y-1">
++              {avgScore >= 8 ? (
++                <>
++                  <li>• 더 복잡한 비즈니스 상황에 도전해보세요</li>
++                  <li>• 의견이 다른 상황에서의 대화를 연습해보세요</li>
++                  <li>• 실제 원어민과의 대화에 자신감을 가지세요!</li>
++                </>
++              ) : avgScore >= 6 ? (
++                <>
++                  <li>• 다양한 표현을 사용해보세요</li>
++                  <li>• 같은 상황을 다시 연습해서 완벽하게 만들어보세요</li>
++                  <li>• Core Phrase 패턴 연습으로 기본기를 다져보세요</li>
++                </>
++              ) : (
++                <>
++                  <li>• 기본 패턴부터 차근차근 연습하세요</li>
++                  <li>• 간단한 상황부터 시작해보세요</li>
++                  <li>• 피드백을 꼼꼼히 확인하고 개선해보세요</li>
++                </>
++              )}
++            </ul>
++          </div>
++
++          {/* Action Buttons */}
++          <div className="flex flex-col sm:flex-row gap-4 justify-center">
++            <Button
++              onClick={() => {
++                setMode('conversation');
++                setCurrentSession(null);
++                startConversation();
++              }}
++              variant="outline"
++            >
++              같은 시나리오 다시 연습
++            </Button>
++            <Button
++              onClick={resetToSetup}
++              variant="primary"
++            >
++              새로운 시나리오 선택
++            </Button>
++          </div>
++        </div>
++      </Card>
++    );
++  }
++
++  return (
++    <div className="text-center py-8">
++      <div className="text-[var(--color-text-primary)]">로딩 중...</div>
++    </div>
++  );
++}
+\ No newline at end of file
+-- 
+2.39.3 (Apple Git-146)
+

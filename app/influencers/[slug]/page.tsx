@@ -14,6 +14,7 @@ import Skeleton from '../../../components/ui/Skeleton';
 import { MedskyAnalyzer } from '../../../components/medsky/MedskyAnalyzer';
 import { EnglishMemorizationTool } from '../../../components/terry/EnglishMemorizationTool';
 import { VocabularyMemoizer } from '../../../components/terry/VocabularyMemoizer';
+import { ChristineAILearningTool } from '../../../components/christine/ChristineAILearningTool';
 import ChatWidget from '../../../components/ChatWidget';
 
 interface Influencer {
@@ -476,8 +477,15 @@ export default function InfluencerDetailPage() {
                 </div>
               )}
 
+              {/* AI Features Tab - Christine's AI learning tools */}
+              {activeTab === 'ai_features' && influencer.slug === 'christine' && (
+                <div className="space-y-6">
+                  <ChristineAILearningTool />
+                </div>
+              )}
+
               {/* AI Features Tab - Coming Soon for other influencers */}
-              {activeTab === 'ai_features' && influencer.slug !== 'terry' && (
+              {activeTab === 'ai_features' && influencer.slug !== 'terry' && influencer.slug !== 'christine' && (
                 <div className="space-y-6">
                   <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
                     <div className="text-center py-16">
