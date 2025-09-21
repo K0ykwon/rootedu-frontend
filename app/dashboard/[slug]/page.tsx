@@ -186,7 +186,7 @@ export default function InfluencerDashboard() {
               >
                 제품별 보기 
               </Button>
-              <Button
+              <Button 
                 variant={viewMode === 'analysis' ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('analysis')}
