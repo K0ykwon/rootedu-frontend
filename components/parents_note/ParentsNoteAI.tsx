@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSession, signIn } from 'next-auth/react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
@@ -52,6 +53,7 @@ interface DiagnosisResult {
 }
 
 export default function ParentsNoteAI() {
+  const { data: session } = useSession();
   const [appState, setAppState] = useState<'main' | 'onboarding' | 'guide' | 'weekly'>('main');
   const [diagnosisResult, setDiagnosisResult] = useState<DiagnosisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -98,6 +100,30 @@ export default function ParentsNoteAI() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">AI가 분석 중입니다...</h2>
           <p className="text-gray-600 dark:text-gray-300">잠시만 기다려주세요!</p>
+        </div>
+      </Card>
+    );
+  }
+
+  // 로그인 필요
+  if (!session) {
+    return (
+      <Card className="p-8 text-center" glass={false}>
+        <div className="space-y-4">
+          <span className="text-6xl">🔒</span>
+          <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
+            로그인이 필요합니다
+          </h2>
+          <p className="text-[var(--color-text-secondary)]">
+          부모노트의 무료 AI 학습 도구를 이용하려면 먼저 로그인해주세요.
+          </p>
+          <Button 
+            onClick={() => signIn()}
+            variant="primary"
+            size="lg"
+          >
+            로그인하기
+          </Button>
         </div>
       </Card>
     );
