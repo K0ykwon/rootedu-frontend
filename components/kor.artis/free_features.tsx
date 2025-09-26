@@ -82,7 +82,7 @@ export default function GilpumKoreanAIFeatures() {
   useEffect(() => {
     const loadKICEData = async () => {
       try {
-        const response = await fetch('/api/kor-artis/kice-data');
+        const response = await fetch('/api/influencers/kor-artis/kice-data');
         const data = await response.json();
         setKiceData(data);
         
@@ -207,7 +207,7 @@ export default function GilpumKoreanAIFeatures() {
           .map(w => w.word);
         
         try {
-          const response = await fetch('/api/kor-artis/ai-quiz', {
+          const response = await fetch('/api/influencers/kor-artis/ai-quiz', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -331,7 +331,7 @@ export default function GilpumKoreanAIFeatures() {
     if (!kiceData) {
       const loadKICEData = async () => {
         try {
-          const response = await fetch('/api/kor-artis/kice-data');
+          const response = await fetch('/api/influencers/kor-artis/kice-data');
           const data = await response.json();
           setKiceData(data);
           
@@ -367,7 +367,7 @@ export default function GilpumKoreanAIFeatures() {
     setIsEvaluating(true);
     
     try {
-      const response = await fetch('/api/kor-artis/context-evaluation', {
+      const response = await fetch('/api/influencers/kor-artis/context-evaluation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -413,7 +413,7 @@ export default function GilpumKoreanAIFeatures() {
     setIsGeneratingQuestions(true);
     
     try {
-      const response = await fetch('/api/kor-artis/question-generation', {
+      const response = await fetch('/api/influencers/kor-artis/question-generation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
