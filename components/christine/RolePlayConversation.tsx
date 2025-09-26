@@ -290,7 +290,7 @@ export function RolePlayConversation() {
                     <Badge
                       variant={
                         scenario.difficulty === 'beginner' ? 'success' :
-                        scenario.difficulty === 'intermediate' ? 'warning' : 'danger'
+                        scenario.difficulty === 'intermediate' ? 'warning' : 'error'
                       }
                       size="sm"
                     >
