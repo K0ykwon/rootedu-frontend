@@ -68,6 +68,11 @@ export default function GilpumKoreanAIFeatures() {
   const [showQuestionAnswer, setShowQuestionAnswer] = useState(false);
   const [questionScore, setQuestionScore] = useState(0);
   const [questionCompleted, setQuestionCompleted] = useState(false);
+  
+  // 주관식 문항 상태
+  const [subjectiveAnswers, setSubjectiveAnswers] = useState<{[key: number]: string}>({});
+  const [subjectiveScores, setSubjectiveScores] = useState<{[key: number]: any}>({});
+  const [isScoringSubjective, setIsScoringSubjective] = useState(false);
 
   // SRS 간격 (일 단위)
   const SRS_INTERVALS = [0, 1, 3, 7]; // D0, D1, D3, D7
@@ -470,6 +475,65 @@ export default function GilpumKoreanAIFeatures() {
     }
   };
 
+  // 주관식 답안 채점
+  const scoreSubjectiveAnswer = async (questionId: number, answer: string) => {
+    const currentQuestion = generatedQuestions.find(q => q.id === questionId);
+    if (!currentQuestion || !currentQuestion.requiredKeywords) return;
+
+    setIsScoringSubjective(true);
+    
+    try {
+      const response = await fetch('/api/influencers/kor-artis/question-scoring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          answer,
+          questionId,
+          requiredKeywords: currentQuestion.requiredKeywords,
+          optionalKeywords: currentQuestion.optionalKeywords || [],
+          maxScore: currentQuestion.maxScore || 10,
+          question: currentQuestion.question,
+          sampleAnswer: currentQuestion.sampleAnswer || ''
+        })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        setSubjectiveScores(prev => ({
+          ...prev,
+          [questionId]: result.data
+        }));
+      }
+    } catch (error) {
+      console.error('주관식 채점 실패:', error);
+    } finally {
+      setIsScoringSubjective(false);
+    }
+  };
+
+  // 주관식 답안 제출
+  const submitSubjectiveAnswer = async (questionId: number) => {
+    const answer = subjectiveAnswers[questionId];
+    if (!answer || answer.trim() === '') {
+      alert('답안을 입력해주세요!');
+      return;
+    }
+    
+    await scoreSubjectiveAnswer(questionId, answer);
+  };
+
+  // 다음 문제로 넘어가기
+  const goToNextQuestion = () => {
+    if (currentQuestionIndex < generatedQuestions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setSelectedAnswer(null);
+      setShowQuestionAnswer(false);
+    } else {
+      // 모든 문제 완료
+      setQuestionCompleted(true);
+    }
+  };
+
   // 메인 화면으로 돌아가기
   const backToMain = () => {
     setShowVocabChallenge(false);
@@ -486,6 +550,9 @@ export default function GilpumKoreanAIFeatures() {
     setShowQuestionAnswer(false);
     setQuestionScore(0);
     setQuestionCompleted(false);
+    setSubjectiveAnswers({});
+    setSubjectiveScores({});
+    setIsScoringSubjective(false);
   };
 
   // 시간 포맷팅
@@ -792,7 +859,7 @@ export default function GilpumKoreanAIFeatures() {
         <Card className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/50 dark:to-blue-900/50 border-purple-200 dark:border-purple-500/30">
           <div className="text-center py-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">🎯 파생 문제 생성</h2>
-            <p className="text-purple-600 dark:text-purple-100">지문을 바탕으로 한 수능 스타일 문제 3개</p>
+            <p className="text-purple-600 dark:text-purple-100">지문을 바탕으로 한 수능 스타일 문제 5개</p>
           </div>
         </Card>
 
@@ -818,43 +885,99 @@ export default function GilpumKoreanAIFeatures() {
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <div className="text-gray-900 dark:text-white">
-                  <span>문제 {currentQuestionIndex + 1}/3</span>
+                  <span>문제 {currentQuestionIndex + 1}/5</span>
                   <span className="ml-4">점수: {questionScore}</span>
                 </div>
                 <div className="text-purple-600 dark:text-purple-400">
                   {currentQuestion.type === 'theme' && '주제 파악'}
                   {currentQuestion.type === 'appreciation' && '지문 감상'}
                   {currentQuestion.type === 'example' && '사례 매칭'}
+                  {currentQuestion.type === 'concept_explanation' && '핵심 개념 설명'}
+                  {currentQuestion.type === 'short_answer' && '단답형'}
                 </div>
               </div>
 
               <div className="space-y-6">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">{currentQuestion.question}</h3>
                 
-                <div className="space-y-3">
-                  {currentQuestion.options.map((option: string, index: number) => (
-                    <button
-                      key={index}
-                      className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-                        selectedAnswer === index 
-                          ? 'border-purple-500 bg-purple-500/20 text-gray-900 dark:text-white' 
-                          : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
-                      }`}
-                      onClick={() => setSelectedAnswer(index)}
-                    >
-                      {String.fromCharCode(65 + index)}. {option}
-                    </button>
-                  ))}
-                </div>
+                {/* 객관식 문항 */}
+                {['theme', 'appreciation', 'example'].includes(currentQuestion.type) && (
+                  <div className="space-y-3">
+                    {currentQuestion.options.map((option: string, index: number) => (
+                      <button
+                        key={index}
+                        className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                          selectedAnswer === index 
+                            ? 'border-purple-500 bg-purple-500/20 text-gray-900 dark:text-white' 
+                            : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
+                        }`}
+                        onClick={() => setSelectedAnswer(index)}
+                      >
+                        {String.fromCharCode(65 + index)}. {option}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* 주관식 문항 - 서술형 (핵심 개념 설명) */}
+                {currentQuestion.type === 'concept_explanation' && (
+                  <div className="space-y-4">
+                    <textarea
+                      value={subjectiveAnswers[currentQuestion.id] || ''}
+                      onChange={(e) => setSubjectiveAnswers(prev => ({
+                        ...prev,
+                        [currentQuestion.id]: e.target.value
+                      }))}
+                      placeholder="답안을 입력하세요..."
+                      className="w-full p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800"
+                      rows={4}
+                    />
+                  </div>
+                )}
+
+                {/* 주관식 문항 - 단답형 */}
+                {currentQuestion.type === 'short_answer' && (
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      value={subjectiveAnswers[currentQuestion.id] || ''}
+                      onChange={(e) => setSubjectiveAnswers(prev => ({
+                        ...prev,
+                        [currentQuestion.id]: e.target.value
+                      }))}
+                      placeholder="답을 입력하세요..."
+                      className="w-full p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800"
+                    />
+                  </div>
+                )}
 
                 <Button 
-                  onClick={checkQuestionAnswer}
+                  onClick={() => {
+                    if (['concept_explanation', 'short_answer'].includes(currentQuestion.type)) {
+                      // 주관식 문제
+                      if (subjectiveScores[currentQuestion.id]) {
+                        // 이미 채점된 경우 다음 문제로
+                        goToNextQuestion();
+                      } else {
+                        // 아직 채점되지 않은 경우 제출
+                        submitSubjectiveAnswer(currentQuestion.id);
+                      }
+                    } else {
+                      // 객관식 문제
+                      checkQuestionAnswer();
+                    }
+                  }}
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                  disabled={isScoringSubjective}
                 >
-                  {!showQuestionAnswer ? '확인' : (currentQuestionIndex < 2 ? '다음 문제' : '완료')}
+                  {isScoringSubjective ? '채점 중...' : 
+                   ['concept_explanation', 'short_answer'].includes(currentQuestion.type) ? 
+                     (subjectiveScores[currentQuestion.id] ? (currentQuestionIndex < 4 ? '다음 문제' : '완료') : '제출') :
+                   !showQuestionAnswer ? '확인' : (currentQuestionIndex < 4 ? '다음 문제' : '완료')}
                 </Button>
 
-                {showQuestionAnswer && (
+                {/* 객관식 답안 확인 결과 */}
+                {showQuestionAnswer && ['theme', 'appreciation', 'example'].includes(currentQuestion.type) && (
                   <div className="space-y-4">
                     <div className={`p-4 rounded-lg border-2 ${
                       selectedAnswer === currentQuestion.correctAnswer 
@@ -877,6 +1000,36 @@ export default function GilpumKoreanAIFeatures() {
                     </div>
                   </div>
                 )}
+
+                {/* 주관식 채점 결과 */}
+                {subjectiveScores[currentQuestion.id] && (
+                  <div className="space-y-4">
+                    <div className={`p-4 rounded-lg border-2 ${
+                      subjectiveScores[currentQuestion.id].percentage >= 80 
+                        ? 'bg-green-50 dark:bg-green-900/50 border-green-300 dark:border-green-500' 
+                        : subjectiveScores[currentQuestion.id].percentage >= 60
+                        ? 'bg-yellow-50 dark:bg-yellow-900/50 border-yellow-300 dark:border-yellow-500'
+                        : 'bg-red-50 dark:bg-red-900/50 border-red-300 dark:border-red-500'
+                    }`}>
+                      <div className="flex items-center justify-center mb-2">
+                        <span className="text-2xl">
+                          {subjectiveScores[currentQuestion.id].percentage >= 80 ? '🎉' : 
+                           subjectiveScores[currentQuestion.id].percentage >= 60 ? '👍' : '💪'}
+                        </span>
+                      </div>
+                      <p className="text-gray-900 dark:text-white font-semibold text-center">
+                        {subjectiveScores[currentQuestion.id].score}/{subjectiveScores[currentQuestion.id].maxScore}점 ({subjectiveScores[currentQuestion.id].percentage}%)
+                      </p>
+                    </div>
+                    
+                    <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                      <h4 className="text-gray-900 dark:text-white font-semibold mb-2">채점 결과</h4>
+                      <div className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">
+                        {subjectiveScores[currentQuestion.id].feedback}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
@@ -889,20 +1042,65 @@ export default function GilpumKoreanAIFeatures() {
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">🎉 파생 문제 완료!</h3>
               <p className="text-gray-600 dark:text-gray-300 mb-6">수고하셨습니다!</p>
               
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
-                  <div className="text-3xl font-bold text-green-600 dark:text-green-400">{questionScore}</div>
-                  <div className="text-gray-600 dark:text-gray-300">정답</div>
-                </div>
-                <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
-                  <div className="text-3xl font-bold text-red-600 dark:text-red-400">{3 - questionScore}</div>
-                  <div className="text-gray-600 dark:text-gray-300">오답</div>
-                </div>
-                <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
-                  <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">{Math.round((questionScore / 3) * 100)}%</div>
-                  <div className="text-gray-600 dark:text-gray-300">정답률</div>
+              {/* 객관식 점수 */}
+              <div className="mb-6">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">객관식 문제 결과</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                    <div className="text-3xl font-bold text-green-600 dark:text-green-400">{questionScore}</div>
+                    <div className="text-gray-600 dark:text-gray-300">정답</div>
+                  </div>
+                  <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                    <div className="text-3xl font-bold text-red-600 dark:text-red-400">{3 - questionScore}</div>
+                    <div className="text-gray-600 dark:text-gray-300">오답</div>
+                  </div>
+                  <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                    <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">{Math.round((questionScore / 3) * 100)}%</div>
+                    <div className="text-gray-600 dark:text-gray-300">정답률</div>
+                  </div>
                 </div>
               </div>
+
+              {/* 주관식 점수 */}
+              {Object.keys(subjectiveScores).length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">주관식 문제 결과</h4>
+                  <div className="space-y-4">
+                    {Object.entries(subjectiveScores).map(([questionId, score]) => {
+                      const question = generatedQuestions.find(q => q.id === parseInt(questionId));
+                      return (
+                        <div key={questionId} className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="text-left">
+                              <div className="font-semibold text-gray-900 dark:text-white">
+                                {question?.type === 'concept_explanation' ? '핵심 개념 설명' : '단답형'}
+                              </div>
+                              <div className="text-sm text-gray-600 dark:text-gray-300">
+                                {score.score}/{score.maxScore}점 ({score.percentage}%)
+                              </div>
+                            </div>
+                            <div className={`text-2xl ${
+                              score.percentage >= 80 ? 'text-green-500' : 
+                              score.percentage >= 60 ? 'text-yellow-500' : 'text-red-500'
+                            }`}>
+                              {score.percentage >= 80 ? '🎉' : 
+                               score.percentage >= 60 ? '👍' : '💪'}
+                            </div>
+                          </div>
+                          
+                          {/* 상세 피드백 */}
+                          <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg">
+                            <h5 className="font-semibold text-gray-900 dark:text-white mb-2">채점 피드백</h5>
+                            <div className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">
+                              {score.feedback}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="space-x-4">
                 <Button 
@@ -914,6 +1112,9 @@ export default function GilpumKoreanAIFeatures() {
                     setShowQuestionAnswer(false);
                     setQuestionScore(0);
                     setQuestionCompleted(false);
+                    setSubjectiveAnswers({});
+                    setSubjectiveScores({});
+                    setIsScoringSubjective(false);
                   }}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
