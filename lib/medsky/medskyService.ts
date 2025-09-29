@@ -35,6 +35,12 @@ import { buildGradeTrendReport } from './transformers/gradeTrends';
 import { buildCompetencyScores } from './transformers/competencyScores';
 import { buildMajorAlignment } from './transformers/majorAlignment';
 import { buildKeywordMatrix } from './transformers/keywordMatrix';
+// Enhanced AI services
+import { extractAIKeywords } from './ai/keywordExtractor';
+import { performAISectionScoring } from './ai/sectionScorer';
+import { performEnhancedAcademicAnalysis } from './ai/academicAnalyzer';
+import { generateAIMajorRecommendations } from './ai/majorRecommender';
+import { generateNextSemesterPlan } from './ai/studyPlanner';
 
 // ===========================
 // Session Management
@@ -60,7 +66,61 @@ interface ProcessingSession {
 // In-memory session storage (augmented with Redis persistence for multi-instance)
 const sessions = new Map<string, ProcessingSession>();
 const SESSION_PREFIX = 'medsky:session:';
-const YAKTOON_ANALYSIS_PREFIX = 'yaktoon:analysis_data:';
+// Dynamic analysis prefix - will be set based on product context
+let CURRENT_INFLUENCER_SLUG = 'yaktoon'; // Default fallback
+
+/**
+ * Generate Redis key prefix for analysis data based on influencer slug
+ */
+function getAnalysisPrefix(influencerSlug: string = CURRENT_INFLUENCER_SLUG): string {
+  return `${influencerSlug}:analysis_data:`;
+}
+
+/**
+ * Generate Redis key for analysis sessions list
+ */
+function getSessionsKey(influencerSlug: string = CURRENT_INFLUENCER_SLUG): string {
+  return `${influencerSlug}:analysis_sessions`;
+}
+
+/**
+ * Extract influencer slug from various sources with fallback
+ */
+function getInfluencerSlug(session?: ProcessingSession, explicit?: string): string {
+  // Priority: explicit > session.userInfo.productId > session.userInfo.id > default
+  return explicit ||
+         session?.userInfo?.productId ||
+         session?.userInfo?.id ||
+         CURRENT_INFLUENCER_SLUG;
+}
+
+/**
+ * Validate that analysis data is complete and ready for storage
+ */
+function validateAnalysisData(session: ProcessingSession): { isValid: boolean; missingFields: string[] } {
+  const missing: string[] = [];
+
+  if (!session.userInfo) {
+    missing.push('userInfo');
+  } else {
+    if (!session.userInfo.id) missing.push('userInfo.id');
+    if (!session.userInfo.name) missing.push('userInfo.name');
+    if (!session.userInfo.email) missing.push('userInfo.email');
+  }
+
+  if (!session.result) {
+    missing.push('result');
+  } else {
+    if (!session.result.textSections) missing.push('result.textSections');
+    if (!session.result.extractedData) missing.push('result.extractedData');
+    if (!session.result.validationAnalysis) missing.push('result.validationAnalysis');
+  }
+
+  return {
+    isValid: missing.length === 0,
+    missingFields: missing
+  };
+}
 
 async function persistSession(session: ProcessingSession): Promise<void> {
   try {
@@ -75,8 +135,15 @@ async function persistSession(session: ProcessingSession): Promise<void> {
 /**
  * Store completed analysis result in Redis for admin access
  */
-async function storeAnalysisForAdmin(sessionId: string, session: ProcessingSession): Promise<void> {
-  if (!session.userInfo || !session.result.extractedData || !session.result.validationAnalysis || !session.result.textSections) {
+async function storeAnalysisForAdmin(sessionId: string, session: ProcessingSession, influencerSlug?: string): Promise<void> {
+  console.log(`🏪 Attempting to store analysis for admin access: ${sessionId}`);
+
+  // Validate analysis data is complete
+  const validation = validateAnalysisData(session);
+  if (!validation.isValid) {
+    console.warn(`⚠️ Analysis data incomplete for session ${sessionId}:`, {
+      missingFields: validation.missingFields
+    });
     return; // Skip if missing required data
   }
 
@@ -106,17 +173,38 @@ async function storeAnalysisForAdmin(sessionId: string, session: ProcessingSessi
     const ttl = 60 * 60 * 24 * 30;
     const metadata = {
       sessionId,
-      productId: session.userInfo.productId || null,
-      userId: session.userInfo.id,
-      name: session.userInfo.name,
-      email: session.userInfo.email,
+      productId: session.userInfo!.productId || null,
+      userId: session.userInfo!.id,
+      name: session.userInfo!.name,
+      email: session.userInfo!.email,
       createdAt: session.startTime.toISOString(),
       completedAt: new Date().toISOString()
     };
+
+    // Determine influencer slug using helper function
+    const slug = getInfluencerSlug(session, influencerSlug);
+
+    const analysisKey = `${getAnalysisPrefix(slug)}${sessionId}`;
+    const sessionsKey = getSessionsKey(slug);
+    const metadataKey = `analysis:${sessionId}:metadata`;
+
+    console.log(`📝 Storing analysis data in Redis for influencer "${slug}":`, {
+      analysisKey,
+      sessionsKey,
+      metadataKey,
+      influencerSlug: slug,
+      userInfo: {
+        id: session.userInfo!.id,
+        name: session.userInfo!.name,
+        productId: session.userInfo!.productId
+      },
+      ttl: `${ttl} seconds (${Math.round(ttl / 60 / 60 / 24)} days)`
+    });
+
     const multi = client.multi();
-    multi.set(`${YAKTOON_ANALYSIS_PREFIX}${sessionId}`, JSON.stringify(analysisData), { EX: ttl } as any);
-    multi.sAdd('yaktoon:analysis_sessions', sessionId);
-    multi.set(`analysis:${sessionId}:metadata`, JSON.stringify(metadata), { EX: ttl } as any);
+    multi.set(analysisKey, JSON.stringify(analysisData), { EX: ttl } as any);
+    multi.sAdd(sessionsKey, sessionId);
+    multi.set(metadataKey, JSON.stringify(metadata), { EX: ttl } as any);
     await multi.exec();
     
     await client.quit();
@@ -189,7 +277,9 @@ function updateSessionStatus(sessionId: string, status: ProcessingStatus): void 
     
     // Store analysis data for admin when processing completes successfully
     if (status.stage === 'completed') {
-      void storeAnalysisForAdmin(sessionId, session);
+      // Determine influencer slug from session userInfo
+      const influencerSlug = session.userInfo?.productId || undefined;
+      void storeAnalysisForAdmin(sessionId, session, influencerSlug);
     }
   }
 }
@@ -211,15 +301,30 @@ function updateSessionResult(sessionId: string, updates: Partial<ProcessingResul
  */
 function markCompletedIfAllDone(sessionId: string): void {
   const session = sessions.get(sessionId);
-  if (!session) return;
+  if (!session) {
+    console.warn(`⚠️ Session ${sessionId} not found when trying to mark as completed`);
+    return;
+  }
+
   const hasExtraction = Boolean(session.result.extractedData);
   const hasValidation = Boolean(session.result.validationAnalysis);
+
+  console.log(`🔍 Checking completion status for session ${sessionId}:`, {
+    hasExtraction,
+    hasValidation,
+    hasUserInfo: !!session.userInfo,
+    currentStage: session.status.stage
+  });
+
   if (hasExtraction && hasValidation) {
+    console.log(`🎉 Marking session ${sessionId} as completed!`);
     updateSessionStatus(sessionId, {
       stage: 'completed',
       progress: 100,
       message: '모든 분석이 완료되었습니다!'
     });
+  } else {
+    console.log(`⏳ Session ${sessionId} not ready for completion yet`);
   }
 }
 
@@ -236,6 +341,7 @@ async function finalizeReportAnalytics(
   const manualInputs = session?.result.manualInputs;
   const consultantNotes = session?.result.consultantNotes;
 
+  // Build traditional transformers first
   const gradeTrends = buildGradeTrendReport(extractedData);
   const competencyScores = buildCompetencyScores(validationAnalysis, manualInputs);
   const majorAlignment = buildMajorAlignment(extractedData, manualInputs);
@@ -249,6 +355,86 @@ async function finalizeReportAnalytics(
 
   if (Object.keys(analyticsUpdates).length > 0) {
     updateSessionResult(sessionId, analyticsUpdates);
+  }
+
+  // Enhanced AI Analysis Pipeline
+  console.log('🤖 Starting enhanced AI analysis pipeline...');
+
+  try {
+    // Get text sections for AI analysis
+    const textSections = session?.result.textSections;
+    if (!textSections) {
+      console.warn('⚠️ No text sections available for AI analysis');
+      return;
+    }
+
+    // Step 1: AI Keyword Extraction
+    console.log('📝 1/5 Extracting AI keywords...');
+    const aiKeywords = await extractAIKeywords(textSections, extractedData);
+
+    // Step 2: AI Section Scoring
+    console.log('🎯 2/5 Performing AI section scoring...');
+    const aiScoring = await performAISectionScoring(textSections, extractedData, validationAnalysis);
+
+    // Step 3: Enhanced Academic Analysis
+    console.log('📚 3/5 Performing enhanced academic analysis...');
+    const enhancedAcademic = await performEnhancedAcademicAnalysis(extractedData);
+
+    // Step 4: AI Major Recommendations
+    console.log('🎓 4/5 Generating AI major recommendations...');
+    const aiMajorRecommendations = await generateAIMajorRecommendations(
+      extractedData,
+      aiKeywords,
+      aiScoring,
+      enhancedAcademic
+    );
+
+    // Step 5: Next Semester Study Plan
+    console.log('📅 5/5 Generating next semester study plan...');
+    const nextSemesterPlan = await generateNextSemesterPlan(
+      extractedData,
+      aiKeywords,
+      aiScoring,
+      enhancedAcademic,
+      aiMajorRecommendations
+    );
+
+    // Store enhanced AI results
+    const enhancedAnalysisUpdates = {
+      ai_keyword_analysis: aiKeywords,
+      ai_section_scoring: aiScoring,
+      enhanced_academic_analysis: enhancedAcademic,
+      ai_major_recommendations: aiMajorRecommendations,
+      next_semester_plan: nextSemesterPlan,
+      ai_analysis_timestamp: new Date().toISOString(),
+      ai_model_versions: {
+        keyword_model: 'gpt-4o-mini',
+        scoring_model: 'gpt-4o-mini',
+        recommendation_model: 'gpt-4o-mini'
+      }
+    };
+
+    updateSessionResult(sessionId, enhancedAnalysisUpdates);
+
+    console.log('✅ Enhanced AI analysis pipeline completed successfully!', {
+      keywordsExtracted: aiKeywords.sections.length,
+      sectionsScored: aiScoring.section_scores.length,
+      subjectsAnalyzed: enhancedAcademic.subject_analysis.length,
+      topRecommendations: aiMajorRecommendations.top_recommendations.length,
+      hasStudyPlan: !!nextSemesterPlan.academic_plan
+    });
+
+  } catch (aiError) {
+    console.error('❌ Enhanced AI analysis failed:', aiError);
+
+    // Store error information but don't fail the entire pipeline
+    updateSessionResult(sessionId, {
+      ai_analysis_error: {
+        message: aiError instanceof Error ? aiError.message : 'Unknown AI analysis error',
+        timestamp: new Date().toISOString(),
+        stage: 'ai_analysis'
+      }
+    });
   }
 
   try {

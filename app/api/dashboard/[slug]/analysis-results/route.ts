@@ -33,8 +33,11 @@ export async function GET(
     try {
       // Get all analysis results for this influencer
       const pattern = `${slug}:analysis_data:*`;
+      console.log(`🔍 Searching for analysis data with pattern: ${pattern}`);
+
       const keys = await redis.keys(pattern);
-      
+      console.log(`📋 Found ${keys.length} analysis keys:`, keys);
+
       const results = [];
       
       for (const key of keys) {
@@ -48,26 +51,63 @@ export async function GET(
             const profileKey = `${slug}:profile:${sessionId}`;
             const profile = await redis.get(profileKey);
             
+            // Log data structure for debugging
+            console.log(`📊 Processing analysis data for session ${sessionId}:`, {
+              hasUserInfo: !!analysisData.userInfo,
+              hasResult: !!analysisData.result,
+              userInfoKeys: analysisData.userInfo ? Object.keys(analysisData.userInfo) : [],
+              resultKeys: analysisData.result ? Object.keys(analysisData.result) : [],
+              topLevelKeys: Object.keys(analysisData)
+            });
+
+            // Fix data structure - ensure transformer data is at the correct level
+            const resultData = analysisData.result || analysisData.analysis || analysisData;
+
+            // If data comes from analysisData.result, it's properly structured
+            // If it comes from direct analysisData, it might be missing transformer fields
+            const finalAnalysisData = {
+              ...resultData,
+              // Ensure transformer fields are available at top level
+              gradeTrends: resultData.gradeTrends || null,
+              competencyScores: resultData.competencyScores || null,
+              majorAlignment: resultData.majorAlignment || null,
+              keywordMatrix: resultData.keywordMatrix || null,
+              summaryDraft: resultData.summaryDraft || null
+            };
+
+            console.log(`🔍 Final analysis data structure for ${sessionId}:`, {
+              hasGradeTrends: !!finalAnalysisData.gradeTrends,
+              hasCompetencyScores: !!finalAnalysisData.competencyScores,
+              hasMajorAlignment: !!finalAnalysisData.majorAlignment,
+              hasKeywordMatrix: !!finalAnalysisData.keywordMatrix,
+              hasSummaryDraft: !!finalAnalysisData.summaryDraft,
+              hasTextSections: !!finalAnalysisData.textSections,
+              hasExtractedData: !!finalAnalysisData.extractedData,
+              hasValidationAnalysis: !!finalAnalysisData.validationAnalysis
+            });
+
             results.push({
               sessionId,
-              userId: analysisData.userId || analysisData.userInfo?.id || 'unknown',
-              userName: analysisData.userName || analysisData.userInfo?.name || '익명 사용자',
-              analysisData: analysisData.analysis || analysisData.result || analysisData,
+              userId: analysisData.userInfo?.id || analysisData.userId || 'unknown',
+              userName: analysisData.userInfo?.name || analysisData.userName || '익명 사용자',
+              analysisData: finalAnalysisData,
               profileGenerated: !!profile,
               generatedProfile: profile ? JSON.parse(profile).profile : null,
-              createdAt: analysisData.createdAt || new Date().toISOString(),
+              createdAt: analysisData.createdAt || analysisData.userInfo?.analyzedAt || new Date().toISOString(),
               completedAt: analysisData.completedAt || analysisData.createdAt || new Date().toISOString()
             });
           }
         } catch (parseError) {
-          console.error('Error parsing analysis data:', parseError);
+          console.error(`❌ Error parsing analysis data for key ${key}:`, parseError);
         }
       }
 
       // Sort by completion date (newest first)
       results.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
 
-      return NextResponse.json({ 
+      console.log(`✅ Successfully processed ${results.length} analysis results for ${slug}`);
+
+      return NextResponse.json({
         results,
         total: results.length
       });

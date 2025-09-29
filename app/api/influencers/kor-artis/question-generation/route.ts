@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
 async function generateQuestions(originalText: string, title: string, category: string) {
   try {
-    const completion = await openai.beta.chat.completions.parse({
+    const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
@@ -126,7 +126,12 @@ ${originalText}
       }
     })
 
-    return completion.choices[0]?.message?.parsed || { questions: [] }
+    const content = completion.choices[0]?.message?.content;
+    try {
+      return content ? JSON.parse(content) : { questions: [] };
+    } catch {
+      return { questions: [] };
+    }
   } catch (error) {
     console.error('OpenAI API Error:', error)
     return { questions: [] }

@@ -16,6 +16,13 @@ import { KeywordMatrixView } from '../../../../../components/medsky/KeywordMatri
 import { SummaryEditor } from '../../../../../components/medsky/SummaryEditor';
 import { ManualCompetencyInput, KeywordOverride } from '../../../../../types/medsky';
 
+// AI Enhanced Components
+import { AIKeywordAnalysisView } from '../../../../../components/medsky/AIKeywordAnalysisView';
+import { AISectionScoringView } from '../../../../../components/medsky/AISectionScoringView';
+import { EnhancedAcademicAnalysisView } from '../../../../../components/medsky/EnhancedAcademicAnalysisView';
+import { AIMajorRecommendationsView } from '../../../../../components/medsky/AIMajorRecommendationsView';
+import { NextSemesterPlanView } from '../../../../../components/medsky/NextSemesterPlanView';
+
 interface AnalysisResult {
   sessionId: string;
   userId: string;
@@ -39,7 +46,7 @@ export default function AnalysisDetailPage() {
   const [hasLoadedResult, setHasLoadedResult] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeResultsTab, setActiveResultsTab] = useState<
-    'overview' | 'trends' | 'competency' | 'major' | 'keywords' | 'structured' | 'detailed' | 'summary'
+    'overview' | 'trends' | 'competency' | 'major' | 'keywords' | 'structured' | 'detailed' | 'summary' | 'ai-keywords' | 'ai-scoring' | 'ai-academic' | 'ai-majors' | 'ai-study-plan'
   >('overview');
 
   const patchAnalysis = async (endpoint: string, payload: unknown, successMessage: string) => {
@@ -239,6 +246,11 @@ export default function AnalysisDetailPage() {
                   <nav className="flex flex-wrap gap-2">
                     {[
                       { id: 'overview', name: '종합 개요', icon: '📊', description: '핵심 통계 및 인사이트' },
+                      { id: 'ai-keywords', name: 'AI 키워드', icon: '🤖', description: 'AI 문맥 키워드 추출', category: 'ai' },
+                      { id: 'ai-scoring', name: 'AI 점수', icon: '⚡', description: 'AI 다기준 섹션 채점', category: 'ai' },
+                      { id: 'ai-academic', name: 'AI 학업분석', icon: '🎓', description: 'AI 향상된 학업 분석', category: 'ai' },
+                      { id: 'ai-majors', name: 'AI 전공추천', icon: '🚀', description: 'AI 기반 전공 추천', category: 'ai' },
+                      { id: 'ai-study-plan', name: 'AI 학습계획', icon: '📋', description: 'AI 차학기 학습 계획', category: 'ai' },
                       { id: 'trends', name: '성적 추이', icon: '📈', description: '학기별 성적 변화' },
                       { id: 'competency', name: '역량 점수화', icon: '🎯', description: '역량별 점수와 백분위' },
                       { id: 'major', name: '전공 연계', icon: '🎓', description: '필수/권장 과목 충족도' },
@@ -252,9 +264,9 @@ export default function AnalysisDetailPage() {
                         onClick={() => setActiveResultsTab(tab.id as any)}
                         className={`
                           flex-1 min-w-[140px] px-4 py-3 text-sm font-medium rounded-md transition-colors flex items-center justify-center space-x-2
-                          ${activeResultsTab === tab.id 
-                            ? 'bg-blue-500 text-white shadow-md' 
-                            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]'
+                          ${activeResultsTab === tab.id
+                            ? (tab.category === 'ai' ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-md' : 'bg-blue-500 text-white shadow-md')
+                            : (tab.category === 'ai' ? 'text-purple-600 hover:text-purple-800 hover:bg-purple-50 border border-purple-200' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]')
                           }
                         `}
                         title={tab.description}
@@ -327,6 +339,82 @@ export default function AnalysisDetailPage() {
                       onSave={handleSaveSummary}
                     />
                   )}
+
+                  {/* AI Enhanced Features */}
+                  {activeResultsTab === 'ai-keywords' && (
+                    <div className="space-y-6">
+                      {analysisResult.analysisData?.ai_keyword_analysis ? (
+                        <AIKeywordAnalysisView data={analysisResult.analysisData.ai_keyword_analysis} />
+                      ) : (
+                        <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
+                          <div className="text-purple-600">
+                            <h3 className="text-lg font-semibold mb-2">AI 키워드 분석 결과가 없습니다</h3>
+                            <p className="text-sm">AI 키워드 추출이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+
+                  {activeResultsTab === 'ai-scoring' && (
+                    <div className="space-y-6">
+                      {analysisResult.analysisData?.ai_section_scoring ? (
+                        <AISectionScoringView data={analysisResult.analysisData.ai_section_scoring} />
+                      ) : (
+                        <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
+                          <div className="text-purple-600">
+                            <h3 className="text-lg font-semibold mb-2">AI 섹션 채점 결과가 없습니다</h3>
+                            <p className="text-sm">AI 다기준 채점이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+
+                  {activeResultsTab === 'ai-academic' && (
+                    <div className="space-y-6">
+                      {analysisResult.analysisData?.enhanced_academic_analysis ? (
+                        <EnhancedAcademicAnalysisView data={analysisResult.analysisData.enhanced_academic_analysis} />
+                      ) : (
+                        <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
+                          <div className="text-purple-600">
+                            <h3 className="text-lg font-semibold mb-2">AI 학업 분석 결과가 없습니다</h3>
+                            <p className="text-sm">AI 향상된 학업 분석이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+
+                  {activeResultsTab === 'ai-majors' && (
+                    <div className="space-y-6">
+                      {analysisResult.analysisData?.ai_major_recommendations ? (
+                        <AIMajorRecommendationsView data={analysisResult.analysisData.ai_major_recommendations} />
+                      ) : (
+                        <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
+                          <div className="text-purple-600">
+                            <h3 className="text-lg font-semibold mb-2">AI 전공 추천 결과가 없습니다</h3>
+                            <p className="text-sm">AI 전공 추천이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+
+                  {activeResultsTab === 'ai-study-plan' && (
+                    <div className="space-y-6">
+                      {analysisResult.analysisData?.next_semester_plan ? (
+                        <NextSemesterPlanView data={analysisResult.analysisData.next_semester_plan} />
+                      ) : (
+                        <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
+                          <div className="text-purple-600">
+                            <h3 className="text-lg font-semibold mb-2">AI 학습 계획 결과가 없습니다</h3>
+                            <p className="text-sm">AI 차학기 학습 계획이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Generated Profile Section */}
@@ -363,12 +451,31 @@ export default function AnalysisDetailPage() {
                   분석 데이터가 불완전합니다
                 </h3>
                 <p className="text-[var(--color-text-secondary)] mb-6">
-                  이 분석 결과는 완전하지 않습니다. 원시 데이터를 확인해보세요.
+                  이 분석 결과는 완전하지 않습니다. 관리자에게 문의하거나 다시 분석을 요청해주세요.
                 </p>
-                
+
+                {/* Data completeness summary */}
+                <div className="bg-[var(--color-bg-secondary)] rounded-lg p-4 mb-6">
+                  <h4 className="font-medium text-[var(--color-text-primary)] mb-3">데이터 상태</h4>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className={`flex items-center space-x-2 ${analysisResult.analysisData?.textSections ? 'text-green-600' : 'text-red-600'}`}>
+                      <span>{analysisResult.analysisData?.textSections ? '✅' : '❌'}</span>
+                      <span>텍스트 섹션</span>
+                    </div>
+                    <div className={`flex items-center space-x-2 ${analysisResult.analysisData?.extractedData ? 'text-green-600' : 'text-red-600'}`}>
+                      <span>{analysisResult.analysisData?.extractedData ? '✅' : '❌'}</span>
+                      <span>추출 데이터</span>
+                    </div>
+                    <div className={`flex items-center space-x-2 ${analysisResult.analysisData?.validationAnalysis ? 'text-green-600' : 'text-red-600'}`}>
+                      <span>{analysisResult.analysisData?.validationAnalysis ? '✅' : '❌'}</span>
+                      <span>검증 분석</span>
+                    </div>
+                  </div>
+                </div>
+
                 <details className="text-left bg-[var(--color-bg-secondary)] rounded-lg p-4">
                   <summary className="cursor-pointer font-medium text-[var(--color-text-primary)]">
-                    원시 분석 데이터 보기
+                    원시 분석 데이터 보기 (디버깅용)
                   </summary>
                   <pre className="mt-4 text-sm text-[var(--color-text-secondary)] whitespace-pre-wrap overflow-x-auto">
                     {JSON.stringify(analysisResult.analysisData, null, 2)}

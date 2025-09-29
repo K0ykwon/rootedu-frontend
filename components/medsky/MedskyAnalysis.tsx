@@ -35,6 +35,7 @@ export default function MedskyAnalysis({
           userId: session.user?.id || 'unknown',
           userName: session.user?.name || session.user?.email || '익명 사용자',
           analysis: {
+            // Legacy data
             extractedData: result.extractedData,
             validationAnalysis: result.validationAnalysis,
             textSections: result.textSections,
@@ -45,6 +46,18 @@ export default function MedskyAnalysis({
             summaryDraft: result.summaryDraft,
             manualInputs: result.manualInputs,
             consultantNotes: result.consultantNotes,
+
+            // AI Enhanced features
+            ai_keyword_analysis: result.ai_keyword_analysis,
+            ai_section_scoring: result.ai_section_scoring,
+            enhanced_academic_analysis: result.enhanced_academic_analysis,
+            ai_major_recommendations: result.ai_major_recommendations,
+            next_semester_plan: result.next_semester_plan,
+            ai_analysis_timestamp: result.ai_analysis_timestamp,
+            ai_model_versions: result.ai_model_versions,
+            ai_analysis_error: result.ai_analysis_error,
+
+            // Computed fields
             totalActivities: result.extractedData?.creativeActivities?.창의적체험활동상황?.length || 0,
             mainField: result.validationAnalysis?.blue_highlight?.Feedbacks?.[0]?.sentence || '미분류',
             recommendedCareer: result.validationAnalysis?.blue_line?.Feedbacks?.[0]?.sentence || '추가 분석 필요'

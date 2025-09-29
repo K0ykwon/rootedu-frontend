@@ -24,6 +24,13 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { useMedskyAnalysis } from '@/lib/medsky/analysisContext';
 
+// AI Enhanced Components
+import { AIKeywordAnalysisView } from './AIKeywordAnalysisView';
+import { AISectionScoringView } from './AISectionScoringView';
+import { EnhancedAcademicAnalysisView } from './EnhancedAcademicAnalysisView';
+import { AIMajorRecommendationsView } from './AIMajorRecommendationsView';
+import { NextSemesterPlanView } from './NextSemesterPlanView';
+
 export function MedskyAnalyzer({ className, onComplete, onStatusChange }: MedskyProps) {
   const { data: session, status: sessionStatus } = useSession();
   const { startAnalysis, updateProgress, completeAnalysis, failAnalysis } = useMedskyAnalysis();
@@ -33,7 +40,7 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [activeResultsTab, setActiveResultsTab] = useState<
-    'overview' | 'trends' | 'competency' | 'major' | 'keywords' | 'structured' | 'detailed' | 'summary'
+    'overview' | 'trends' | 'competency' | 'major' | 'keywords' | 'structured' | 'detailed' | 'summary' | 'ai-keywords' | 'ai-scoring' | 'ai-academic' | 'ai-majors' | 'ai-study-plan'
   >('overview');
 
   // Helper function to get progress percentage for stage
@@ -351,6 +358,11 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
                   <nav className="flex flex-wrap gap-2">
                     {[
                       { id: 'overview', name: '종합 개요', icon: '📊', description: '핵심 통계 및 인사이트' },
+                      { id: 'ai-keywords', name: 'AI 키워드', icon: '🤖', description: 'AI 문맥 키워드 추출', category: 'ai' },
+                      { id: 'ai-scoring', name: 'AI 점수', icon: '⚡', description: 'AI 다기준 섹션 채점', category: 'ai' },
+                      { id: 'ai-academic', name: 'AI 학업분석', icon: '🎓', description: 'AI 향상된 학업 분석', category: 'ai' },
+                      { id: 'ai-majors', name: 'AI 전공추천', icon: '🚀', description: 'AI 기반 전공 추천', category: 'ai' },
+                      { id: 'ai-study-plan', name: 'AI 학습계획', icon: '📋', description: 'AI 차학기 학습 계획', category: 'ai' },
                       { id: 'trends', name: '성적 추이', icon: '📈', description: '학기별 성적 변화' },
                       { id: 'competency', name: '역량 점수화', icon: '🎯', description: '역량별 점수와 백분위' },
                       { id: 'major', name: '전공 연계', icon: '🎓', description: '필수/권장 과목 충족도' },
@@ -364,9 +376,9 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
                         onClick={() => setActiveResultsTab(tab.id as any)}
                         className={`
                           flex-1 min-w-[120px] px-4 py-3 text-sm font-medium rounded-md transition-colors flex items-center justify-center space-x-2
-                          ${activeResultsTab === tab.id 
-                            ? 'bg-blue-500 text-white shadow-md' 
-                            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]'
+                          ${activeResultsTab === tab.id
+                            ? (tab.category === 'ai' ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-md' : 'bg-blue-500 text-white shadow-md')
+                            : (tab.category === 'ai' ? 'text-purple-600 hover:text-purple-800 hover:bg-purple-50 border border-purple-200' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]')
                           }
                   `}
                   title={tab.description}
@@ -422,6 +434,82 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
 
                   {activeResultsTab === 'summary' && (
                     <SummaryEditor summary={processingResult.summaryDraft} />
+                  )}
+
+                  {/* AI Enhanced Features */}
+                  {activeResultsTab === 'ai-keywords' && (
+                    <div className="space-y-6">
+                      {processingResult.ai_keyword_analysis ? (
+                        <AIKeywordAnalysisView data={processingResult.ai_keyword_analysis} />
+                      ) : (
+                        <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
+                          <div className="text-purple-600">
+                            <h3 className="text-lg font-semibold mb-2">AI 키워드 분석 결과가 없습니다</h3>
+                            <p className="text-sm">AI 키워드 추출이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+
+                  {activeResultsTab === 'ai-scoring' && (
+                    <div className="space-y-6">
+                      {processingResult.ai_section_scoring ? (
+                        <AISectionScoringView data={processingResult.ai_section_scoring} />
+                      ) : (
+                        <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
+                          <div className="text-purple-600">
+                            <h3 className="text-lg font-semibold mb-2">AI 섹션 채점 결과가 없습니다</h3>
+                            <p className="text-sm">AI 다기준 채점이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+
+                  {activeResultsTab === 'ai-academic' && (
+                    <div className="space-y-6">
+                      {processingResult.enhanced_academic_analysis ? (
+                        <EnhancedAcademicAnalysisView data={processingResult.enhanced_academic_analysis} />
+                      ) : (
+                        <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
+                          <div className="text-purple-600">
+                            <h3 className="text-lg font-semibold mb-2">AI 학업 분석 결과가 없습니다</h3>
+                            <p className="text-sm">AI 향상된 학업 분석이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+
+                  {activeResultsTab === 'ai-majors' && (
+                    <div className="space-y-6">
+                      {processingResult.ai_major_recommendations ? (
+                        <AIMajorRecommendationsView data={processingResult.ai_major_recommendations} />
+                      ) : (
+                        <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
+                          <div className="text-purple-600">
+                            <h3 className="text-lg font-semibold mb-2">AI 전공 추천 결과가 없습니다</h3>
+                            <p className="text-sm">AI 전공 추천이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+
+                  {activeResultsTab === 'ai-study-plan' && (
+                    <div className="space-y-6">
+                      {processingResult.next_semester_plan ? (
+                        <NextSemesterPlanView data={processingResult.next_semester_plan} />
+                      ) : (
+                        <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
+                          <div className="text-purple-600">
+                            <h3 className="text-lg font-semibold mb-2">AI 학습 계획 결과가 없습니다</h3>
+                            <p className="text-sm">AI 차학기 학습 계획이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
                   )}
                 </div>
         </div>

@@ -245,6 +245,30 @@ export interface ProcessingResult {
   consultantNotes?: ConsultantNoteBlock;
   /** Latest manual inputs captured on the dashboard */
   manualInputs?: ManualInputState;
+  /** AI-powered keyword analysis */
+  ai_keyword_analysis?: any;
+  /** AI-powered section scoring */
+  ai_section_scoring?: any;
+  /** Enhanced academic analysis */
+  enhanced_academic_analysis?: any;
+  /** AI major recommendations */
+  ai_major_recommendations?: any;
+  /** Next semester study plan */
+  next_semester_plan?: any;
+  /** AI analysis timestamp */
+  ai_analysis_timestamp?: string;
+  /** AI model versions used */
+  ai_model_versions?: {
+    keyword_model: string;
+    scoring_model: string;
+    recommendation_model: string;
+  };
+  /** AI analysis error information */
+  ai_analysis_error?: {
+    message: string;
+    timestamp: string;
+    stage: string;
+  };
 }
 
 // ===========================

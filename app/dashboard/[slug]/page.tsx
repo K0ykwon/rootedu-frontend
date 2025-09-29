@@ -490,8 +490,8 @@ export default function InfluencerDashboard() {
                 </div>
               </div>
               <div className="p-6">
-                {selectedAnalysis.analysisData?.textSections && 
-                 selectedAnalysis.analysisData?.extractedData && 
+                {selectedAnalysis.analysisData?.textSections &&
+                 selectedAnalysis.analysisData?.extractedData &&
                  selectedAnalysis.analysisData?.validationAnalysis ? (
                   <div className="space-y-6">
                     <div className="text-center mb-6">
@@ -502,6 +502,54 @@ export default function InfluencerDashboard() {
                         AI가 분석한 진로 역량, 구체적 노력, 연계성 등의 종합 결과입니다
                       </p>
                     </div>
+
+                    {/* Enhanced AI Features Section */}
+                    {(selectedAnalysis.analysisData?.ai_keyword_analysis ||
+                      selectedAnalysis.analysisData?.ai_section_scoring ||
+                      selectedAnalysis.analysisData?.enhanced_academic_analysis ||
+                      selectedAnalysis.analysisData?.ai_major_recommendations ||
+                      selectedAnalysis.analysisData?.next_semester_plan) && (
+                      <div className="mb-8 p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+                        <div className="flex items-center space-x-2 mb-4">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+                            <span className="text-white text-sm">🤖</span>
+                          </div>
+                          <h5 className="text-lg font-semibold text-gray-900">AI 향상된 분석</h5>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                          {selectedAnalysis.analysisData?.ai_keyword_analysis && (
+                            <div className="bg-white p-2 rounded border text-center">
+                              <span className="text-purple-600">🤖 키워드</span>
+                            </div>
+                          )}
+                          {selectedAnalysis.analysisData?.ai_section_scoring && (
+                            <div className="bg-white p-2 rounded border text-center">
+                              <span className="text-purple-600">⚡ 점수</span>
+                            </div>
+                          )}
+                          {selectedAnalysis.analysisData?.enhanced_academic_analysis && (
+                            <div className="bg-white p-2 rounded border text-center">
+                              <span className="text-purple-600">🎓 학업분석</span>
+                            </div>
+                          )}
+                          {selectedAnalysis.analysisData?.ai_major_recommendations && (
+                            <div className="bg-white p-2 rounded border text-center">
+                              <span className="text-purple-600">🚀 전공추천</span>
+                            </div>
+                          )}
+                          {selectedAnalysis.analysisData?.next_semester_plan && (
+                            <div className="bg-white p-2 rounded border text-center">
+                              <span className="text-purple-600">📋 학습계획</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <p className="text-xs text-gray-600 mt-2">
+                          💡 전체 AI 기능을 보려면 "새 탭에서 보기"를 클릭하세요
+                        </p>
+                      </div>
+                    )}
 
                     <ValidationResults
                       textSections={selectedAnalysis.analysisData.textSections}
