@@ -44,6 +44,7 @@ export interface CreativeActivities {
 
 
 export const AcademicDevelopmentSchema = z.object({
+  학기: z.string().nullable().describe("해당 교과학습발달상황의 학기 (예: 1학기, 2학기)"),
   과목: z.string().describe("해당 교과학습발달상황의 과목. 과목 column of table e.g - 수학, 과학, ..."),
   학점수: z.number().describe("해당 교과학습발달상황의 학점수. 학점수 column of table"),
   score_over_average: z.string().describe("해당 교과학습발달상황의 원점수/과목평균. 원점수/과목평균 column of table"),
@@ -68,6 +69,8 @@ export const DetailedAbilitiesSchema = z.object({
  * Academic Development Entry - 교과학습발달상황
  */
 export interface AcademicDevelopment {
+  /** Semester or term information (e.g., '1학기') */
+  학기: string | null;
   /** Subject name (e.g., 국어, 수학, 영어, 한국사, 통합사회, 통합과학) */
   과목: string;
   /** Credit points for the subject */
@@ -228,6 +231,20 @@ export interface ProcessingResult {
   extractedData?: ExtractedData;
   /** Validation analysis results */
   validationAnalysis?: ValidationAnalysis;
+  /** Academic trend analytics derived from coursework */
+  gradeTrends?: GradeTrendReport;
+  /** Competency scoring payload combining auto + consultant inputs */
+  competencyScores?: CompetencyScorePayload;
+  /** Major alignment analysis for the consultant-selected target */
+  majorAlignment?: MajorAlignmentReport;
+  /** Keyword clusters for quick scanning */
+  keywordMatrix?: KeywordMatrixEntry[];
+  /** Drafted summary content */
+  summaryDraft?: SummaryDraft;
+  /** Consultant-authored notes and overrides */
+  consultantNotes?: ConsultantNoteBlock;
+  /** Latest manual inputs captured on the dashboard */
+  manualInputs?: ManualInputState;
 }
 
 // ===========================
@@ -284,6 +301,187 @@ export interface ExtractDataResponse {
   success: boolean;
   extractedData?: ExtractedData;
   error?: string;
+}
+
+/**
+ * Grade trend data point for visualisation
+ */
+export interface GradeTrendPoint {
+  /** Semester label, e.g. "1-1" */
+  semester: string;
+  /** Student's score (if available) */
+  score?: number | null;
+  /** Average score from the grade table */
+  average?: number | null;
+  /** Score minus average (delta) */
+  delta?: number | null;
+}
+
+/**
+ * Grade trend series representing a subject grouping
+ */
+export interface GradeTrendSeries {
+  /** Identifier for the series (overall, core, etc.) */
+  id: string;
+  /** Human-readable name */
+  name: string;
+  /** Collection of semester points */
+  points: GradeTrendPoint[];
+  /** Optional notes about the series */
+  notes?: string;
+}
+
+/**
+ * Grade trend report containing multiple series
+ */
+export interface GradeTrendReport {
+  series: GradeTrendSeries[];
+  availableSemesters: string[];
+  generatedAt: string;
+}
+
+/**
+ * Single competency score information
+ */
+export interface CompetencyScore {
+  competency: string;
+  label: string;
+  autoScore?: number | null;
+  manualScore?: number | null;
+  normalized?: {
+    zScore?: number | null;
+    percentile?: number | null;
+  };
+  notes?: string;
+  lastUpdatedAt?: string;
+}
+
+/**
+ * Competency scoring payload for charts and reporting
+ */
+export interface CompetencyScorePayload {
+  scores: CompetencyScore[];
+  distribution?: {
+    mean: number;
+    stdDev: number;
+    label: string;
+  };
+  updatedAt: string;
+  source: 'auto' | 'mixed' | 'manual';
+}
+
+/**
+ * Requirement status for a specific subject in major alignment analysis
+ */
+export interface MajorRequirementStatus {
+  subject: string;
+  category: 'required' | 'recommended';
+  fulfilled: boolean;
+  evidence?: string[];
+  notes?: string;
+}
+
+/**
+ * Major alignment report describing gaps and fulfilled requirements
+ */
+export interface MajorAlignmentReport {
+  target?: {
+    university?: string;
+    major?: string;
+  };
+  requirements: MajorRequirementStatus[];
+  fulfilledCount: number;
+  totalCount: number;
+  recommendations: string[];
+  generatedAt: string;
+}
+
+/**
+ * Keyword reference for traceability
+ */
+export interface KeywordReference {
+  section: keyof TextSections | 'validation';
+  sentence: string;
+  competency?: string;
+}
+
+/**
+ * Keyword entry with competency mapping
+ */
+export interface KeywordEntry {
+  term: string;
+  competency?: string;
+  occurrence: number;
+  references: KeywordReference[];
+  origin: 'ai' | 'consultant';
+}
+
+/**
+ * Keyword matrix entry grouped by grade/subject
+ */
+export interface KeywordMatrixEntry {
+  grade: string;
+  subject: string;
+  entries: KeywordEntry[];
+}
+
+/**
+ * Summary draft container with AI + consultant revisions
+ */
+export interface SummaryDraft {
+  aiDraft: string;
+  consultantDraft?: string;
+  strengths?: string[];
+  improvements?: string[];
+  recommendations?: string[];
+  updatedAt: string;
+}
+
+/**
+ * Consultant-authored notes tied to report sections
+ */
+export interface ConsultantNote {
+  section: string;
+  content: string;
+  updatedAt: string;
+  authorId?: string;
+}
+
+export interface ConsultantNoteBlock {
+  notes: ConsultantNote[];
+  updatedAt: string;
+}
+
+/**
+ * Manual competency input shape
+ */
+export interface ManualCompetencyInput {
+  competency: string;
+  score: number;
+  notes?: string;
+  updatedAt: string;
+}
+
+/**
+ * Manual keyword override
+ */
+export interface KeywordOverride {
+  term: string;
+  competency?: string;
+  action: 'add' | 'remove' | 'update';
+  updatedAt: string;
+}
+
+/**
+ * Manual inputs captured from consultant UI
+ */
+export interface ManualInputState {
+  targetUniversity?: string;
+  targetMajor?: string;
+  competencyInputs?: ManualCompetencyInput[];
+  summaryOverride?: string;
+  keywordOverrides?: KeywordOverride[];
+  updatedAt?: string;
 }
 
 /**

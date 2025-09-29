@@ -176,6 +176,15 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
    - Click on "🏥 생기부 분석" tab
    - Upload a PDF student record file
 
+5. **Consultant Editing Overview**
+   - 분석 결과 페이지는 이제 `성적 추이 → 역량 점수화 → 전공 연계 → 키워드 맵 → 세부 분석 → 총평` 순으로 탭이 구성됩니다.
+   - 컨설턴트는 각 탭에서 수동 입력을 즉시 수정할 수 있으며 모든 수정 사항은 `/api/medsky/analysis/:sessionId/...` 엔드포인트를 통해 저장됩니다.
+     - `manual-scores`: 역량 점수 및 메모 업데이트
+     - `target-major`: 목표 대학/학과 설정 → 전공 연계 분석 자동 갱신
+     - `keywords`: 키워드 ↔ 역량 분류 덮어쓰기
+     - `summary`: 총평 초안에 대한 컨설턴트 수정본 저장
+   - 모든 수동 입력은 Redis 세션에 저장되고 `finalizeReportAnalytics` 단계에서 보고서 재생성을 트리거합니다.
+
 ### For Users (알약툰 Page)
 
 1. **Navigate to Analysis Tab**

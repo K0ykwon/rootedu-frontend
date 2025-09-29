@@ -20,14 +20,20 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <Link 
-              href="/study-proof" 
+            <Link
+              href="/study-plan"
+              className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+            >
+              📚 학습 계획
+            </Link>
+            <Link
+              href="/study-proof"
               className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
             >
               🔥 공부 인증
             </Link>
-            <Link 
-              href="/influencers" 
+            <Link
+              href="/influencers"
               className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
             >
               인플루언서 탐색

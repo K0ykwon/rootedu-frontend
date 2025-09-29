@@ -82,6 +82,7 @@ OUTPUT: Return a JSON object matching this exact structure:
 {
   "교과학습발달상황": [
     {
+      "학기": "string - semester label (예: '1학기', '2학기'). 추론 가능하면 반드시 기입",
       "과목": "string - subject name (e.g., 국어, 수학, 영어, 한국사, 통합사회, 통합과학, etc.)",
       "학점수": "integer - credit points for the subject",
       "score_over_average": "string - original score/class average format (e.g., '82/69.2(13.6)')",
@@ -93,8 +94,8 @@ OUTPUT: Return a JSON object matching this exact structure:
 \`\`\`
 
 EXTRACTION RULES:
-1. Look for grade tables with columns: 교과, 과목, 학점수, 원점수/과목평균, 성취도, 석차등급
-2. Extract each subject as a separate entry
+1. Look for grade tables with columns: 학기, 교과, 과목, 학점수, 원점수/과목평균, 성취도, 석차등급
+2. Extract each subject as a separate entry and set 학기 (e.g., '1학기'). If not explicitly given, infer from table grouping/order.
 3. For 학점수: Convert to integer
 4. For score_over_average: Keep exact format with scores, averages, and standard deviations
 5. Skip header rows, semester labels, and summary rows
@@ -114,6 +115,7 @@ Extract as:
 {
   "교과학습발달상황": [
     {
+      "학기": "1학기",
       "과목": "국어",
       "학점수": 4,
       "score_over_average": "82/69.2(13.6)",
@@ -121,6 +123,7 @@ Extract as:
       "석차등급": "3"
     },
     {
+      "학기": "1학기",
       "과목": "수학", 
       "학점수": 4,
       "score_over_average": "74/60.7(20.1)",
@@ -390,6 +393,37 @@ export const RED_CHECK_PROMPT = `
 - 스키마: { "type": "red_check", "Feedbacks": [ { "sentence": string, "feedback": string } ] }
 - 일치 문장이 없으면 "Feedbacks": []로 반환.
 - sentence는 원문과 완전 일치, feedback은 평가가 불가능한 구체 사유를 1-2문장으로 간결히 서술(한국어).
+`;
+
+/**
+ * Summary draft generation prompt
+ */
+export const SUMMARY_DRAFT_PROMPT = `
+You are a professional Korean educational consultant. Based on the structured inputs, craft a concise report summary highlighting strengths, improvement areas, and next steps.
+
+INPUT (JSON fields may be empty):
+- gradeTrends: array of series with semester scores and deltas
+- competencyScores: list of competencies with auto/manual scores
+- majorAlignment: requirement statuses and recommendations
+- keywordMatrix: keyword clusters grouped by subject
+- consultantNotes: optional notes to emphasise in the summary
+
+RESPONSE FORMAT:
+Return pure JSON, no markdown:
+{
+  "summary": {
+    "strengths": ["string", "string"],
+    "improvements": ["string"],
+    "recommendations": ["string"],
+    "draft": "paragraph"
+  }
+}
+
+GUIDELINES:
+1. Each string in arrays must be ≤120 Korean characters and reference concrete evidence where possible.
+2. The draft paragraph should weave together strengths → improvements → recommended actions in ≤3 sentences.
+3. If data is missing, acknowledge briefly rather than fabricating.
+4. Keep tone supportive yet objective, suitable for consultant handover.
 `;
 
 // ===========================

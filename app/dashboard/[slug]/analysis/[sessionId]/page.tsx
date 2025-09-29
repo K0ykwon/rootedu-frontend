@@ -9,6 +9,12 @@ import Button from '../../../../../components/ui/Button';
 import { ValidationResults } from '../../../../../components/medsky/ValidationResults';
 import { AnalysisOverview } from '../../../../../components/medsky/AnalysisOverview';
 import { StructuredDataTabs } from '../../../../../components/medsky/StructuredDataTabs';
+import { GradeTrendChart } from '../../../../../components/medsky/GradeTrendChart';
+import { CompetencyDistribution } from '../../../../../components/medsky/CompetencyDistribution';
+import { MajorAlignmentMatrix } from '../../../../../components/medsky/MajorAlignmentMatrix';
+import { KeywordMatrixView } from '../../../../../components/medsky/KeywordMatrixView';
+import { SummaryEditor } from '../../../../../components/medsky/SummaryEditor';
+import { ManualCompetencyInput, KeywordOverride } from '../../../../../types/medsky';
 
 interface AnalysisResult {
   sessionId: string;
@@ -32,7 +38,51 @@ export default function AnalysisDetailPage() {
   const [loading, setLoading] = useState(true);
   const [hasLoadedResult, setHasLoadedResult] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeResultsTab, setActiveResultsTab] = useState<'overview' | 'structured' | 'detailed'>('overview');
+  const [activeResultsTab, setActiveResultsTab] = useState<
+    'overview' | 'trends' | 'competency' | 'major' | 'keywords' | 'structured' | 'detailed' | 'summary'
+  >('overview');
+
+  const patchAnalysis = async (endpoint: string, payload: unknown, successMessage: string) => {
+    try {
+      const response = await fetch(`/api/medsky/analysis/${sessionId}/${endpoint}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.error || '요청이 실패했습니다');
+      }
+
+      const data = await response.json();
+      if (data?.result) {
+        setAnalysisResult((prev) => (prev ? { ...prev, analysisData: data.result } : prev));
+      }
+      toast.success(successMessage);
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : '업데이트에 실패했습니다.');
+    }
+  };
+
+  const handleSaveScores = async (inputs: ManualCompetencyInput[]) => {
+    await patchAnalysis('manual-scores', { scores: inputs }, '역량 점수가 저장되었습니다.');
+  };
+
+  const handleUpdateMajor = async (target: { targetUniversity?: string; targetMajor?: string }) => {
+    await patchAnalysis('target-major', target, '목표 전공 정보가 업데이트되었습니다.');
+  };
+
+  const handleSaveKeywords = async (overrides: KeywordOverride[]) => {
+    await patchAnalysis('keywords', { overrides }, '키워드 분류가 저장되었습니다.');
+  };
+
+  const handleSaveSummary = async (draft: string) => {
+    await patchAnalysis('summary', { consultantDraft: draft }, '총평이 저장되었습니다.');
+  };
 
   // Check if user has access to this analysis
   useEffect(() => {
@@ -186,17 +236,22 @@ export default function AnalysisDetailPage() {
 
                 {/* Results Tab Navigation */}
                 <Card className="p-1" glass={false}>
-                  <nav className="flex space-x-1">
+                  <nav className="flex flex-wrap gap-2">
                     {[
                       { id: 'overview', name: '종합 개요', icon: '📊', description: '핵심 통계 및 인사이트' },
-                      { id: 'structured', name: '구조화된 데이터', icon: '📋', description: '정리된 활동 및 성취 정보' },
-                      { id: 'detailed', name: '상세 분석', icon: '🔍', description: '원문 기반 세부 피드백' }
+                      { id: 'trends', name: '성적 추이', icon: '📈', description: '학기별 성적 변화' },
+                      { id: 'competency', name: '역량 점수화', icon: '🎯', description: '역량별 점수와 백분위' },
+                      { id: 'major', name: '전공 연계', icon: '🎓', description: '필수/권장 과목 충족도' },
+                      { id: 'keywords', name: '키워드 맵', icon: '🔑', description: '세특 키워드 요약' },
+                      { id: 'structured', name: '구조화 데이터', icon: '📋', description: '정리된 활동 및 성취 정보' },
+                      { id: 'detailed', name: '세부 분석', icon: '🔍', description: '원문 기반 세부 피드백' },
+                      { id: 'summary', name: '총평', icon: '📝', description: 'AI 초안 & 편집' },
                     ].map((tab) => (
                       <button
                         key={tab.id}
                         onClick={() => setActiveResultsTab(tab.id as any)}
                         className={`
-                          flex-1 px-4 py-3 text-sm font-medium rounded-md transition-colors flex items-center justify-center space-x-2
+                          flex-1 min-w-[140px] px-4 py-3 text-sm font-medium rounded-md transition-colors flex items-center justify-center space-x-2
                           ${activeResultsTab === tab.id 
                             ? 'bg-blue-500 text-white shadow-md' 
                             : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]'
@@ -205,19 +260,47 @@ export default function AnalysisDetailPage() {
                         title={tab.description}
                       >
                         <span>{tab.icon}</span>
-                        <span className="hidden md:inline">{tab.name}</span>
-                        <span className="md:hidden">{tab.name.split(' ')[0]}</span>
+                        <span className="hidden lg:inline">{tab.name}</span>
+                        <span className="lg:hidden">{tab.name.split(' ')[0]}</span>
                       </button>
                     ))}
                   </nav>
                 </Card>
 
                 {/* Tab Content */}
-                <div className="min-h-[600px]">
+                <div className="min-h-[600px] space-y-4">
                   {activeResultsTab === 'overview' && (
                     <AnalysisOverview
                       extractedData={analysisResult.analysisData.extractedData}
                       validationAnalysis={analysisResult.analysisData.validationAnalysis}
+                    />
+                  )}
+
+                  {activeResultsTab === 'trends' && (
+                    <GradeTrendChart report={analysisResult.analysisData.gradeTrends} />
+                  )}
+
+                  {activeResultsTab === 'competency' && (
+                    <CompetencyDistribution
+                      data={analysisResult.analysisData.competencyScores}
+                      editable
+                      onSave={handleSaveScores}
+                    />
+                  )}
+
+                  {activeResultsTab === 'major' && (
+                    <MajorAlignmentMatrix
+                      report={analysisResult.analysisData.majorAlignment}
+                      editable
+                      onUpdateTarget={handleUpdateMajor}
+                    />
+                  )}
+
+                  {activeResultsTab === 'keywords' && (
+                    <KeywordMatrixView
+                      matrix={analysisResult.analysisData.keywordMatrix}
+                      editable
+                      onSaveOverrides={handleSaveKeywords}
                     />
                   )}
 
@@ -233,36 +316,17 @@ export default function AnalysisDetailPage() {
                       extractedData={analysisResult.analysisData.extractedData}
                       validationAnalysis={analysisResult.analysisData.validationAnalysis}
                       activeFilters={['blue_highlight', 'red_line', 'blue_line', 'black_line', 'red_check']}
-                      onFilterChange={() => {}} // Read-only mode for dedicated page
+                      onFilterChange={() => {}}
                     />
                   )}
-                </div>
 
-                {/* Summary Section */}
-                <div className="mt-8 bg-[var(--color-bg-secondary)] rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">
-                    분석 요약
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-[var(--color-primary-500)] mb-1">
-                        {analysisResult.analysisData?.totalActivities || 0}
-                      </div>
-                      <div className="text-sm text-[var(--color-text-secondary)]">총 활동 수</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-medium text-[var(--color-text-primary)] mb-1">
-                        {analysisResult.analysisData?.mainField || '미분류'}
-                      </div>
-                      <div className="text-sm text-[var(--color-text-secondary)]">주요 관심 분야</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-lg font-medium text-[var(--color-text-primary)] mb-1">
-                        {analysisResult.analysisData?.recommendedCareer || '추가 분석 필요'}
-                      </div>
-                      <div className="text-sm text-[var(--color-text-secondary)]">추천 진로</div>
-                    </div>
-                  </div>
+                  {activeResultsTab === 'summary' && (
+                    <SummaryEditor
+                      summary={analysisResult.analysisData.summaryDraft}
+                      editable
+                      onSave={handleSaveSummary}
+                    />
+                  )}
                 </div>
 
                 {/* Generated Profile Section */}

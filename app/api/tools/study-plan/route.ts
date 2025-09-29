@@ -55,10 +55,10 @@ export async function POST(request: NextRequest) {
     ];
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-mini',
       messages,
-      max_tokens: 1000,
-      temperature: 0.7,
+      // max_tokens: 1000,
+      temperature: 0,
     });
 
     const response = completion.choices[0]?.message?.content || '죄송합니다. 응답을 생성할 수 없습니다.';

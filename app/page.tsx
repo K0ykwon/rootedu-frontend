@@ -2,7 +2,10 @@ import HeroSection from '../components/ui/HeroSection';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import PopularInfluencers from '../components/home/PopularInfluencers';
+import StudyPlanPrompt from '../components/StudyPlanPrompt';
 import Link from 'next/link';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../lib/auth';
 import { getRedisClient } from '../lib/redis';
 
 // Fetch real influencer data from Redis
@@ -190,9 +193,12 @@ async function getPopularProducts() {
 }
 
 export default async function Home() {
+  const session = await getServerSession(authOptions);
   const popularInfluencers = await getPopularInfluencers();
   const popularCourses = await getPopularProducts();
-  
+
+  const userName = session?.user?.name || (session?.user as any)?.userId || '학생';
+
   return (
     <div className="space-y-16 pb-16 premium-gradient noise-texture relative">
       {/* Hero Section */}
@@ -206,6 +212,13 @@ export default async function Home() {
           }
         }}
       />
+
+      {/* Study Plan Prompt - Show only if user is logged in */}
+      {session && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <StudyPlanPrompt userName={userName} />
+        </section>
+      )}
 
       {/* Study Proof Banner */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">

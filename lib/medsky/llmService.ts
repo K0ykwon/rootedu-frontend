@@ -7,8 +7,9 @@
  */
 
 import OpenAI from "openai";
-import { zodTextFormat, zodResponseFormat } from "openai/helpers/zod";
+import { zodResponseFormat } from "openai/helpers/zod";
 import { Agent, setGlobalDispatcher } from 'undici';
+import { z } from 'zod';
 import { 
   CreativeActivities, 
   AcademicDevelopments, 
@@ -20,9 +21,32 @@ import {
   CreativeActivitiesSchema,
   AcademicDevelopmentsSchema,
   DetailedAbilitiesSchema,
-  ValidationResultSchema
+  ValidationResultSchema,
+  GradeTrendReport,
+  CompetencyScorePayload,
+  MajorAlignmentReport,
+  KeywordMatrixEntry,
+  ConsultantNoteBlock,
+  SummaryDraft
 } from '@/types/medsky';
-import { getExtractionPrompt, getValidationPrompt } from './prompts';
+import { getExtractionPrompt, getValidationPrompt, SUMMARY_DRAFT_PROMPT } from './prompts';
+
+const SummaryDraftSchema = z.object({
+  summary: z.object({
+    strengths: z.array(z.string()).default([]),
+    improvements: z.array(z.string()).default([]),
+    recommendations: z.array(z.string()).default([]),
+    draft: z.string(),
+  }),
+});
+
+export interface SummaryDraftInput {
+  gradeTrends?: GradeTrendReport;
+  competencyScores?: CompetencyScorePayload;
+  majorAlignment?: MajorAlignmentReport;
+  keywordMatrix?: KeywordMatrixEntry[];
+  consultantNotes?: ConsultantNoteBlock;
+}
 
 // ===========================
 // Configuration (functional style)
@@ -38,22 +62,54 @@ try {
 interface LLMConfig {
   apiKey: string;
   model: string;
+  baseUrl?: string;
 }
 
-const DEFAULT_CONFIG: Partial<LLMConfig> = {
-  model: 'openai/gpt-5-mini',
-};
+const DEFAULT_OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
 function buildConfig(config: Partial<LLMConfig>): LLMConfig {
-  if (!config.apiKey) {
+  const apiKey = config.apiKey ?? process.env.OPENAI_API_KEY ?? '';
+  if (!apiKey) {
     throw new Error('OpenAI API key is required');
   }
-  return { ...DEFAULT_CONFIG, ...config } as LLMConfig;
+
+  const model = config.model ?? DEFAULT_OPENAI_MODEL;
+
+  // Only use OpenAI - no baseUrl needed (will use default)
+  return {
+    apiKey,
+    baseUrl: undefined,
+    model,
+  };
 }
 
-// Important: Do NOT singleton-cache the OpenAI client here.
-// The SDK may gate concurrency per client; creating a new client per request
-// allows true parallelism while still sharing the global Undici dispatcher.
+let cachedClient: {
+  apiKey: string;
+  baseUrl?: string;
+  client: OpenAI;
+} | null = null;
+
+function createResponsesClient(config: LLMConfig): OpenAI {
+  if (
+    cachedClient &&
+    cachedClient.apiKey === config.apiKey
+  ) {
+    return cachedClient.client;
+  }
+
+  const client = new OpenAI({
+    apiKey: config.apiKey,
+    // Let OpenAI SDK use its default baseURL
+  });
+
+  cachedClient = {
+    apiKey: config.apiKey,
+    baseUrl: undefined,
+    client,
+  };
+
+  return client;
+}
 
 async function parseStructuredOutput<T>(
   config: Partial<LLMConfig>,
@@ -63,48 +119,49 @@ async function parseStructuredOutput<T>(
   schemaName: string
 ): Promise<T> {
   const resolved = buildConfig(config);
-  const openai = new OpenAI({ apiKey: process.env.OPENROUTER_API_KEY, baseURL: process.env.OPENROUTER_BASE_URL });
+  const openai = createResponsesClient(resolved);
 
-  // Toggle between Chat Completions structured output and Responses API via env
-  const useChatStructured = String(process.env.MEDSKY_USE_CHAT_STRUCTURED || '').toLowerCase();
-  const preferChat = useChatStructured === '1' || useChatStructured === 'true' || useChatStructured === 'yes';
-
-  if (preferChat) {
-    console.log('Using Chat Completions structured output');
-    const completion = await openai.chat.completions.create({
-      model: resolved.model!,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userContent }
-      ],
-      response_format: zodResponseFormat(zodSchema as any, schemaName),
-    });
-    const message: any = completion.choices?.[0]?.message;
-    const content = message?.content;
-    if (typeof content === 'string') {
-      return JSON.parse(content) as T;
-    }
-    if (Array.isArray(content)) {
-      const text = content.map((part: any) => (typeof part === 'string' ? part : part?.text || '')).join('');
-      if (text) {
-        return JSON.parse(text) as T;
-      }
-    }
-    throw new Error('Failed to parse structured JSON content from chat completion');
-  }
-
-  // Fallback to Responses API structured parsing
-  const response = await openai.responses.parse({
-    model: resolved.model!,
-    input: [
+  const response = await openai.chat.completions.parse({
+    model: resolved.model,
+    messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userContent }
     ],
-    text: {
-      format: zodTextFormat(zodSchema as any, schemaName),
-    },
+    response_format: zodResponseFormat(zodSchema as any, schemaName),
   });
-  return response.output_parsed as T;
+
+  const message = response.choices[0]?.message;
+  if (!message?.parsed) {
+    throw new Error('Failed to parse structured output');
+  }
+
+  return message.parsed as T;
+}
+
+export async function runParallelLLMTasks<T>(
+  factories: Array<() => Promise<T>>,
+  concurrency = 5
+): Promise<PromiseSettledResult<T>[]> {
+  if (factories.length === 0) return [];
+  const results: PromiseSettledResult<T>[] = new Array(factories.length);
+  let nextIndex = 0;
+
+  async function worker() {
+    while (true) {
+      const current = nextIndex++;
+      if (current >= factories.length) break;
+      try {
+        const value = await factories[current]();
+        results[current] = { status: 'fulfilled', value };
+      } catch (error) {
+        results[current] = { status: 'rejected', reason: error };
+      }
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, factories.length) }, () => worker());
+  await Promise.all(workers);
+  return results;
 }
 
 // (Removed runWithLimit helper to keep implementation minimal)
@@ -413,6 +470,47 @@ export async function runComprehensiveValidation(
   }
 }
 
+/**
+ * Generate summary draft combining analytics and consultant notes
+ */
+export async function generateSummaryDraft(
+  input: SummaryDraftInput,
+  config: Partial<LLMConfig>
+): Promise<SummaryDraft> {
+  try {
+    const payload = JSON.stringify({
+      gradeTrends: input.gradeTrends ?? null,
+      competencyScores: input.competencyScores ?? null,
+      majorAlignment: input.majorAlignment ?? null,
+      keywordMatrix: input.keywordMatrix ?? null,
+      consultantNotes: input.consultantNotes ?? null,
+    });
+
+    const result = await parseStructuredOutput<z.infer<typeof SummaryDraftSchema>>(
+      config,
+      SUMMARY_DRAFT_PROMPT,
+      payload,
+      SummaryDraftSchema,
+      'summary_draft'
+    );
+
+    const summary = result.summary;
+    return {
+      aiDraft: summary.draft,
+      strengths: summary.strengths,
+      improvements: summary.improvements,
+      recommendations: summary.recommendations,
+      updatedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    throw new MedskyError(
+      `Failed to generate summary draft: ${error}`,
+      ERROR_CODES.LLM_EXTRACTION_FAILED,
+      'validating'
+    );
+  }
+}
+
 // ===========================
 // Utility Functions
 // ===========================
@@ -423,7 +521,8 @@ export async function runComprehensiveValidation(
 export function createLLMConfig(): Partial<LLMConfig> {
   return {
     apiKey: process.env.OPENAI_API_KEY || '',
-    model: process.env.OPENAI_MODEL || DEFAULT_CONFIG.model,
+    baseUrl: undefined, // Use OpenAI default
+    model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
   };
 }
 

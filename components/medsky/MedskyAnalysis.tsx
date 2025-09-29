@@ -38,6 +38,13 @@ export default function MedskyAnalysis({
             extractedData: result.extractedData,
             validationAnalysis: result.validationAnalysis,
             textSections: result.textSections,
+            gradeTrends: result.gradeTrends,
+            competencyScores: result.competencyScores,
+            majorAlignment: result.majorAlignment,
+            keywordMatrix: result.keywordMatrix,
+            summaryDraft: result.summaryDraft,
+            manualInputs: result.manualInputs,
+            consultantNotes: result.consultantNotes,
             totalActivities: result.extractedData?.creativeActivities?.창의적체험활동상황?.length || 0,
             mainField: result.validationAnalysis?.blue_highlight?.Feedbacks?.[0]?.sentence || '미분류',
             recommendedCareer: result.validationAnalysis?.blue_line?.Feedbacks?.[0]?.sentence || '추가 분석 필요'

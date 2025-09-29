@@ -7,20 +7,34 @@
  * This service provides both individual step functions and a complete processing pipeline.
  */
 
-import { 
-  ProcessingResult, 
-  ProcessingStatus, 
-  TextSections, 
-  ExtractedData, 
+import {
+  ProcessingResult,
+  ProcessingStatus,
+  TextSections,
+  ExtractedData,
   ValidationAnalysis,
   MedskyError,
   ERROR_CODES,
-  ProcessingStage 
+  ProcessingStage,
+  ManualInputState,
+  ManualCompetencyInput,
+  KeywordOverride,
 } from '@/types/medsky';
 import { getRedisClient } from '@/lib/redis';
 import { parsePDFFile, createPDFConfig, validateStudentRecord } from './pdfService';
 import { parseAllSections, cleanAllSections, validateParsedSections } from './textParser';
-import { extractAllData, runComprehensiveValidation, createLLMConfig, validateLLMConfig } from './llmService';
+import {
+  extractAllData,
+  runComprehensiveValidation,
+  createLLMConfig,
+  validateLLMConfig,
+  generateSummaryDraft,
+  SummaryDraftInput,
+} from './llmService';
+import { buildGradeTrendReport } from './transformers/gradeTrends';
+import { buildCompetencyScores } from './transformers/competencyScores';
+import { buildMajorAlignment } from './transformers/majorAlignment';
+import { buildKeywordMatrix } from './transformers/keywordMatrix';
 
 // ===========================
 // Session Management
@@ -77,6 +91,12 @@ async function storeAnalysisForAdmin(sessionId: string, session: ProcessingSessi
         textSections: session.result.textSections,
         extractedData: session.result.extractedData,
         validationAnalysis: session.result.validationAnalysis,
+        gradeTrends: session.result.gradeTrends,
+        competencyScores: session.result.competencyScores,
+        majorAlignment: session.result.majorAlignment,
+        keywordMatrix: session.result.keywordMatrix,
+        summaryDraft: session.result.summaryDraft,
+        consultantNotes: session.result.consultantNotes,
         status: session.result.status
       },
       processingTime: session.lastUpdate.getTime() - session.startTime.getTime()
@@ -203,6 +223,73 @@ function markCompletedIfAllDone(sessionId: string): void {
   }
 }
 
+async function finalizeReportAnalytics(
+  sessionId: string,
+  extractedData: ExtractedData | undefined,
+  validationAnalysis: ValidationAnalysis | undefined
+): Promise<void> {
+  if (!extractedData || !validationAnalysis) {
+    return;
+  }
+
+  const session = getSession(sessionId);
+  const manualInputs = session?.result.manualInputs;
+  const consultantNotes = session?.result.consultantNotes;
+
+  const gradeTrends = buildGradeTrendReport(extractedData);
+  const competencyScores = buildCompetencyScores(validationAnalysis, manualInputs);
+  const majorAlignment = buildMajorAlignment(extractedData, manualInputs);
+  const keywordMatrix = buildKeywordMatrix(extractedData, manualInputs);
+
+  const analyticsUpdates: Partial<ProcessingResult> = {};
+  if (gradeTrends) analyticsUpdates.gradeTrends = gradeTrends;
+  if (competencyScores) analyticsUpdates.competencyScores = competencyScores;
+  if (majorAlignment) analyticsUpdates.majorAlignment = majorAlignment;
+  if (keywordMatrix) analyticsUpdates.keywordMatrix = keywordMatrix;
+
+  if (Object.keys(analyticsUpdates).length > 0) {
+    updateSessionResult(sessionId, analyticsUpdates);
+  }
+
+  try {
+    const llmConfig = createLLMConfig();
+    const configErrors = validateLLMConfig(llmConfig);
+    if (configErrors.length > 0) {
+      throw new Error(`LLM config invalid: ${configErrors.join(', ')}`);
+    }
+
+    const summaryInput: SummaryDraftInput = {
+      gradeTrends,
+      competencyScores,
+      majorAlignment,
+      keywordMatrix,
+      consultantNotes,
+    };
+
+    const summary = await generateSummaryDraft(summaryInput, llmConfig);
+    updateSessionResult(sessionId, { summaryDraft: summary });
+  } catch (error) {
+    console.warn('Summary draft generation failed:', error);
+    updateSessionResult(sessionId, {
+      summaryDraft: {
+        aiDraft: '자동 요약을 생성하지 못했습니다. 수동으로 요약을 입력해주세요.',
+        strengths: [],
+        improvements: [],
+        recommendations: [],
+        updatedAt: new Date().toISOString(),
+      },
+    });
+  }
+
+  markCompletedIfAllDone(sessionId);
+}
+
+async function recomputeAnalytics(sessionId: string): Promise<ProcessingResult> {
+  const currentResult = await getOrLoadSessionResult(sessionId);
+  await finalizeReportAnalytics(sessionId, currentResult.extractedData, currentResult.validationAnalysis);
+  return await getOrLoadSessionResult(sessionId);
+}
+
 /**
  * Get session data
  */
@@ -213,6 +300,16 @@ export function getSession(sessionId: string): ProcessingSession | null {
   // Consumers should call getProcessingStatus/getProcessingResult which handle absence gracefully.
   void loadSessionFromStore(sessionId);
   return sessions.get(sessionId) || null;
+}
+
+async function getOrLoadSessionResult(sessionId: string): Promise<ProcessingResult> {
+  const session = sessions.get(sessionId);
+  if (session) return session.result;
+  const loaded = await loadSessionFromStore(sessionId);
+  if (!loaded) {
+    throw new MedskyError('Session not found', ERROR_CODES.UNKNOWN_ERROR);
+  }
+  return loaded.result;
 }
 
 /**
@@ -521,8 +618,8 @@ export async function processCompleteAnalysis(
       })()
     ]);
 
-    // Mark as completed when both are done
-    markCompletedIfAllDone(sessionId);
+    await finalizeReportAnalytics(sessionId, extractedData, validationAnalysis);
+
     if (onStatusUpdate) {
       const session = getSession(sessionId);
       if (session) onStatusUpdate(session.status);
@@ -577,19 +674,20 @@ export function startProcessingPipeline(sessionId: string, file: File, userInfo?
       onStatusUpdate?.(getProcessingStatus(sessionId)!);
 
       // Steps 3 & 4 in parallel: extraction and validation
-      await Promise.all([
+      const [extractedData, validationAnalysis] = await Promise.all([
         (async () => {
-          await processDataExtraction(textSections, sessionId);
+          const data = await processDataExtraction(textSections, sessionId);
           onStatusUpdate?.(getProcessingStatus(sessionId)!);
+          return data;
         })(),
         (async () => {
-          await processValidation(textSections, sessionId);
+          const validation = await processValidation(textSections, sessionId);
           onStatusUpdate?.(getProcessingStatus(sessionId)!);
+          return validation;
         })()
       ]);
 
-      // Mark as completed when both are done
-      markCompletedIfAllDone(sessionId);
+      await finalizeReportAnalytics(sessionId, extractedData, validationAnalysis);
       onStatusUpdate?.(getProcessingStatus(sessionId)!);
     } catch (error) {
       // Errors are already recorded in session status by each step
@@ -712,6 +810,77 @@ export async function retryProcessing(
   }
 }
 
+export async function updateManualCompetencyScores(
+  sessionId: string,
+  inputs: ManualCompetencyInput[]
+): Promise<ProcessingResult> {
+  const now = new Date().toISOString();
+  const current = await getOrLoadSessionResult(sessionId);
+  const manualInputs: ManualInputState = {
+    ...(current.manualInputs ?? {}),
+    competencyInputs: inputs,
+    updatedAt: now,
+  };
+  updateSessionResult(sessionId, { manualInputs });
+  return await recomputeAnalytics(sessionId);
+}
+
+export async function updateManualTargetMajor(
+  sessionId: string,
+  payload: { targetUniversity?: string; targetMajor?: string }
+): Promise<ProcessingResult> {
+  const now = new Date().toISOString();
+  const current = await getOrLoadSessionResult(sessionId);
+  const manualInputs: ManualInputState = {
+    ...(current.manualInputs ?? {}),
+    targetUniversity: payload.targetUniversity ?? current.manualInputs?.targetUniversity,
+    targetMajor: payload.targetMajor ?? current.manualInputs?.targetMajor,
+    updatedAt: now,
+  };
+  updateSessionResult(sessionId, { manualInputs });
+  return await recomputeAnalytics(sessionId);
+}
+
+export async function updateKeywordOverridesForSession(
+  sessionId: string,
+  overrides: KeywordOverride[]
+): Promise<ProcessingResult> {
+  const now = new Date().toISOString();
+  const current = await getOrLoadSessionResult(sessionId);
+  const manualInputs: ManualInputState = {
+    ...(current.manualInputs ?? {}),
+    keywordOverrides: overrides,
+    updatedAt: now,
+  };
+  updateSessionResult(sessionId, { manualInputs });
+  return await recomputeAnalytics(sessionId);
+}
+
+export async function updateSummaryOverride(
+  sessionId: string,
+  consultantDraft: string
+): Promise<ProcessingResult> {
+  const now = new Date().toISOString();
+  const current = await getOrLoadSessionResult(sessionId);
+  const summary = current.summaryDraft ?? {
+    aiDraft: '',
+    strengths: [],
+    improvements: [],
+    recommendations: [],
+    updatedAt: now,
+  };
+
+  updateSessionResult(sessionId, {
+    summaryDraft: {
+      ...summary,
+      consultantDraft,
+      updatedAt: now,
+    },
+  });
+
+  return await getOrLoadSessionResult(sessionId);
+}
+
 // ===========================
 // Configuration Validation
 // ===========================
@@ -728,8 +897,8 @@ export function validateConfiguration(): { isValid: boolean; errors: string[] } 
   }
 
   // Check LLM config
-  if (!process.env.OPENAI_API_KEY) {
-    errors.push('OPENAI_API_KEY environment variable is required');
+  if (!process.env.OPENAI_API_KEY && !process.env.OPENROUTER_API_KEY) {
+    errors.push('Either OPENAI_API_KEY or OPENROUTER_API_KEY environment variable is required');
   }
 
   return {
