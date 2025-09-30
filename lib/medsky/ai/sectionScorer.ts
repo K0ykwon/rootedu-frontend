@@ -7,10 +7,16 @@
  */
 
 import OpenAI from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { TextSections, ExtractedData, ValidationAnalysis } from '@/types/medsky';
-import { AIScoreAnalysisSchema, AIScoreAnalysis } from '@/types/medsky-enhanced';
+import { AIScoreAnalysisSchema, AIScoreAnalysis, SectionScoreSchema } from '@/types/medsky-enhanced';
 import { createLLMConfig } from '../llmService';
+
+// Zod schemas for structured outputs
+const OverallScoreResponseSchema = z.object({
+  overall_feedback: z.string()
+});
 
 // Scoring criteria definitions
 const SCORING_CRITERIA = {
@@ -121,7 +127,7 @@ ${contextInfo}
 }`;
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await client.chat.completions.parse({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -133,16 +139,15 @@ ${contextInfo}
           content: sectionPrompt
         }
       ],
+      response_format: zodResponseFormat(SectionScoreSchema, 'section_score'),
       temperature: 0.2, // Lower temperature for more consistent scoring
       max_tokens: 2500
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No content in AI response');
+    const parsed = response.choices[0]?.message?.parsed;
+    if (!parsed) {
+      throw new Error('No parsed response from AI');
     }
-
-    const parsed = JSON.parse(content);
 
     // Validate and clean the response
     const sectionScore = {
@@ -243,7 +248,7 @@ ${JSON.stringify(sectionScores, null, 2)}
 JSON 형태로 "overall_feedback" 필드에 담아 응답해주세요.`;
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await client.chat.completions.parse({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -255,19 +260,19 @@ JSON 형태로 "overall_feedback" 필드에 담아 응답해주세요.`;
           content: feedbackPrompt
         }
       ],
+      response_format: zodResponseFormat(OverallScoreResponseSchema, 'overall_feedback'),
       temperature: 0.3,
       max_tokens: 1000
     });
 
-    const content = response.choices[0]?.message?.content;
-    const parsed = content ? JSON.parse(content) : {};
+    const parsed = response.choices[0]?.message?.parsed;
 
     return {
       overall_score: overallScore,
       grade_equivalent: gradeEquivalent,
       percentile_rank: percentileRank,
       competency_balance: competencyBalance,
-      overall_feedback: parsed.overall_feedback || `총 ${overallScore}점으로 ${gradeEquivalent}등급에 해당하는 우수한 생활기록부입니다.`
+      overall_feedback: parsed?.overall_feedback || `총 ${overallScore}점으로 ${gradeEquivalent}등급에 해당하는 우수한 생활기록부입니다.`
     };
   } catch (error) {
     console.error('Error generating overall analysis:', error);

@@ -22,7 +22,6 @@ import { KeywordMatrixView } from './KeywordMatrixView';
 import { SummaryEditor } from './SummaryEditor';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { useMedskyAnalysis } from '@/lib/medsky/analysisContext';
 
 // AI Enhanced Components
 import { AIKeywordAnalysisView } from './AIKeywordAnalysisView';
@@ -31,9 +30,8 @@ import { EnhancedAcademicAnalysisView } from './EnhancedAcademicAnalysisView';
 import { AIMajorRecommendationsView } from './AIMajorRecommendationsView';
 import { NextSemesterPlanView } from './NextSemesterPlanView';
 
-export function MedskyAnalyzer({ className, onComplete, onStatusChange }: MedskyProps) {
+export function MedskyAnalyzer({ className, productId, onComplete, onStatusChange }: MedskyProps) {
   const { data: session, status: sessionStatus } = useSession();
-  const { startAnalysis, updateProgress, completeAnalysis, failAnalysis } = useMedskyAnalysis();
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatus | null>(null);
   const [processingResult, setProcessingResult] = useState<ProcessingResult | null>(null);
@@ -68,13 +66,15 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
       progress: 0,
       message: '파일 업로드 중...'
     });
-    
-    // Start the toast notification
-    startAnalysis(file);
 
     try {
       const formData = new FormData();
       formData.append('file', file);
+
+      // Include productId if provided
+      if (productId) {
+        formData.append('productId', productId);
+      }
 
       const response = await fetch('/api/medsky/process', {
         method: 'POST',
@@ -103,12 +103,10 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
         message: errorMessage,
         error: errorMessage
       });
-      // Update toast with error
-      failAnalysis(errorMessage);
     } finally {
       setIsProcessing(false);
     }
-  }, [onComplete, onStatusChange, startAnalysis, failAnalysis]);
+  }, [onComplete, onStatusChange]);
 
   /**
    * Reset the analyzer to initial state
@@ -180,10 +178,6 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
         if (data.success && data.status) {
           setProcessingStatus(data.status);
           onStatusChange?.(data.status);
-          
-          // Update toast progress based on stage
-          const progress = getProgressForStage(data.status.stage);
-          updateProgress(progress, data.status.message || data.status.stage);
 
           if (data.status.stage === 'completed') {
             // Fetch final result when completed
@@ -195,8 +189,6 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
               if (resultData.success && resultData.result) {
                 setProcessingResult(resultData.result);
                 onComplete?.(resultData.result);
-                // Update toast with completion
-                completeAnalysis(resultData.result);
                 // Stop polling AFTER we have the result
                 isCancelled = true;
                 if (timerId) clearInterval(timerId);
@@ -209,10 +201,9 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
             }
             return;
           }
-          
+
           if (data.status.stage === 'error') {
-            // Update toast with error and stop polling
-            failAnalysis(data.status.error || 'Processing failed');
+            // Stop polling on error
             isCancelled = true;
             if (timerId) clearInterval(timerId);
             return;
@@ -235,7 +226,7 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
       isCancelled = true;
       if (timerId) clearInterval(timerId);
     };
-  }, [sessionId, onStatusChange, onComplete, processingResult, updateProgress, completeAnalysis, failAnalysis]);
+  }, [sessionId, onStatusChange, onComplete, processingResult]);
 
   // Show loading while checking authentication
   if (sessionStatus === 'loading') {
@@ -334,10 +325,69 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
         </Card>
       )}
 
-      {/* Results Display */}
-      {processingResult && 
-       processingResult.extractedData && 
-       processingResult.validationAnalysis && 
+      {/* Submission Confirmation - Show instead of immediate results */}
+      {processingStatus?.stage === 'completed' && sessionId && (
+        <Card className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border-green-200 dark:border-green-700">
+          <div className="text-center py-12 px-6">
+            <div className="text-6xl mb-6">✅</div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+              분석이 완료되었습니다!
+            </h3>
+            <p className="text-gray-700 dark:text-gray-300 mb-6 text-lg">
+              알약툰 전문가가 검토 후 결과를 전달드립니다
+            </p>
+
+            {/* Analysis ID Display */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 inline-block max-w-md mb-6 shadow-sm">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 font-medium">분석 ID</p>
+              <p className="font-mono text-sm text-gray-800 dark:text-gray-200 break-all">{sessionId}</p>
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  💡 이 ID로 분석 결과를 조회할 수 있습니다
+                </p>
+              </div>
+            </div>
+
+            {/* What happens next */}
+            <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-6 max-w-2xl mx-auto mb-6">
+              <h4 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-4 flex items-center justify-center gap-2">
+                <span>📋</span> 다음 단계
+              </h4>
+              <ol className="text-left space-y-3 text-sm text-blue-800 dark:text-blue-200">
+                <li className="flex items-start gap-3">
+                  <span className="font-bold text-blue-600 dark:text-blue-400 min-w-[24px]">1.</span>
+                  <span>전문가가 분석 결과를 검토합니다</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="font-bold text-blue-600 dark:text-blue-400 min-w-[24px]">2.</span>
+                  <span>검토가 완료되면 "내 분석 결과" 탭에서 확인하실 수 있습니다</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="font-bold text-blue-600 dark:text-blue-400 min-w-[24px]">3.</span>
+                  <span>결과가 준비되면 알림을 보내드립니다</span>
+                </li>
+              </ol>
+            </div>
+
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              📧 검토 완료 시 알림을 받으시려면 프로필에서 알림 설정을 확인해주세요
+            </p>
+
+            <Button
+              onClick={handleReset}
+              variant="primary"
+              size="lg"
+            >
+              새 분석 시작하기
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Results Display - HIDDEN FOR NOW, kept for future reference */}
+      {false && processingResult &&
+       processingResult?.extractedData &&
+       processingResult?.validationAnalysis &&
        processingStatus?.stage === 'completed' && (
         <div className="space-y-6">
           <div className="flex justify-between items-center">
@@ -393,54 +443,58 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
 
           {/* Tab Content */}
                 <div className="min-h-[600px]">
-                  {activeResultsTab === 'overview' && (
-                    <AnalysisOverview
-                      extractedData={processingResult.extractedData}
-                      validationAnalysis={processingResult.validationAnalysis}
-                    />
-                  )}
+                  {processingResult && (() => {
+                    const result = processingResult!;
+                    return (
+                    <>
+                      {activeResultsTab === 'overview' && result.extractedData && result.validationAnalysis && (
+                        <AnalysisOverview
+                          extractedData={result.extractedData!}
+                          validationAnalysis={result.validationAnalysis!}
+                        />
+                      )}
 
-                  {activeResultsTab === 'trends' && (
-                    <GradeTrendChart report={processingResult.gradeTrends} />
-                  )}
+                      {activeResultsTab === 'trends' && result.gradeTrends && (
+                        <GradeTrendChart report={result.gradeTrends!} />
+                      )}
 
-                  {activeResultsTab === 'competency' && (
-                    <CompetencyDistribution data={processingResult.competencyScores} />
-                  )}
+                      {activeResultsTab === 'competency' && result.competencyScores && (
+                        <CompetencyDistribution data={result.competencyScores!} />
+                      )}
 
-                  {activeResultsTab === 'major' && (
-                    <MajorAlignmentMatrix report={processingResult.majorAlignment} />
-                  )}
+                      {activeResultsTab === 'major' && result.majorAlignment && (
+                        <MajorAlignmentMatrix report={result.majorAlignment!} />
+                      )}
 
-                  {activeResultsTab === 'keywords' && (
-                    <KeywordMatrixView matrix={processingResult.keywordMatrix} />
-                  )}
+                      {activeResultsTab === 'keywords' && result.keywordMatrix && (
+                        <KeywordMatrixView matrix={result.keywordMatrix!} />
+                      )}
 
-                  {activeResultsTab === 'structured' && (
-                    <StructuredDataTabs
-                      extractedData={processingResult.extractedData}
-                    />
-                  )}
+                      {activeResultsTab === 'structured' && result.extractedData && (
+                        <StructuredDataTabs
+                          extractedData={result.extractedData!}
+                        />
+                      )}
 
-                  {activeResultsTab === 'detailed' && (
-                    <ValidationResults
-                      textSections={processingResult.textSections!}
-                extractedData={processingResult.extractedData}
-                validationAnalysis={processingResult.validationAnalysis}
-                activeFilters={['blue_highlight', 'red_line', 'blue_line', 'black_line', 'red_check']}
-                onFilterChange={() => {}} // Will be implemented in ValidationResults
-                    />
-                  )}
+                      {activeResultsTab === 'detailed' && result.textSections && result.extractedData && result.validationAnalysis && (
+                        <ValidationResults
+                          textSections={result.textSections!}
+                          extractedData={result.extractedData!}
+                          validationAnalysis={result.validationAnalysis!}
+                          activeFilters={['blue_highlight', 'red_line', 'blue_line', 'black_line', 'red_check']}
+                          onFilterChange={() => {}}
+                        />
+                      )}
 
-                  {activeResultsTab === 'summary' && (
-                    <SummaryEditor summary={processingResult.summaryDraft} />
-                  )}
+                      {activeResultsTab === 'summary' && result.summaryDraft && (
+                        <SummaryEditor summary={result.summaryDraft!} />
+                      )}
 
-                  {/* AI Enhanced Features */}
-                  {activeResultsTab === 'ai-keywords' && (
-                    <div className="space-y-6">
-                      {processingResult.ai_keyword_analysis ? (
-                        <AIKeywordAnalysisView data={processingResult.ai_keyword_analysis} />
+                      {/* AI Enhanced Features */}
+                      {activeResultsTab === 'ai-keywords' && (
+                        <div className="space-y-6">
+                          {result.ai_keyword_analysis ? (
+                        <AIKeywordAnalysisView data={result.ai_keyword_analysis!} />
                       ) : (
                         <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
                           <div className="text-purple-600">
@@ -454,8 +508,8 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
 
                   {activeResultsTab === 'ai-scoring' && (
                     <div className="space-y-6">
-                      {processingResult.ai_section_scoring ? (
-                        <AISectionScoringView data={processingResult.ai_section_scoring} />
+                      {result.ai_section_scoring ? (
+                        <AISectionScoringView data={result.ai_section_scoring!} />
                       ) : (
                         <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
                           <div className="text-purple-600">
@@ -469,8 +523,8 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
 
                   {activeResultsTab === 'ai-academic' && (
                     <div className="space-y-6">
-                      {processingResult.enhanced_academic_analysis ? (
-                        <EnhancedAcademicAnalysisView data={processingResult.enhanced_academic_analysis} />
+                      {result.enhanced_academic_analysis ? (
+                        <EnhancedAcademicAnalysisView data={result.enhanced_academic_analysis!} />
                       ) : (
                         <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
                           <div className="text-purple-600">
@@ -484,8 +538,8 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
 
                   {activeResultsTab === 'ai-majors' && (
                     <div className="space-y-6">
-                      {processingResult.ai_major_recommendations ? (
-                        <AIMajorRecommendationsView data={processingResult.ai_major_recommendations} />
+                      {result.ai_major_recommendations ? (
+                        <AIMajorRecommendationsView data={result.ai_major_recommendations!} />
                       ) : (
                         <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
                           <div className="text-purple-600">
@@ -499,8 +553,8 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
 
                   {activeResultsTab === 'ai-study-plan' && (
                     <div className="space-y-6">
-                      {processingResult.next_semester_plan ? (
-                        <NextSemesterPlanView data={processingResult.next_semester_plan} />
+                      {result.next_semester_plan ? (
+                        <NextSemesterPlanView data={result.next_semester_plan!} />
                       ) : (
                         <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
                           <div className="text-purple-600">
@@ -511,11 +565,14 @@ export function MedskyAnalyzer({ className, onComplete, onStatusChange }: Medsky
                       )}
                     </div>
                   )}
+                    </>
+                    );
+                  })()}
                 </div>
         </div>
       )}
-        </div>
-      </div>
     </div>
+  </div>
+</div>
   );
 }

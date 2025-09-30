@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { toast, Toaster } from 'react-hot-toast';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
+import Badge from '../../../components/ui/Badge';
 import MedskyAnalysis from '../../../components/medsky/MedskyAnalysis';
 import { ValidationResults } from '../../../components/medsky/ValidationResults';
 import ProductBasedDashboard from './ProductBasedDashboard';
@@ -20,6 +21,11 @@ interface AnalysisResult {
   generatedProfile?: string;
   createdAt: string;
   completedAt: string;
+  // Approval workflow fields
+  approvalStatus: 'pending_review' | 'approved' | 'rejected';
+  approvedAt: string | null;
+  approvedBy: string | null;
+  influencerNotes: string | null;
 }
 
 interface ChatHistory {
@@ -49,6 +55,8 @@ export default function InfluencerDashboard() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showChatHistory, setShowChatHistory] = useState(false);
   const [viewMode, setViewMode] = useState<'products' | 'analysis'>('products');
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'pending' | 'approved'>('pending');
+  const [approvingSessionId, setApprovingSessionId] = useState<string | null>(null);
 
   // Check if user has access to this dashboard
   useEffect(() => {
@@ -136,9 +144,9 @@ export default function InfluencerDashboard() {
         const data = await response.json();
         toast.success('프로필이 생성되었습니다!');
         // Update the analysis result with the generated profile
-        setAnalysisResults(prev => 
-          prev.map(result => 
-            result.sessionId === sessionId 
+        setAnalysisResults(prev =>
+          prev.map(result =>
+            result.sessionId === sessionId
               ? { ...result, profileGenerated: true, generatedProfile: data.profile }
               : result
           )
@@ -151,6 +159,44 @@ export default function InfluencerDashboard() {
       toast.error('프로필 생성 중 오류가 발생했습니다.');
     } finally {
       setGeneratingProfile(null);
+    }
+  };
+
+  const handleApproveAnalysis = async (sessionId: string) => {
+    setApprovingSessionId(sessionId);
+    try {
+      const response = await fetch(`/api/dashboard/${slug}/approve-analysis`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId,
+          action: 'approve'
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('분석 결과가 승인되었습니다! 학생이 이제 결과를 볼 수 있습니다.');
+        // Update the analysis result approval status
+        setAnalysisResults(prev =>
+          prev.map(result =>
+            result.sessionId === sessionId
+              ? { ...result, approvalStatus: 'approved', approvedAt: new Date().toISOString() }
+              : result
+          )
+        );
+        // Reload to get fresh data
+        loadAnalysisResults();
+      } else {
+        const data = await response.json();
+        toast.error(data.error || '승인 처리에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Failed to approve analysis:', error);
+      toast.error('승인 처리 중 오류가 발생했습니다.');
+    } finally {
+      setApprovingSessionId(null);
     }
   };
 
@@ -247,41 +293,95 @@ export default function InfluencerDashboard() {
         {/* Analysis Results Section */}
         <Card>
           <div className="p-6">
-            <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-6">
-              분석 결과 ({analysisResults.length})
-            </h2>
-            
-            {analysisResults.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">📊</div>
-                <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">
-                  아직 분석 결과가 없습니다
-                </h3>
-                <p className="text-[var(--color-text-secondary)]">
-                  위의 분석 도구를 사용하여 첫 번째 생활기록부를 분석해보세요.
-                </p>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
+                분석 결과 ({analysisResults.length})
+              </h2>
+
+              {/* Filter Tabs */}
+              <div className="flex gap-2">
+                <Button
+                  variant={reviewFilter === 'pending' ? 'primary' : 'outline'}
+                  size="sm"
+                  onClick={() => setReviewFilter('pending')}
+                >
+                  <span className="mr-1">⏳</span>
+                  검토 대기 ({analysisResults.filter(r => r.approvalStatus === 'pending_review').length})
+                </Button>
+                <Button
+                  variant={reviewFilter === 'approved' ? 'primary' : 'outline'}
+                  size="sm"
+                  onClick={() => setReviewFilter('approved')}
+                >
+                  <span className="mr-1">✓</span>
+                  승인됨 ({analysisResults.filter(r => r.approvalStatus === 'approved').length})
+                </Button>
+                <Button
+                  variant={reviewFilter === 'all' ? 'primary' : 'outline'}
+                  size="sm"
+                  onClick={() => setReviewFilter('all')}
+                >
+                  전체
+                </Button>
               </div>
-            ) : (
-              <div className="space-y-6">
-                {analysisResults.map((result) => (
+            </div>
+
+            {/* Filtered Results */}
+            {(() => {
+              const filteredResults = analysisResults.filter(result => {
+                if (reviewFilter === 'all') return true;
+                if (reviewFilter === 'pending') return result.approvalStatus === 'pending_review';
+                return result.approvalStatus === 'approved';
+              });
+
+              return filteredResults.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">📊</div>
+                  <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">
+                    {reviewFilter === 'pending' && '검토 대기 중인 분석이 없습니다'}
+                    {reviewFilter === 'approved' && '승인된 분석이 없습니다'}
+                    {reviewFilter === 'all' && '아직 분석 결과가 없습니다'}
+                  </h3>
+                  <p className="text-[var(--color-text-secondary)]">
+                    위의 분석 도구를 사용하여 첫 번째 생활기록부를 분석해보세요.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {filteredResults.map((result) => (
                   <div
                     key={result.sessionId}
                     className="border border-[var(--color-border-primary)] rounded-lg p-6"
                   >
                     <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-lg font-medium text-[var(--color-text-primary)]">
-                          {result.userName || '익명 사용자'}
-                        </h3>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-lg font-medium text-[var(--color-text-primary)]">
+                            {result.userName || '익명 사용자'}
+                          </h3>
+                          {/* Approval Status Badge */}
+                          {result.approvalStatus === 'pending_review' ? (
+                            <Badge variant="warning" size="sm">⏳ 검토 대기</Badge>
+                          ) : result.approvalStatus === 'approved' ? (
+                            <Badge variant="success" size="sm">✓ 승인 완료</Badge>
+                          ) : (
+                            <Badge variant="error" size="sm">❌ 거절됨</Badge>
+                          )}
+                        </div>
                         <p className="text-sm text-[var(--color-text-secondary)]">
                           분석 완료: {new Date(result.completedAt).toLocaleDateString('ko-KR')}
                         </p>
+                        {result.approvedAt && (
+                          <p className="text-xs text-green-600">
+                            승인일: {new Date(result.approvedAt).toLocaleDateString('ko-KR')}
+                          </p>
+                        )}
                         <p className="text-xs text-[var(--color-text-tertiary)]">
                           세션 ID: {result.sessionId}
                         </p>
                       </div>
-                      
-                      <div className="flex gap-2">
+
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           variant="secondary"
                           size="sm"
@@ -303,7 +403,19 @@ export default function InfluencerDashboard() {
                         >
                           학생 관련 질문하기
                         </Button>
-                        
+
+                        {/* Approval Button - Only show for pending analyses */}
+                        {result.approvalStatus === 'pending_review' && (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => handleApproveAnalysis(result.sessionId)}
+                            disabled={approvingSessionId === result.sessionId}
+                          >
+                            {approvingSessionId === result.sessionId ? '승인 중...' : '✓ 승인하기'}
+                          </Button>
+                        )}
+
                         {!result.profileGenerated ? (
                           <Button
                             variant="primary"
@@ -371,9 +483,10 @@ export default function InfluencerDashboard() {
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         </Card>
           </>

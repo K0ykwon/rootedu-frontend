@@ -552,6 +552,8 @@ export interface CompleteProcessResponse {
 export interface MedskyProps {
   /** Optional custom styling classes */
   className?: string;
+  /** Optional product ID to associate with analysis */
+  productId?: string;
   /** Callback when processing completes */
   onComplete?: (result: ProcessingResult) => void;
   /** Callback for processing status updates */

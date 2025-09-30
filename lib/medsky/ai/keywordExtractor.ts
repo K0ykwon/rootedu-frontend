@@ -7,10 +7,23 @@
  */
 
 import OpenAI from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { TextSections, ExtractedData } from '@/types/medsky';
-import { AIKeywordExtractionSchema, AIKeywordExtraction } from '@/types/medsky-enhanced';
+import { AIKeywordExtractionSchema, AIKeywordExtraction, AIKeywordSchema } from '@/types/medsky-enhanced';
 import { createLLMConfig } from '../llmService';
+
+// Zod schemas for structured outputs
+const SectionKeywordsResponseSchema = z.object({
+  keywords: z.array(AIKeywordSchema),
+  section_summary: z.string()
+});
+
+const OverallInsightsResponseSchema = z.object({
+  overall_keywords: z.array(AIKeywordSchema),
+  student_strengths: z.array(z.string()),
+  improvement_areas: z.array(z.string())
+});
 
 // LLM prompt for contextual keyword extraction
 const KEYWORD_EXTRACTION_PROMPT = `
@@ -68,7 +81,7 @@ ${sectionText}
 JSON 형태로 응답해주세요.`;
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await client.chat.completions.parse({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -80,17 +93,15 @@ JSON 형태로 응답해주세요.`;
           content: sectionPrompt
         }
       ],
+      response_format: zodResponseFormat(SectionKeywordsResponseSchema, 'section_keywords'),
       temperature: 0.3,
       max_tokens: 2000
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No content in AI response');
+    const parsed = response.choices[0]?.message?.parsed;
+    if (!parsed) {
+      throw new Error('No parsed response from AI');
     }
-
-    // Parse and validate the response
-    const parsed = JSON.parse(content);
 
     // Map to our schema format
     const sectionKeywords = {
@@ -133,7 +144,7 @@ ${JSON.stringify(allKeywords, null, 2)}
 JSON 형태로 응답해주세요.`;
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await client.chat.completions.parse({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -145,16 +156,15 @@ JSON 형태로 응답해주세요.`;
           content: insightsPrompt
         }
       ],
+      response_format: zodResponseFormat(OverallInsightsResponseSchema, 'overall_insights'),
       temperature: 0.3,
       max_tokens: 1500
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No content in AI response');
+    const parsed = response.choices[0]?.message?.parsed;
+    if (!parsed) {
+      throw new Error('No parsed response from AI');
     }
-
-    const parsed = JSON.parse(content);
     return {
       overall_keywords: parsed.overall_keywords || [],
       student_strengths: parsed.student_strengths || [],

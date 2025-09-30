@@ -9,12 +9,7 @@ import Button from '../../../../../components/ui/Button';
 import { ValidationResults } from '../../../../../components/medsky/ValidationResults';
 import { AnalysisOverview } from '../../../../../components/medsky/AnalysisOverview';
 import { StructuredDataTabs } from '../../../../../components/medsky/StructuredDataTabs';
-import { GradeTrendChart } from '../../../../../components/medsky/GradeTrendChart';
-import { CompetencyDistribution } from '../../../../../components/medsky/CompetencyDistribution';
-import { MajorAlignmentMatrix } from '../../../../../components/medsky/MajorAlignmentMatrix';
-import { KeywordMatrixView } from '../../../../../components/medsky/KeywordMatrixView';
 import { SummaryEditor } from '../../../../../components/medsky/SummaryEditor';
-import { ManualCompetencyInput, KeywordOverride } from '../../../../../types/medsky';
 
 // AI Enhanced Components
 import { AIKeywordAnalysisView } from '../../../../../components/medsky/AIKeywordAnalysisView';
@@ -46,7 +41,7 @@ export default function AnalysisDetailPage() {
   const [hasLoadedResult, setHasLoadedResult] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeResultsTab, setActiveResultsTab] = useState<
-    'overview' | 'trends' | 'competency' | 'major' | 'keywords' | 'structured' | 'detailed' | 'summary' | 'ai-keywords' | 'ai-scoring' | 'ai-academic' | 'ai-majors' | 'ai-study-plan'
+    'overview' | 'keywords' | 'scoring' | 'academic' | 'majors' | 'study-plan' | 'structured' | 'detailed' | 'summary'
   >('overview');
 
   const patchAnalysis = async (endpoint: string, payload: unknown, successMessage: string) => {
@@ -75,20 +70,28 @@ export default function AnalysisDetailPage() {
     }
   };
 
-  const handleSaveScores = async (inputs: ManualCompetencyInput[]) => {
-    await patchAnalysis('manual-scores', { scores: inputs }, '역량 점수가 저장되었습니다.');
-  };
-
-  const handleUpdateMajor = async (target: { targetUniversity?: string; targetMajor?: string }) => {
-    await patchAnalysis('target-major', target, '목표 전공 정보가 업데이트되었습니다.');
-  };
-
-  const handleSaveKeywords = async (overrides: KeywordOverride[]) => {
-    await patchAnalysis('keywords', { overrides }, '키워드 분류가 저장되었습니다.');
-  };
-
   const handleSaveSummary = async (draft: string) => {
     await patchAnalysis('summary', { consultantDraft: draft }, '총평이 저장되었습니다.');
+  };
+
+  const handleSaveScoring = async (data: any) => {
+    await patchAnalysis('ai-scoring', { data }, '점수 분석이 저장되었습니다.');
+  };
+
+  const handleSaveKeywords = async (data: any) => {
+    await patchAnalysis('ai-keywords', { data }, '키워드 분석이 저장되었습니다.');
+  };
+
+  const handleSaveAcademic = async (data: any) => {
+    await patchAnalysis('ai-academic', { data }, '학업 분석이 저장되었습니다.');
+  };
+
+  const handleSaveMajors = async (data: any) => {
+    await patchAnalysis('ai-majors', { data }, '전공 추천이 저장되었습니다.');
+  };
+
+  const handleSaveStudyPlan = async (data: any) => {
+    await patchAnalysis('ai-study-plan', { data }, '학습 계획이 저장되었습니다.');
   };
 
   // Check if user has access to this analysis
@@ -246,18 +249,14 @@ export default function AnalysisDetailPage() {
                   <nav className="flex flex-wrap gap-2">
                     {[
                       { id: 'overview', name: '종합 개요', icon: '📊', description: '핵심 통계 및 인사이트' },
-                      { id: 'ai-keywords', name: 'AI 키워드', icon: '🤖', description: 'AI 문맥 키워드 추출', category: 'ai' },
-                      { id: 'ai-scoring', name: 'AI 점수', icon: '⚡', description: 'AI 다기준 섹션 채점', category: 'ai' },
-                      { id: 'ai-academic', name: 'AI 학업분석', icon: '🎓', description: 'AI 향상된 학업 분석', category: 'ai' },
-                      { id: 'ai-majors', name: 'AI 전공추천', icon: '🚀', description: 'AI 기반 전공 추천', category: 'ai' },
-                      { id: 'ai-study-plan', name: 'AI 학습계획', icon: '📋', description: 'AI 차학기 학습 계획', category: 'ai' },
-                      { id: 'trends', name: '성적 추이', icon: '📈', description: '학기별 성적 변화' },
-                      { id: 'competency', name: '역량 점수화', icon: '🎯', description: '역량별 점수와 백분위' },
-                      { id: 'major', name: '전공 연계', icon: '🎓', description: '필수/권장 과목 충족도' },
-                      { id: 'keywords', name: '키워드 맵', icon: '🔑', description: '세특 키워드 요약' },
-                      { id: 'structured', name: '구조화 데이터', icon: '📋', description: '정리된 활동 및 성취 정보' },
+                      { id: 'keywords', name: '키워드 분석', icon: '🔑', description: '문맥 키워드 추출 및 분류' },
+                      { id: 'scoring', name: '세부 점수', icon: '⚡', description: '다기준 섹션 채점' },
+                      { id: 'academic', name: '학업 분석', icon: '🎓', description: '향상된 학업 분석' },
+                      { id: 'majors', name: '전공 추천', icon: '🚀', description: '맞춤 전공 추천' },
+                      { id: 'study-plan', name: '학습 계획', icon: '📋', description: '차학기 학습 계획' },
+                      { id: 'structured', name: '구조화 데이터', icon: '📂', description: '정리된 활동 및 성취 정보' },
                       { id: 'detailed', name: '세부 분석', icon: '🔍', description: '원문 기반 세부 피드백' },
-                      { id: 'summary', name: '총평', icon: '📝', description: 'AI 초안 & 편집' },
+                      { id: 'summary', name: '총평', icon: '📝', description: '종합 평가 및 편집' },
                     ].map((tab) => (
                       <button
                         key={tab.id}
@@ -265,8 +264,8 @@ export default function AnalysisDetailPage() {
                         className={`
                           flex-1 min-w-[140px] px-4 py-3 text-sm font-medium rounded-md transition-colors flex items-center justify-center space-x-2
                           ${activeResultsTab === tab.id
-                            ? (tab.category === 'ai' ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-md' : 'bg-blue-500 text-white shadow-md')
-                            : (tab.category === 'ai' ? 'text-purple-600 hover:text-purple-800 hover:bg-purple-50 border border-purple-200' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]')
+                            ? 'bg-blue-500 text-white shadow-md'
+                            : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]'
                           }
                         `}
                         title={tab.description}
@@ -285,35 +284,107 @@ export default function AnalysisDetailPage() {
                     <AnalysisOverview
                       extractedData={analysisResult.analysisData.extractedData}
                       validationAnalysis={analysisResult.analysisData.validationAnalysis}
-                    />
-                  )}
-
-                  {activeResultsTab === 'trends' && (
-                    <GradeTrendChart report={analysisResult.analysisData.gradeTrends} />
-                  )}
-
-                  {activeResultsTab === 'competency' && (
-                    <CompetencyDistribution
-                      data={analysisResult.analysisData.competencyScores}
-                      editable
-                      onSave={handleSaveScores}
-                    />
-                  )}
-
-                  {activeResultsTab === 'major' && (
-                    <MajorAlignmentMatrix
-                      report={analysisResult.analysisData.majorAlignment}
-                      editable
-                      onUpdateTarget={handleUpdateMajor}
+                      aiKeywordAnalysis={analysisResult.analysisData.ai_keyword_analysis}
+                      aiSectionScoring={analysisResult.analysisData.ai_section_scoring}
+                      enhancedAcademicAnalysis={analysisResult.analysisData.enhanced_academic_analysis}
+                      aiMajorRecommendations={analysisResult.analysisData.ai_major_recommendations}
+                      nextSemesterPlan={analysisResult.analysisData.next_semester_plan}
                     />
                   )}
 
                   {activeResultsTab === 'keywords' && (
-                    <KeywordMatrixView
-                      matrix={analysisResult.analysisData.keywordMatrix}
-                      editable
-                      onSaveOverrides={handleSaveKeywords}
-                    />
+                    <div className="space-y-6">
+                      {analysisResult.analysisData?.ai_keyword_analysis ? (
+                        <AIKeywordAnalysisView
+                          data={analysisResult.analysisData.ai_keyword_analysis}
+                          editable
+                          onSave={handleSaveKeywords}
+                        />
+                      ) : (
+                        <Card className="p-8 text-center border-gray-200 bg-gray-50" glass={false}>
+                          <div className="text-gray-600">
+                            <h3 className="text-lg font-semibold mb-2">키워드 분석 결과가 없습니다</h3>
+                            <p className="text-sm">키워드 추출이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+
+                  {activeResultsTab === 'scoring' && (
+                    <div className="space-y-6">
+                      {analysisResult.analysisData?.ai_section_scoring ? (
+                        <AISectionScoringView
+                          data={analysisResult.analysisData.ai_section_scoring}
+                          editable
+                          onSave={handleSaveScoring}
+                        />
+                      ) : (
+                        <Card className="p-8 text-center border-gray-200 bg-gray-50" glass={false}>
+                          <div className="text-gray-600">
+                            <h3 className="text-lg font-semibold mb-2">섹션 채점 결과가 없습니다</h3>
+                            <p className="text-sm">다기준 채점이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+
+                  {activeResultsTab === 'academic' && (
+                    <div className="space-y-6">
+                      {analysisResult.analysisData?.enhanced_academic_analysis ? (
+                        <EnhancedAcademicAnalysisView
+                          data={analysisResult.analysisData.enhanced_academic_analysis}
+                          editable
+                          onSave={handleSaveAcademic}
+                        />
+                      ) : (
+                        <Card className="p-8 text-center border-gray-200 bg-gray-50" glass={false}>
+                          <div className="text-gray-600">
+                            <h3 className="text-lg font-semibold mb-2">학업 분석 결과가 없습니다</h3>
+                            <p className="text-sm">향상된 학업 분석이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+
+                  {activeResultsTab === 'majors' && (
+                    <div className="space-y-6">
+                      {analysisResult.analysisData?.ai_major_recommendations ? (
+                        <AIMajorRecommendationsView
+                          data={analysisResult.analysisData.ai_major_recommendations}
+                          editable
+                          onSave={handleSaveMajors}
+                        />
+                      ) : (
+                        <Card className="p-8 text-center border-gray-200 bg-gray-50" glass={false}>
+                          <div className="text-gray-600">
+                            <h3 className="text-lg font-semibold mb-2">전공 추천 결과가 없습니다</h3>
+                            <p className="text-sm">전공 추천이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+
+                  {activeResultsTab === 'study-plan' && (
+                    <div className="space-y-6">
+                      {analysisResult.analysisData?.next_semester_plan ? (
+                        <NextSemesterPlanView
+                          data={analysisResult.analysisData.next_semester_plan}
+                          editable
+                          onSave={handleSaveStudyPlan}
+                        />
+                      ) : (
+                        <Card className="p-8 text-center border-gray-200 bg-gray-50" glass={false}>
+                          <div className="text-gray-600">
+                            <h3 className="text-lg font-semibold mb-2">학습 계획 결과가 없습니다</h3>
+                            <p className="text-sm">차학기 학습 계획이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
                   )}
 
                   {activeResultsTab === 'structured' && (
@@ -338,82 +409,6 @@ export default function AnalysisDetailPage() {
                       editable
                       onSave={handleSaveSummary}
                     />
-                  )}
-
-                  {/* AI Enhanced Features */}
-                  {activeResultsTab === 'ai-keywords' && (
-                    <div className="space-y-6">
-                      {analysisResult.analysisData?.ai_keyword_analysis ? (
-                        <AIKeywordAnalysisView data={analysisResult.analysisData.ai_keyword_analysis} />
-                      ) : (
-                        <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
-                          <div className="text-purple-600">
-                            <h3 className="text-lg font-semibold mb-2">AI 키워드 분석 결과가 없습니다</h3>
-                            <p className="text-sm">AI 키워드 추출이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
-                          </div>
-                        </Card>
-                      )}
-                    </div>
-                  )}
-
-                  {activeResultsTab === 'ai-scoring' && (
-                    <div className="space-y-6">
-                      {analysisResult.analysisData?.ai_section_scoring ? (
-                        <AISectionScoringView data={analysisResult.analysisData.ai_section_scoring} />
-                      ) : (
-                        <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
-                          <div className="text-purple-600">
-                            <h3 className="text-lg font-semibold mb-2">AI 섹션 채점 결과가 없습니다</h3>
-                            <p className="text-sm">AI 다기준 채점이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
-                          </div>
-                        </Card>
-                      )}
-                    </div>
-                  )}
-
-                  {activeResultsTab === 'ai-academic' && (
-                    <div className="space-y-6">
-                      {analysisResult.analysisData?.enhanced_academic_analysis ? (
-                        <EnhancedAcademicAnalysisView data={analysisResult.analysisData.enhanced_academic_analysis} />
-                      ) : (
-                        <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
-                          <div className="text-purple-600">
-                            <h3 className="text-lg font-semibold mb-2">AI 학업 분석 결과가 없습니다</h3>
-                            <p className="text-sm">AI 향상된 학업 분석이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
-                          </div>
-                        </Card>
-                      )}
-                    </div>
-                  )}
-
-                  {activeResultsTab === 'ai-majors' && (
-                    <div className="space-y-6">
-                      {analysisResult.analysisData?.ai_major_recommendations ? (
-                        <AIMajorRecommendationsView data={analysisResult.analysisData.ai_major_recommendations} />
-                      ) : (
-                        <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
-                          <div className="text-purple-600">
-                            <h3 className="text-lg font-semibold mb-2">AI 전공 추천 결과가 없습니다</h3>
-                            <p className="text-sm">AI 전공 추천이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
-                          </div>
-                        </Card>
-                      )}
-                    </div>
-                  )}
-
-                  {activeResultsTab === 'ai-study-plan' && (
-                    <div className="space-y-6">
-                      {analysisResult.analysisData?.next_semester_plan ? (
-                        <NextSemesterPlanView data={analysisResult.analysisData.next_semester_plan} />
-                      ) : (
-                        <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
-                          <div className="text-purple-600">
-                            <h3 className="text-lg font-semibold mb-2">AI 학습 계획 결과가 없습니다</h3>
-                            <p className="text-sm">AI 차학기 학습 계획이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
-                          </div>
-                        </Card>
-                      )}
-                    </div>
                   )}
                 </div>
 

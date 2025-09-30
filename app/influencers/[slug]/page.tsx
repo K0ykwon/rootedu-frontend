@@ -45,6 +45,18 @@ interface Product {
   summary: string;
 }
 
+interface AnalysisResult {
+  id: string;
+  sessionId: string;
+  userId: string;
+  userName: string;
+  analysisData: any;
+  profileGenerated?: boolean;
+  generatedProfile?: string;
+  createdAt: string;
+  completedAt: string;
+}
+
 
 export default function InfluencerDetailPage() {
   const params = useParams();
@@ -59,6 +71,10 @@ export default function InfluencerDetailPage() {
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [userPurchases, setUserPurchases] = useState<string[]>([]);
   const [purchasesLoading, setPurchasesLoading] = useState(true);
+  const [learningSpaceTab, setLearningSpaceTab] = useState<'new_analysis' | 'my_results'>('new_analysis');
+  const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [pendingAnalysesCount, setPendingAnalysesCount] = useState(0);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -110,6 +126,34 @@ export default function InfluencerDetailPage() {
 
     fetchUserPurchases();
   }, [session]);
+
+  // Fetch analysis results when learning space tab is accessed
+  const loadAnalysisResults = async () => {
+    if (!session) return;
+
+    setAnalysisLoading(true);
+    try {
+      const response = await fetch(`/api/dashboard/${slug}/analysis-results`);
+      if (response.ok) {
+        const data = await response.json();
+        setAnalysisResults(data.results || []);
+        setPendingAnalysesCount(data.pendingCount || 0);
+      } else {
+        console.error('Failed to load analysis results');
+      }
+    } catch (error) {
+      console.error('Error loading analysis results:', error);
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+
+  // Load analysis results when switching to learning space tab or my_results subtab
+  useEffect(() => {
+    if (activeTab === 'learning_space' && learningSpaceTab === 'my_results' && session && userPurchases.length > 0) {
+      loadAnalysisResults();
+    }
+  }, [activeTab, learningSpaceTab, session, userPurchases]);
 
   const handleFollow = () => {
     setIsFollowing(!isFollowing);
@@ -574,8 +618,8 @@ export default function InfluencerDetailPage() {
                         <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto mb-6">
                           학습공간을 이용하려면 먼저 알약툰의 상품을 구매해주세요
                         </p>
-                        <Button 
-                          variant="primary" 
+                        <Button
+                          variant="primary"
                           size="sm"
                           onClick={() => setActiveTab('courses')}
                         >
@@ -585,52 +629,325 @@ export default function InfluencerDetailPage() {
                     </Card>
                   ) : (
                     <>
-                      {/* Medsky Analyzer Component - Only show if user has purchased */}
-                      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                        <MedskyAnalyzer 
-                          onComplete={() => {
-                            showToast('생기부 분석이 완료되었습니다!', 'success');
-                          }}
-                          onStatusChange={(status) => {
-                            console.log('Status update:', status);
-                          }}
-                        />
-                      </div>
+                      {/* Learning Space Navigation Tabs */}
+                      <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
+                        <div className="flex border-b border-gray-200 dark:border-gray-700">
+                          <button
+                            onClick={() => setLearningSpaceTab('new_analysis')}
+                            className={`flex-1 py-3 px-6 text-sm font-medium transition-all duration-200 ${
+                              learningSpaceTab === 'new_analysis'
+                                ? 'text-green-600 dark:text-green-400 border-b-2 border-green-500 bg-green-50 dark:bg-green-900/20'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400'
+                            }`}
+                          >
+                            <span className="flex items-center justify-center gap-2">
+                              <span>📝</span>
+                              새 분석
+                            </span>
+                          </button>
+                          <button
+                            onClick={() => setLearningSpaceTab('my_results')}
+                            className={`flex-1 py-3 px-6 text-sm font-medium transition-all duration-200 ${
+                              learningSpaceTab === 'my_results'
+                                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
+                            }`}
+                          >
+                            <span className="flex items-center justify-center gap-2">
+                              <span>📊</span>
+                              내 분석 결과
+                              {analysisResults.length > 0 && (
+                                <Badge variant="primary" size="sm">{analysisResults.length}</Badge>
+                              )}
+                            </span>
+                          </button>
+                        </div>
+                      </Card>
 
-                      {/* 알약툰 Special Features - Only show if user has purchased */}
-                  <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
-                    <div className="p-6">
-                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        <span>💊</span> 알약툰만의 특별 서비스
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-4 bg-blue-900/20 rounded-lg border border-blue-500/30">
-                          <h4 className="font-medium text-blue-700 dark:text-blue-200 mb-2">🎯 의대 진학 전략</h4>
-                          <p className="text-sm text-blue-600 dark:text-blue-100/80">
-                            분석 결과를 바탕으로 의대 입시에 특화된 맞춤 전략을 제공합니다
-                          </p>
+                      {/* New Analysis Tab */}
+                      {learningSpaceTab === 'new_analysis' && (
+                        <div className="space-y-6">
+                          {/* Medsky Analyzer Component */}
+                          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                            <MedskyAnalyzer
+                              productId={slug}
+                              onComplete={() => {
+                                showToast('생기부 분석이 완료되었습니다!', 'success');
+                                // Refresh analysis results when analysis completes
+                                loadAnalysisResults();
+                              }}
+                              onStatusChange={(status) => {
+                                console.log('Status update:', status);
+                              }}
+                            />
+                          </div>
+
+                          {/* 알약툰 Special Features */}
+                          <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
+                            <div className="p-6">
+                              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                <span>💊</span> 알약툰만의 특별 서비스
+                              </h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="p-4 bg-blue-900/20 rounded-lg border border-blue-500/30">
+                                  <h4 className="font-medium text-blue-700 dark:text-blue-200 mb-2">🎯 의대 진학 전략</h4>
+                                  <p className="text-sm text-blue-600 dark:text-blue-100/80">
+                                    분석 결과를 바탕으로 의대 입시에 특화된 맞춤 전략을 제공합니다
+                                  </p>
+                                </div>
+                                <div className="p-4 bg-green-900/20 rounded-lg border border-green-500/30">
+                                  <h4 className="font-medium text-green-700 dark:text-green-200 mb-2">📈 역량 강화 로드맵</h4>
+                                  <p className="text-sm text-green-600 dark:text-green-100/80">
+                                    부족한 부분을 체계적으로 보완할 수 있는 구체적인 계획을 제시합니다
+                                  </p>
+                                </div>
+                                <div className="p-4 bg-purple-900/20 rounded-lg border border-purple-500/30">
+                                  <h4 className="font-medium text-purple-700 dark:text-purple-200 mb-2">🏥 의료진 멘토링</h4>
+                                  <p className="text-sm text-purple-600 dark:text-purple-100/80">
+                                    현직 의료진 출신 멘토들의 실질적인 조언과 가이드를 받을 수 있습니다
+                                  </p>
+                                </div>
+                                <div className="p-4 bg-orange-900/20 rounded-lg border border-orange-500/30">
+                                  <h4 className="font-medium text-orange-700 dark:text-orange-200 mb-2">📝 1:1 맞춤 피드백</h4>
+                                  <p className="text-sm text-orange-600 dark:text-orange-100/80">
+                                    AI 분석 결과를 바탕으로 개인별 맞춤 피드백을 제공합니다
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
                         </div>
-                        <div className="p-4 bg-green-900/20 rounded-lg border border-green-500/30">
-                          <h4 className="font-medium text-green-700 dark:text-green-200 mb-2">📈 역량 강화 로드맵</h4>
-                          <p className="text-sm text-green-600 dark:text-green-100/80">
-                            부족한 부분을 체계적으로 보완할 수 있는 구체적인 계획을 제시합니다
-                          </p>
+                      )}
+
+                      {/* My Analysis Results Tab */}
+                      {learningSpaceTab === 'my_results' && (
+                        <div className="space-y-6">
+                          {analysisLoading ? (
+                            <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
+                              <div className="text-center py-16">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                                <p className="text-gray-600 dark:text-gray-400">분석 결과를 불러오는 중...</p>
+                              </div>
+                            </Card>
+                          ) : analysisResults.length === 0 ? (
+                            pendingAnalysesCount > 0 ? (
+                              <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-amber-200 dark:border-amber-700 shadow-sm">
+                                <div className="text-center py-16 px-6">
+                                  {/* Animated Icon */}
+                                  <div className="w-24 h-24 mx-auto mb-6 relative">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full animate-pulse opacity-20"></div>
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                      <span className="text-5xl">⏳</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Main Title */}
+                                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                                    분석이 검토 중입니다
+                                  </h3>
+
+                                  {/* Description */}
+                                  <p className="text-gray-700 dark:text-gray-300 max-w-md mx-auto mb-6 text-lg">
+                                    알약툰 전문가가 회원님의 생기부를 꼼꼼히 검토하고 있습니다
+                                  </p>
+
+                                  {/* Count Badge */}
+                                  <div className="inline-flex items-center gap-2 bg-white dark:bg-gray-800 rounded-full px-6 py-3 shadow-sm mb-8">
+                                    <span className="text-2xl">📊</span>
+                                    <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                                      검토 중인 분석: {pendingAnalysesCount}개
+                                    </span>
+                                  </div>
+
+                                  {/* Process Timeline */}
+                                  <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-auto mb-6 shadow-sm">
+                                    <div className="space-y-4">
+                                      <div className="flex items-center gap-4">
+                                        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                                          <span className="text-white font-bold text-sm">✓</span>
+                                        </div>
+                                        <div className="text-left flex-1">
+                                          <p className="font-medium text-gray-900 dark:text-white">1. AI 분석 완료</p>
+                                          <p className="text-sm text-gray-600 dark:text-gray-400">생기부 데이터 추출 및 AI 분석 완료</p>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-4">
+                                        <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0 animate-pulse">
+                                          <span className="text-white font-bold text-sm">●</span>
+                                        </div>
+                                        <div className="text-left flex-1">
+                                          <p className="font-medium text-gray-900 dark:text-white">2. 전문가 검토 중</p>
+                                          <p className="text-sm text-gray-600 dark:text-gray-400">전문가의 세밀한 검토 진행 중</p>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-4">
+                                        <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center flex-shrink-0">
+                                          <span className="text-gray-500 dark:text-gray-400 font-bold text-sm">○</span>
+                                        </div>
+                                        <div className="text-left flex-1">
+                                          <p className="font-medium text-gray-900 dark:text-white">3. 결과 전달</p>
+                                          <p className="text-sm text-gray-600 dark:text-gray-400">검토 완료 후 결과 전달</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Expected Time */}
+                                  <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 max-w-md mx-auto mb-6">
+                                    <p className="text-sm text-blue-800 dark:text-blue-200 flex items-center justify-center gap-2">
+                                      <span>💡</span>
+                                      <span>보통 24시간 이내에 검토가 완료됩니다</span>
+                                    </p>
+                                  </div>
+
+                                  {/* Additional Analysis Button */}
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => setLearningSpaceTab('new_analysis')}
+                                    className="mt-4"
+                                  >
+                                    추가 분석 시작하기
+                                  </Button>
+                                </div>
+                              </Card>
+                            ) : (
+                              <Card className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
+                                <div className="text-center py-16">
+                                  <div className="mb-6">
+                                    <div className="w-24 h-24 mx-auto bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full flex items-center justify-center">
+                                      <span className="text-5xl">📊</span>
+                                    </div>
+                                  </div>
+                                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">아직 분석 결과가 없습니다</h3>
+                                  <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto mb-6">
+                                    먼저 새 분석을 실행해보세요!
+                                  </p>
+                                  <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => setLearningSpaceTab('new_analysis')}
+                                  >
+                                    새 분석 시작하기
+                                  </Button>
+                                </div>
+                              </Card>
+                            )
+                          ) : (
+                            <>
+                              {/* Analysis Results List */}
+                              <div className="grid grid-cols-1 gap-4">
+                                {analysisResults.map((result) => (
+                                  <Card key={result.sessionId} className="bg-white dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-none">
+                                    <div className="p-6">
+                                      <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                            {result.userName}님의 분석 결과
+                                          </h4>
+                                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            {new Date(result.completedAt).toLocaleDateString('ko-KR', {
+                                              year: 'numeric',
+                                              month: 'long',
+                                              day: 'numeric',
+                                              hour: '2-digit',
+                                              minute: '2-digit'
+                                            })}
+                                          </p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                          <Button
+                                            variant="primary"
+                                            size="sm"
+                                            onClick={() => {
+                                              window.open(`/dashboard/yaktoon/analysis/${result.sessionId}`, '_blank');
+                                            }}
+                                          >
+                                            상세 분석 보기
+                                          </Button>
+                                        </div>
+                                      </div>
+
+                                      {/* AI Features Indicators */}
+                                      {(result.analysisData?.ai_keyword_analysis ||
+                                        result.analysisData?.ai_section_scoring ||
+                                        result.analysisData?.enhanced_academic_analysis ||
+                                        result.analysisData?.ai_major_recommendations ||
+                                        result.analysisData?.next_semester_plan) && (
+                                        <div className="mb-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+                                          <div className="flex items-center space-x-2 mb-3">
+                                            <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+                                              <span className="text-white text-sm">🤖</span>
+                                            </div>
+                                            <h5 className="text-sm font-semibold text-gray-900">AI 향상된 분석 포함</h5>
+                                          </div>
+                                          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                            {result.analysisData?.ai_keyword_analysis && (
+                                              <div className="bg-white p-2 rounded border text-center">
+                                                <span className="text-purple-600 text-xs">🤖 키워드</span>
+                                              </div>
+                                            )}
+                                            {result.analysisData?.ai_section_scoring && (
+                                              <div className="bg-white p-2 rounded border text-center">
+                                                <span className="text-purple-600 text-xs">⚡ 점수</span>
+                                              </div>
+                                            )}
+                                            {result.analysisData?.enhanced_academic_analysis && (
+                                              <div className="bg-white p-2 rounded border text-center">
+                                                <span className="text-purple-600 text-xs">🎓 학업분석</span>
+                                              </div>
+                                            )}
+                                            {result.analysisData?.ai_major_recommendations && (
+                                              <div className="bg-white p-2 rounded border text-center">
+                                                <span className="text-purple-600 text-xs">🚀 전공추천</span>
+                                              </div>
+                                            )}
+                                            {result.analysisData?.next_semester_plan && (
+                                              <div className="bg-white p-2 rounded border text-center">
+                                                <span className="text-purple-600 text-xs">📅 학습계획</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Quick Summary */}
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                        <div className="text-center p-3 border rounded">
+                                          <div className="font-semibold text-gray-900 dark:text-white">
+                                            {result.analysisData?.competencyScores?.overallScore || 'N/A'}
+                                          </div>
+                                          <div className="text-gray-600 dark:text-gray-400">종합 점수</div>
+                                        </div>
+                                        <div className="text-center p-3 border rounded">
+                                          <div className="font-semibold text-gray-900 dark:text-white">
+                                            {result.analysisData?.gradeTrends?.subjects?.length || 0}
+                                          </div>
+                                          <div className="text-gray-600 dark:text-gray-400">분석 과목</div>
+                                        </div>
+                                        <div className="text-center p-3 border rounded">
+                                          <div className="font-semibold text-gray-900 dark:text-white">
+                                            {result.analysisData?.ai_section_scoring?.section_scores?.length || 0}
+                                          </div>
+                                          <div className="text-gray-600 dark:text-gray-400">AI 채점</div>
+                                        </div>
+                                        <div className="text-center p-3 border rounded">
+                                          <div className="font-semibold text-gray-900 dark:text-white">
+                                            {result.analysisData?.ai_major_recommendations?.top_recommendations?.length || 0}
+                                          </div>
+                                          <div className="text-gray-600 dark:text-gray-400">추천 전공</div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </Card>
+                                ))}
+                              </div>
+                            </>
+                          )}
                         </div>
-                        <div className="p-4 bg-purple-900/20 rounded-lg border border-purple-500/30">
-                          <h4 className="font-medium text-purple-700 dark:text-purple-200 mb-2">🏥 의료진 멘토링</h4>
-                          <p className="text-sm text-purple-600 dark:text-purple-100/80">
-                            현직 의료진 출신 멘토들의 실질적인 조언과 가이드를 받을 수 있습니다
-                          </p>
-                        </div>
-                        <div className="p-4 bg-orange-900/20 rounded-lg border border-orange-500/30">
-                          <h4 className="font-medium text-orange-700 dark:text-orange-200 mb-2">📝 1:1 맞춤 피드백</h4>
-                          <p className="text-sm text-orange-600 dark:text-orange-100/80">
-                            AI 분석 결과를 바탕으로 개인별 맞춤 피드백을 제공합니다
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
+                      )}
                     </>
                   )}
                 </div>

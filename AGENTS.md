@@ -21,3 +21,4 @@ History favors concise, present-tense subjects (e.g. `Fixed slug page crushing i
 
 ## Security & Configuration Tips
 Keep secrets in `.env.local`; required values include NextAuth providers, Upstash Redis URL/token, Cohere/OpenAI keys, and vector store paths. Run `npm run setup-vector-db` after changing embeddings or product metadata so notebooks and agents stay in sync. Never commit credentials or raw data exports—store sanitized fixtures in `docs/` or `public/mock-data/` instead.
+c

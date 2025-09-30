@@ -81,12 +81,13 @@ export async function POST(request: NextRequest) {
     // Create session and start background processing with user info
     const sessionId = createSession();
     const userInfo = {
-      id: session.user.id,
+      id: (session.user as any).userId || session.user.id, // Use login ID (userId) for consistent storage
       name: session.user.name || '',
       email: session.user.email || '',
       analyzedAt: new Date().toISOString(),
       productId
     };
+    console.log('🔑 Using userId for storage:', userInfo.id);
     startProcessingPipeline(sessionId, file, userInfo);
 
     // Return immediately with sessionId

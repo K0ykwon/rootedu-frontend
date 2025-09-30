@@ -7,17 +7,32 @@
  */
 
 import OpenAI from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { ExtractedData } from '@/types/medsky';
 import {
   NextSemesterPlanSchema,
   NextSemesterPlan,
+  StudyPlanRecommendationSchema,
   AIKeywordExtraction,
   AIScoreAnalysis,
   EnhancedAcademicAnalysis,
   AIMajorRecommendations
 } from '@/types/medsky-enhanced';
 import { createLLMConfig } from '../llmService';
+
+// Zod schemas for structured outputs
+const CharacterDevelopmentResponseSchema = z.object({
+  target_competencies: z.array(z.string()),
+  development_activities: z.array(z.string()),
+  reflection_questions: z.array(z.string())
+});
+
+const DocumentationStrategyResponseSchema = z.object({
+  monthly_goals: z.array(z.string()),
+  writing_tips: z.array(z.string()),
+  evidence_collection: z.array(z.string())
+});
 
 // Study planning system prompt
 const STUDY_PLANNING_PROMPT = `
@@ -153,7 +168,7 @@ JSON 형태로 응답해주세요:
 }`;
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await client.chat.completions.parse({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -165,16 +180,15 @@ JSON 형태로 응답해주세요:
           content: academicPrompt
         }
       ],
+      response_format: zodResponseFormat(StudyPlanRecommendationSchema, 'academic_plan'),
       temperature: 0.3,
       max_tokens: 3000
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No content in AI response');
+    const parsed = response.choices[0]?.message?.parsed;
+    if (!parsed) {
+      throw new Error('No parsed response from AI');
     }
-
-    const parsed = JSON.parse(content);
     return {
       priority_subjects: parsed.priority_subjects || [],
       extracurricular_recommendations: parsed.extracurricular_recommendations || [],
@@ -257,7 +271,7 @@ JSON 형태로 응답:
 }`;
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await client.chat.completions.parse({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -269,16 +283,15 @@ JSON 형태로 응답:
           content: characterPrompt
         }
       ],
+      response_format: zodResponseFormat(CharacterDevelopmentResponseSchema, 'character_development'),
       temperature: 0.3,
       max_tokens: 1500
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No content in AI response');
+    const parsed = response.choices[0]?.message?.parsed;
+    if (!parsed) {
+      throw new Error('No parsed response from AI');
     }
-
-    const parsed = JSON.parse(content);
     return {
       target_competencies: parsed.target_competencies || [],
       development_activities: parsed.development_activities || [],
@@ -328,7 +341,7 @@ JSON 형태로 응답:
 }`;
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await client.chat.completions.parse({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -340,16 +353,15 @@ JSON 형태로 응답:
           content: documentationPrompt
         }
       ],
+      response_format: zodResponseFormat(DocumentationStrategyResponseSchema, 'documentation_strategy'),
       temperature: 0.3,
       max_tokens: 1500
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No content in AI response');
+    const parsed = response.choices[0]?.message?.parsed;
+    if (!parsed) {
+      throw new Error('No parsed response from AI');
     }
-
-    const parsed = JSON.parse(content);
     return {
       monthly_goals: parsed.monthly_goals || [],
       writing_tips: parsed.writing_tips || [],

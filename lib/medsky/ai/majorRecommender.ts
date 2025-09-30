@@ -7,6 +7,7 @@
  */
 
 import OpenAI from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { ExtractedData } from '@/types/medsky';
 import {
@@ -182,7 +183,7 @@ JSON 형태로 응답해주세요:
 }`;
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await client.chat.completions.parse({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -194,16 +195,15 @@ JSON 형태로 응답해주세요:
           content: recommendationPrompt
         }
       ],
+      response_format: zodResponseFormat(AIMajorRecommendationsSchema, 'major_recommendations'),
       temperature: 0.3,
       max_tokens: 4000
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No content in AI response');
+    const parsed = response.choices[0]?.message?.parsed;
+    if (!parsed) {
+      throw new Error('No parsed response from AI');
     }
-
-    const parsed = JSON.parse(content);
     return {
       top_recommendations: parsed.top_recommendations || [],
       alternative_options: parsed.alternative_options || [],

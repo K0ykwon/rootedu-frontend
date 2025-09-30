@@ -72,7 +72,7 @@ const BottomNav: React.FC = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 glass-card-heavy border-t border-[var(--glass-border)] md:hidden safe-bottom z-50 shadow-[0_-2px_8px_rgba(0,0,0,0.1)]">
+    <nav className="fixed bottom-0 left-0 right-0 glass-card-heavy border-t border-[var(--glass-border)] md:hidden safe-bottom z-50 shadow-[0_-2px_8px_rgba(0,0,0,0.1)] backdrop-blur-xl">
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));

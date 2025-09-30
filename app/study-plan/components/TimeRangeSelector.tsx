@@ -129,74 +129,77 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-      <div className="mb-4">
+    <div className="bg-white rounded-xl p-2 md:p-4 shadow-sm border border-gray-200 overflow-x-hidden">
+      <div className="mb-3 md:mb-4">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            <Clock className="w-5 h-5" />
+          <h3 className="text-base md:text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <Clock className="w-4 h-4 md:w-5 md:h-5" />
             학습 시간 선택
           </h3>
-          <span className="text-sm text-gray-500">
-            총 {totalHours}시간 선택됨
+          <span className="text-xs md:text-sm text-gray-500">
+            총 {totalHours}시간
           </span>
         </div>
-        <p className="text-sm text-gray-600">
-          드래그하여 학습할 시간대를 선택하세요. 여러 시간대 선택 가능합니다.
+        <p className="text-xs md:text-sm text-gray-600">
+          <span className="hidden md:inline">드래그하여 학습할 시간대를 선택하세요. 여러 시간대 선택 가능합니다.</span>
+          <span className="md:hidden">시간을 탭하여 선택하세요.</span>
         </p>
       </div>
 
       {/* Selected ranges display */}
-      <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-        <div className="text-sm font-medium text-blue-900 mb-2">선택된 시간:</div>
-        <div className="text-sm text-blue-700">{getRangeDisplay()}</div>
+      <div className="mb-3 md:mb-4 p-2 md:p-3 bg-blue-50 rounded-lg">
+        <div className="text-xs md:text-sm font-medium text-blue-900 mb-1 md:mb-2">선택된 시간:</div>
+        <div className="text-xs md:text-sm text-blue-700">{getRangeDisplay()}</div>
       </div>
 
       {/* Timeline */}
       <div className="relative space-y-4" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
         {/* AM Section (0-11) */}
         <div>
-          <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+          <div className="text-xs md:text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
             <span className="text-blue-500">오전 (AM)</span>
-            <span className="text-xs text-gray-400">0시 - 11시</span>
+            <span className="text-[10px] md:text-xs text-gray-400">0시 - 11시</span>
           </div>
-          <div className="grid grid-cols-12 gap-1">
+          <div className="grid grid-cols-6 md:grid-cols-12 gap-1.5 md:gap-1">
             {hours.slice(0, 12).map(hour => {
               const isSelected = isHourSelected(hour);
               const isCurrentlySelecting = isInCurrentSelection(hour);
               const isNightTime = hour < 6;
 
               return (
-                <div key={hour} className="text-center">
-                  <div className="text-xs text-gray-600 mb-1 font-medium">
+                <div key={hour} className="text-center touch-target">
+                  <div className="text-[10px] md:text-xs text-gray-600 mb-1 font-medium">
                     {hour}시
                   </div>
                   <motion.div
                     className={`
-                      relative h-12 w-full rounded-lg cursor-pointer transition-all
+                      relative h-14 md:h-12 w-full min-h-[44px] rounded-lg cursor-pointer transition-all
                       ${isSelected
                         ? 'bg-gradient-to-b from-blue-400 to-blue-500 shadow-md'
                         : isCurrentlySelecting
                         ? 'bg-gradient-to-b from-blue-200 to-blue-300'
                         : isNightTime
-                        ? 'bg-slate-100 hover:bg-slate-200 border-2 border-slate-200'
-                        : 'bg-gray-50 hover:bg-gray-100 border-2 border-gray-200'
+                        ? 'bg-slate-100 hover:bg-slate-200 border-2 border-slate-200 active:bg-slate-300'
+                        : 'bg-gray-50 hover:bg-gray-100 border-2 border-gray-200 active:bg-gray-200'
                       }
                     `}
                     onMouseDown={() => handleMouseDown(hour)}
                     onMouseEnter={() => handleMouseEnter(hour)}
+                    onTouchStart={() => handleMouseDown(hour)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    style={{ touchAction: 'manipulation' }}
                   >
                     {/* Night time indicator */}
                     {isNightTime && !isSelected && !isCurrentlySelecting && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-lg">🌙</span>
+                        <span className="text-base md:text-lg">🌙</span>
                       </div>
                     )}
                     {/* Selected indicator */}
                     {isSelected && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-white font-bold">✓</span>
+                        <span className="text-white font-bold text-sm md:text-base">✓</span>
                       </div>
                     )}
                   </motion.div>
@@ -208,48 +211,50 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
 
         {/* PM Section (12-23) */}
         <div>
-          <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+          <div className="text-xs md:text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
             <span className="text-orange-500">오후 (PM)</span>
-            <span className="text-xs text-gray-400">12시 - 23시</span>
+            <span className="text-[10px] md:text-xs text-gray-400">12시 - 23시</span>
           </div>
-          <div className="grid grid-cols-12 gap-1">
+          <div className="grid grid-cols-6 md:grid-cols-12 gap-1.5 md:gap-1">
             {hours.slice(12, 24).map(hour => {
               const isSelected = isHourSelected(hour);
               const isCurrentlySelecting = isInCurrentSelection(hour);
               const isNightTime = hour >= 22;
 
               return (
-                <div key={hour} className="text-center">
-                  <div className="text-xs text-gray-600 mb-1 font-medium">
+                <div key={hour} className="text-center touch-target">
+                  <div className="text-[10px] md:text-xs text-gray-600 mb-1 font-medium">
                     {hour}시
                   </div>
                   <motion.div
                     className={`
-                      relative h-12 w-full rounded-lg cursor-pointer transition-all
+                      relative h-14 md:h-12 w-full min-h-[44px] rounded-lg cursor-pointer transition-all
                       ${isSelected
                         ? 'bg-gradient-to-b from-blue-400 to-blue-500 shadow-md'
                         : isCurrentlySelecting
                         ? 'bg-gradient-to-b from-blue-200 to-blue-300'
                         : isNightTime
-                        ? 'bg-slate-100 hover:bg-slate-200 border-2 border-slate-200'
-                        : 'bg-gray-50 hover:bg-gray-100 border-2 border-gray-200'
+                        ? 'bg-slate-100 hover:bg-slate-200 border-2 border-slate-200 active:bg-slate-300'
+                        : 'bg-gray-50 hover:bg-gray-100 border-2 border-gray-200 active:bg-gray-200'
                       }
                     `}
                     onMouseDown={() => handleMouseDown(hour)}
                     onMouseEnter={() => handleMouseEnter(hour)}
+                    onTouchStart={() => handleMouseDown(hour)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    style={{ touchAction: 'manipulation' }}
                   >
                     {/* Night time indicator */}
                     {isNightTime && !isSelected && !isCurrentlySelecting && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-lg">🌙</span>
+                        <span className="text-base md:text-lg">🌙</span>
                       </div>
                     )}
                     {/* Selected indicator */}
                     {isSelected && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-white font-bold">✓</span>
+                        <span className="text-white font-bold text-sm md:text-base">✓</span>
                       </div>
                     )}
                   </motion.div>
@@ -261,22 +266,25 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
       </div>
 
       {/* Quick select buttons */}
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-3 md:mt-4 flex flex-col md:flex-row flex-wrap gap-2">
         <button
           onClick={() => onChange([{ start: '09:00', end: '12:00' }])}
-          className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+          className="px-3 py-2 md:py-1.5 text-sm md:text-xs bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-full transition-colors w-full md:w-auto touch-target"
+          style={{ touchAction: 'manipulation' }}
         >
           오전 (9-12시)
         </button>
         <button
           onClick={() => onChange([{ start: '13:00', end: '18:00' }])}
-          className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+          className="px-3 py-2 md:py-1.5 text-sm md:text-xs bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-full transition-colors w-full md:w-auto touch-target"
+          style={{ touchAction: 'manipulation' }}
         >
           오후 (1-6시)
         </button>
         <button
           onClick={() => onChange([{ start: '19:00', end: '23:00' }])}
-          className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+          className="px-3 py-2 md:py-1.5 text-sm md:text-xs bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-full transition-colors w-full md:w-auto touch-target"
+          style={{ touchAction: 'manipulation' }}
         >
           저녁 (7-11시)
         </button>
@@ -285,13 +293,15 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
             { start: '09:00', end: '12:00' },
             { start: '14:00', end: '18:00' }
           ])}
-          className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+          className="px-3 py-2 md:py-1.5 text-sm md:text-xs bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-full transition-colors w-full md:w-auto touch-target"
+          style={{ touchAction: 'manipulation' }}
         >
           오전+오후
         </button>
         <button
           onClick={() => onChange([])}
-          className="px-3 py-1 text-xs bg-red-100 hover:bg-red-200 text-red-600 rounded-full transition-colors"
+          className="px-3 py-2 md:py-1.5 text-sm md:text-xs bg-red-100 hover:bg-red-200 active:bg-red-300 text-red-600 rounded-full transition-colors w-full md:w-auto touch-target"
+          style={{ touchAction: 'manipulation' }}
         >
           초기화
         </button>
@@ -303,7 +313,8 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           onClick={onConfirm}
-          className="mt-4 w-full py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md"
+          className="mt-3 md:mt-4 w-full py-3 md:py-2.5 min-h-[44px] bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-blue-700 active:from-blue-700 active:to-blue-800 transition-all shadow-md text-base md:text-sm touch-target"
+          style={{ touchAction: 'manipulation' }}
         >
           선택 완료
         </motion.button>

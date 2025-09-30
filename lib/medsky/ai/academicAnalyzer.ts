@@ -7,10 +7,31 @@
  */
 
 import OpenAI from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 import { ExtractedData, AcademicDevelopment } from '@/types/medsky';
 import { EnhancedAcademicAnalysisSchema, EnhancedAcademicAnalysis } from '@/types/medsky-enhanced';
 import { createLLMConfig } from '../llmService';
+
+// Zod schemas for structured outputs
+const SubjectAnalysisResponseSchema = z.object({
+  subject: z.string(),
+  semester: z.string(),
+  performance_trend: z.enum(["상승", "하락", "유지", "불안정"]),
+  grade_analysis: z.object({
+    raw_score: z.string(),
+    achievement_level: z.string(),
+    rank_grade: z.string(),
+    relative_position: z.enum(["상위권", "중상위권", "중위권", "중하위권", "하위권"])
+  }),
+  strengths: z.array(z.string()),
+  improvements_needed: z.array(z.string()),
+  college_readiness: z.number()
+});
+
+const CollegeReadinessResponseSchema = z.object({
+  recommendations: z.array(z.string())
+});
 
 // Academic analysis system prompt
 const ACADEMIC_ANALYSIS_PROMPT = `
@@ -171,7 +192,7 @@ ${grades.map(g => `
 }`;
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await client.chat.completions.parse({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -183,14 +204,13 @@ ${grades.map(g => `
           content: analysisPrompt
         }
       ],
+      response_format: zodResponseFormat(SubjectAnalysisResponseSchema, 'subject_analysis'),
       temperature: 0.2,
       max_tokens: 1500
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) return null;
-
-    const parsed = JSON.parse(content);
+    const parsed = response.choices[0]?.message?.parsed;
+    if (!parsed) return null;
     return {
       subject: parsed.subject || subject,
       semester: parsed.semester || latestGrade.학기,
@@ -301,7 +321,7 @@ ${JSON.stringify(subjectReadiness, null, 2)}
 JSON 형태의 "recommendations" 배열로 응답해주세요.`;
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await client.chat.completions.parse({
       model: 'gpt-4o-mini',
       messages: [
         {
@@ -313,18 +333,18 @@ JSON 형태의 "recommendations" 배열로 응답해주세요.`;
           content: recommendationsPrompt
         }
       ],
+      response_format: zodResponseFormat(CollegeReadinessResponseSchema, 'college_readiness'),
       temperature: 0.3,
       max_tokens: 1000
     });
 
-    const content = response.choices[0]?.message?.content;
-    const parsed = content ? JSON.parse(content) : {};
+    const parsed = response.choices[0]?.message?.parsed;
 
     return {
       overall_readiness: overallReadiness,
       subject_readiness: subjectReadiness,
       competitive_position: competitivePosition,
-      recommendations: parsed.recommendations || [
+      recommendations: parsed?.recommendations || [
         '주요 과목 집중 학습을 통한 등급 향상',
         '약점 과목 보완을 위한 추가 학습',
         '지속적인 성적 관리와 목표 설정'

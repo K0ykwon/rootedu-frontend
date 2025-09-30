@@ -35,7 +35,7 @@ export default function RootLayout({
             <ToastProvider>
               <div className="min-h-screen flex flex-col">
                 <Header />
-                <main className="flex-1 pb-16 md:pb-0">
+                <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
                   {children}
                 </main>
                 <Footer />

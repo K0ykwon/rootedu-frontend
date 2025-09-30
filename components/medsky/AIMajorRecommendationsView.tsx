@@ -1,15 +1,88 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
 import { AIMajorRecommendations, MajorRecommendationSchema } from '@/types/medsky-enhanced';
 import { z } from 'zod';
+import { CollapsibleSection } from './CollapsibleSection';
+import { ArrayEditor } from './ArrayEditor';
 
 interface AIMajorRecommendationsViewProps {
   data: AIMajorRecommendations;
+  editable?: boolean;
+  onSave?: (data: AIMajorRecommendations) => Promise<void>;
 }
 
-export function AIMajorRecommendationsView({ data }: AIMajorRecommendationsViewProps) {
+export function AIMajorRecommendationsView({ data, editable = false, onSave }: AIMajorRecommendationsViewProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedData, setEditedData] = useState(data);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!onSave) return;
+    setIsSaving(true);
+    try {
+      await onSave(editedData);
+      setIsEditing(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditedData(data);
+    setIsEditing(false);
+  };
+
+  // Top recommendations handlers (fixed array of 3)
+  const handleTopRecommendationChange = (index: number, field: string, value: any) => {
+    setEditedData(prev => ({
+      ...prev,
+      top_recommendations: prev.top_recommendations.map((rec, i) =>
+        i === index ? { ...rec, [field]: value } : rec
+      )
+    }));
+  };
+
+  // Alternative options handlers (variable array)
+  const handleAlternativeChange = (index: number, field: string, value: any) => {
+    setEditedData(prev => ({
+      ...prev,
+      alternative_options: prev.alternative_options.map((opt, i) =>
+        i === index ? { ...opt, [field]: value } : opt
+      )
+    }));
+  };
+
+  const handleAddAlternative = () => {
+    setEditedData(prev => ({
+      ...prev,
+      alternative_options: [
+        ...prev.alternative_options,
+        {
+          major_name: '',
+          university_examples: [''],
+          match_score: 0,
+          match_reasons: [''],
+          required_subjects: [''],
+          current_preparation_level: 0,
+          career_prospects: [''],
+          related_activities: ['']
+        }
+      ]
+    }));
+  };
+
+  const handleRemoveAlternative = (index: number) => {
+    setEditedData(prev => ({
+      ...prev,
+      alternative_options: prev.alternative_options.filter((_, i) => i !== index)
+    }));
+  };
+
+  const displayData = isEditing ? editedData : data;
+
   const getMatchColor = (score: number) => {
     if (score >= 90) return 'text-green-600 bg-green-50 border-green-200';
     if (score >= 80) return 'text-blue-600 bg-blue-50 border-blue-200';
@@ -26,6 +99,105 @@ export function AIMajorRecommendationsView({ data }: AIMajorRecommendationsViewP
     return 'text-red-600';
   };
 
+  // Major Editor Component
+  const MajorEditor = ({
+    major,
+    onMajorChange
+  }: {
+    major: z.infer<typeof MajorRecommendationSchema>;
+    onMajorChange: (field: string, value: any) => void;
+  }) => (
+    <div className="space-y-4">
+      {/* Major Name and Scores */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1 block">전공명</label>
+          <input
+            type="text"
+            className="w-full text-sm border rounded px-3 py-2"
+            value={major.major_name}
+            onChange={(e) => onMajorChange('major_name', e.target.value)}
+            placeholder="전공명 입력"
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1 block">
+            적합도: {major.match_score}%
+          </label>
+          <input
+            type="range"
+            className="w-full"
+            min={0}
+            max={100}
+            value={major.match_score}
+            onChange={(e) => onMajorChange('match_score', Number(e.target.value))}
+          />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1 block">
+            준비도: {major.current_preparation_level}%
+          </label>
+          <input
+            type="range"
+            className="w-full"
+            min={0}
+            max={100}
+            value={major.current_preparation_level}
+            onChange={(e) => onMajorChange('current_preparation_level', Number(e.target.value))}
+          />
+        </div>
+      </div>
+
+      {/* University Examples */}
+      <ArrayEditor
+        label="추천 대학교"
+        items={major.university_examples}
+        onChange={(items) => onMajorChange('university_examples', items)}
+        placeholder="대학교 입력"
+        addButtonText="+ 대학교 추가"
+      />
+
+      {/* Match Reasons */}
+      <ArrayEditor
+        label="추천 이유"
+        items={major.match_reasons}
+        onChange={(items) => onMajorChange('match_reasons', items)}
+        placeholder="추천 이유 입력"
+        multiline
+        addButtonText="+ 이유 추가"
+      />
+
+      {/* Required Subjects */}
+      <ArrayEditor
+        label="필수 과목"
+        items={major.required_subjects}
+        onChange={(items) => onMajorChange('required_subjects', items)}
+        placeholder="과목 입력"
+        addButtonText="+ 과목 추가"
+      />
+
+      {/* Career Prospects */}
+      <ArrayEditor
+        label="진로 전망"
+        items={major.career_prospects}
+        onChange={(items) => onMajorChange('career_prospects', items)}
+        placeholder="진로 입력"
+        multiline
+        addButtonText="+ 진로 추가"
+      />
+
+      {/* Related Activities */}
+      <ArrayEditor
+        label="추천 활동"
+        items={major.related_activities}
+        onChange={(items) => onMajorChange('related_activities', items)}
+        placeholder="활동 입력"
+        addButtonText="+ 활동 추가"
+      />
+    </div>
+  );
+
+  // Major Card (Read-only view)
   const MajorCard = ({ major, rank, isTop = false }: {
     major: z.infer<typeof MajorRecommendationSchema>;
     rank: number;
@@ -137,14 +309,41 @@ export function AIMajorRecommendationsView({ data }: AIMajorRecommendationsViewP
     <div className="space-y-6">
       {/* Header */}
       <Card className="p-6 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200" glass={false}>
-        <div className="flex items-center space-x-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
-            <span className="text-white text-lg">🚀</span>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+              <span className="text-white text-lg">🚀</span>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">AI 전공 추천</h2>
+              <p className="text-sm text-gray-600">학생 프로필 기반 맞춤형 전공 및 진로 추천</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">AI 전공 추천</h2>
-            <p className="text-sm text-gray-600">학생 프로필 기반 맞춤형 전공 및 진로 추천</p>
-          </div>
+
+          {editable && !isEditing && (
+            <Button variant="outline" onClick={() => setIsEditing(true)}>
+              수정하기
+            </Button>
+          )}
+
+          {isEditing && (
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                onClick={handleCancel}
+                disabled={isSaving}
+              >
+                취소
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? '저장 중...' : '저장'}
+              </Button>
+            </div>
+          )}
         </div>
       </Card>
 
@@ -154,9 +353,19 @@ export function AIMajorRecommendationsView({ data }: AIMajorRecommendationsViewP
           <span className="mr-2">📋</span>
           종합 분석 의견
         </h3>
-        <p className="text-gray-700 bg-gray-50 p-4 rounded-lg leading-relaxed">
-          {data.analysis_summary}
-        </p>
+        {isEditing ? (
+          <textarea
+            className="w-full text-sm border border-gray-300 rounded px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 leading-relaxed"
+            value={editedData.analysis_summary}
+            onChange={(e) => setEditedData(prev => ({ ...prev, analysis_summary: e.target.value }))}
+            rows={4}
+            placeholder="종합 분석 의견을 입력하세요"
+          />
+        ) : (
+          <p className="text-gray-700 bg-gray-50 p-4 rounded-lg leading-relaxed">
+            {displayData.analysis_summary}
+          </p>
+        )}
       </Card>
 
       {/* Top 3 Recommendations */}
@@ -165,60 +374,120 @@ export function AIMajorRecommendationsView({ data }: AIMajorRecommendationsViewP
           <span className="mr-2">🏆</span>
           상위 3개 추천 전공
         </h3>
-        {data.top_recommendations.map((major, index) => (
-          <MajorCard key={index} major={major} rank={index + 1} isTop={true} />
-        ))}
+        {isEditing ? (
+          <div className="space-y-4">
+            {editedData.top_recommendations.map((major, index) => (
+              <CollapsibleSection
+                key={index}
+                title={`${index + 1}순위: ${major.major_name || '전공명 미입력'}`}
+                defaultOpen={false}
+              >
+                <MajorEditor
+                  major={major}
+                  onMajorChange={(field, value) => handleTopRecommendationChange(index, field, value)}
+                />
+              </CollapsibleSection>
+            ))}
+          </div>
+        ) : (
+          displayData.top_recommendations.map((major, index) => (
+            <MajorCard key={index} major={major} rank={index + 1} isTop={true} />
+          ))
+        )}
       </div>
 
       {/* Alternative Options */}
-      {data.alternative_options.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold flex items-center">
-            <span className="mr-2">🎯</span>
-            추가 고려 전공
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {data.alternative_options.map((major, index) => (
-              <MajorCard key={index} major={major} rank={index + 4} isTop={false} />
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold flex items-center">
+          <span className="mr-2">🎯</span>
+          추가 고려 전공
+        </h3>
+        {isEditing ? (
+          <div className="space-y-4">
+            {editedData.alternative_options.map((major, index) => (
+              <CollapsibleSection
+                key={index}
+                title={`추가 전공 ${index + 1}: ${major.major_name || '전공명 미입력'}`}
+                defaultOpen={false}
+                headerActions={
+                  <button
+                    onClick={() => handleRemoveAlternative(index)}
+                    className="px-3 py-1 text-sm text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                  >
+                    삭제
+                  </button>
+                }
+              >
+                <MajorEditor
+                  major={major}
+                  onMajorChange={(field, value) => handleAlternativeChange(index, field, value)}
+                />
+              </CollapsibleSection>
             ))}
+            <button
+              onClick={handleAddAlternative}
+              className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors"
+            >
+              + 추가 전공 추가
+            </button>
           </div>
-        </div>
-      )}
+        ) : (
+          displayData.alternative_options.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {displayData.alternative_options.map((major, index) => (
+                <MajorCard key={index} major={major} rank={index + 4} isTop={false} />
+              ))}
+            </div>
+          )
+        )}
+      </div>
 
       {/* Interdisciplinary Suggestions */}
-      {data.interdisciplinary_suggestions.length > 0 && (
-        <Card className="p-6" glass={false}>
-          <h3 className="text-lg font-semibold mb-4 flex items-center">
-            <span className="mr-2">🔀</span>
-            융복합 전공 추천
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {data.interdisciplinary_suggestions.map((suggestion, index) => (
-              <div key={index} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center">
-                    <span className="text-white text-xs">🔗</span>
+      <Card className="p-6" glass={false}>
+        <h3 className="text-lg font-semibold mb-4 flex items-center">
+          <span className="mr-2">🔀</span>
+          융복합 전공 추천
+        </h3>
+        {isEditing ? (
+          <ArrayEditor
+            label=""
+            items={editedData.interdisciplinary_suggestions}
+            onChange={(items) => setEditedData(prev => ({ ...prev, interdisciplinary_suggestions: items }))}
+            placeholder="융복합 전공 입력"
+            addButtonText="+ 융복합 전공 추가"
+          />
+        ) : (
+          displayData.interdisciplinary_suggestions.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {displayData.interdisciplinary_suggestions.map((suggestion, index) => (
+                <div key={index} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center">
+                      <span className="text-white text-xs">🔗</span>
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">{suggestion}</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-900">{suggestion}</span>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          )
+        )}
+      </Card>
+
+      {/* Legend */}
+      {!isEditing && (
+        <Card className="p-4 bg-gray-50" glass={false}>
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">지표 설명</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-600">
+            <div>
+              <span className="font-medium">적합도:</span> 학생의 역량과 전공의 요구사항 일치 정도
+            </div>
+            <div>
+              <span className="font-medium">준비도:</span> 현재 해당 전공 진학을 위한 준비 수준
+            </div>
           </div>
         </Card>
       )}
-
-      {/* Legend */}
-      <Card className="p-4 bg-gray-50" glass={false}>
-        <h4 className="text-sm font-semibold text-gray-700 mb-3">지표 설명</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-600">
-          <div>
-            <span className="font-medium">적합도:</span> 학생의 역량과 전공의 요구사항 일치 정도
-          </div>
-          <div>
-            <span className="font-medium">준비도:</span> 현재 해당 전공 진학을 위한 준비 수준
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }

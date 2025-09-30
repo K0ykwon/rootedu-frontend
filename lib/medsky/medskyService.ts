@@ -164,9 +164,22 @@ async function storeAnalysisForAdmin(sessionId: string, session: ProcessingSessi
         keywordMatrix: session.result.keywordMatrix,
         summaryDraft: session.result.summaryDraft,
         consultantNotes: session.result.consultantNotes,
-        status: session.result.status
+        status: session.result.status,
+        // AI Enhanced Analysis Fields
+        ai_keyword_analysis: session.result.ai_keyword_analysis,
+        ai_section_scoring: session.result.ai_section_scoring,
+        enhanced_academic_analysis: session.result.enhanced_academic_analysis,
+        ai_major_recommendations: session.result.ai_major_recommendations,
+        next_semester_plan: session.result.next_semester_plan,
+        ai_analysis_timestamp: session.result.ai_analysis_timestamp,
+        ai_model_versions: session.result.ai_model_versions
       },
-      processingTime: session.lastUpdate.getTime() - session.startTime.getTime()
+      processingTime: session.lastUpdate.getTime() - session.startTime.getTime(),
+      // Approval workflow fields
+      approvalStatus: 'pending_review',
+      approvedAt: null,
+      approvedBy: null,
+      influencerNotes: null
     };
 
     // Batch writes to reduce round-trips
@@ -188,6 +201,11 @@ async function storeAnalysisForAdmin(sessionId: string, session: ProcessingSessi
     const sessionsKey = getSessionsKey(slug);
     const metadataKey = `analysis:${sessionId}:metadata`;
 
+    // Validate user ID exists
+    if (!session.userInfo?.id) {
+      throw new Error('User ID is required for storing analysis data');
+    }
+
     console.log(`📝 Storing analysis data in Redis for influencer "${slug}":`, {
       analysisKey,
       sessionsKey,
@@ -201,14 +219,37 @@ async function storeAnalysisForAdmin(sessionId: string, session: ProcessingSessi
       ttl: `${ttl} seconds (${Math.round(ttl / 60 / 60 / 24)} days)`
     });
 
+    // Also store under user-specific key for user's own access with product namespace
+    const userAnalysisKey = `user:${session.userInfo!.id}:medsky:analysis:${sessionId}`;
+    const userSessionsKey = `user:${session.userInfo!.id}:medsky:analysis_sessions`;
+
+    // Approval workflow tracking keys
+    const pendingReviewsKey = `${slug}:pending_reviews`;
+
     const multi = client.multi();
+
+    // Store under influencer key (for admin/influencer access)
     multi.set(analysisKey, JSON.stringify(analysisData), { EX: ttl } as any);
     multi.sAdd(sessionsKey, sessionId);
     multi.set(metadataKey, JSON.stringify(metadata), { EX: ttl } as any);
+
+    // Store under user key (for user's own access)
+    multi.set(userAnalysisKey, JSON.stringify(analysisData), { EX: ttl } as any);
+    multi.sAdd(userSessionsKey, sessionId);
+
+    // Add to pending reviews set for influencer workflow
+    multi.sAdd(pendingReviewsKey, sessionId);
+
     await multi.exec();
-    
+
     await client.quit();
-    console.log(`✅ Analysis data stored for admin access: ${sessionId}`);
+    console.log(`✅ Analysis data stored for admin and user access: ${sessionId}`, {
+      sessionId,
+      influencerKey: analysisKey,
+      userKey: userAnalysisKey,
+      userId: session.userInfo!.id,
+      userIdType: typeof session.userInfo!.id
+    });
   } catch (error) {
     console.error('Failed to store analysis data for admin:', error);
     // Non-fatal: best-effort storage
@@ -1067,6 +1108,175 @@ export async function updateSummaryOverride(
   return await getOrLoadSessionResult(sessionId);
 }
 
+/**
+ * Update AI section scoring data
+ */
+export async function updateAISectionScoring(
+  sessionId: string,
+  scoringData: any
+): Promise<ProcessingResult> {
+  const now = new Date().toISOString();
+
+  updateSessionResult(sessionId, {
+    ai_section_scoring: scoringData,
+    ai_analysis_timestamp: now
+  });
+
+  return await getOrLoadSessionResult(sessionId);
+}
+
+/**
+ * Update AI keyword analysis data
+ */
+export async function updateAIKeywordAnalysis(
+  sessionId: string,
+  keywordData: any
+): Promise<ProcessingResult> {
+  const now = new Date().toISOString();
+
+  updateSessionResult(sessionId, {
+    ai_keyword_analysis: keywordData,
+    ai_analysis_timestamp: now
+  });
+
+  return await getOrLoadSessionResult(sessionId);
+}
+
+/**
+ * Update enhanced academic analysis data
+ */
+export async function updateEnhancedAcademicAnalysis(
+  sessionId: string,
+  academicData: any
+): Promise<ProcessingResult> {
+  const now = new Date().toISOString();
+
+  updateSessionResult(sessionId, {
+    enhanced_academic_analysis: academicData,
+    ai_analysis_timestamp: now
+  });
+
+  return await getOrLoadSessionResult(sessionId);
+}
+
+/**
+ * Update AI major recommendations data
+ */
+export async function updateAIMajorRecommendations(
+  sessionId: string,
+  majorData: any
+): Promise<ProcessingResult> {
+  const now = new Date().toISOString();
+
+  updateSessionResult(sessionId, {
+    ai_major_recommendations: majorData,
+    ai_analysis_timestamp: now
+  });
+
+  return await getOrLoadSessionResult(sessionId);
+}
+
+/**
+ * Update next semester study plan data
+ */
+export async function updateNextSemesterPlan(
+  sessionId: string,
+  planData: any
+): Promise<ProcessingResult> {
+  const now = new Date().toISOString();
+
+  updateSessionResult(sessionId, {
+    next_semester_plan: planData,
+    ai_analysis_timestamp: now
+  });
+
+  return await getOrLoadSessionResult(sessionId);
+}
+
+/**
+ * Update extracted data (core student information)
+ */
+export async function updateExtractedData(
+  sessionId: string,
+  extractedData: any
+): Promise<ProcessingResult> {
+  updateSessionResult(sessionId, {
+    extractedData
+  });
+
+  return await getOrLoadSessionResult(sessionId);
+}
+
+/**
+ * Update validation analysis
+ */
+export async function updateValidationAnalysis(
+  sessionId: string,
+  validationData: any
+): Promise<ProcessingResult> {
+  updateSessionResult(sessionId, {
+    validationAnalysis: validationData
+  });
+
+  return await getOrLoadSessionResult(sessionId);
+}
+
+/**
+ * Update grade trends analytics
+ */
+export async function updateGradeTrends(
+  sessionId: string,
+  trendsData: any
+): Promise<ProcessingResult> {
+  updateSessionResult(sessionId, {
+    gradeTrends: trendsData
+  });
+
+  return await getOrLoadSessionResult(sessionId);
+}
+
+/**
+ * Update competency scores payload
+ */
+export async function updateCompetencyScores(
+  sessionId: string,
+  scoresData: any
+): Promise<ProcessingResult> {
+  updateSessionResult(sessionId, {
+    competencyScores: scoresData
+  });
+
+  return await getOrLoadSessionResult(sessionId);
+}
+
+/**
+ * Update major alignment report
+ */
+export async function updateMajorAlignment(
+  sessionId: string,
+  alignmentData: any
+): Promise<ProcessingResult> {
+  updateSessionResult(sessionId, {
+    majorAlignment: alignmentData
+  });
+
+  return await getOrLoadSessionResult(sessionId);
+}
+
+/**
+ * Update keyword matrix
+ */
+export async function updateKeywordMatrix(
+  sessionId: string,
+  keywordMatrix: any
+): Promise<ProcessingResult> {
+  updateSessionResult(sessionId, {
+    keywordMatrix
+  });
+
+  return await getOrLoadSessionResult(sessionId);
+}
+
 // ===========================
 // Configuration Validation
 // ===========================
@@ -1164,4 +1374,83 @@ export async function healthCheck(): Promise<{
   }
 
   return { status, services, errors };
+}
+
+/**
+ * Approve or reject an analysis result
+ * This makes the analysis visible to the user or marks it for revision
+ */
+export async function updateAnalysisApproval(
+  slug: string,
+  sessionId: string,
+  action: 'approve' | 'reject',
+  approverId: string,
+  notes?: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const client = await getRedisClient();
+
+    // Load existing analysis data
+    const analysisKey = `${getAnalysisPrefix(slug)}${sessionId}`;
+    const dataStr = await client.get(analysisKey);
+
+    if (!dataStr) {
+      await client.quit();
+      return { success: false, message: 'Analysis not found' };
+    }
+
+    const analysisData = JSON.parse(dataStr);
+
+    // Update approval fields
+    const newStatus = action === 'approve' ? 'approved' : 'rejected';
+    analysisData.approvalStatus = newStatus;
+    analysisData.approvedAt = new Date().toISOString();
+    analysisData.approvedBy = approverId;
+    analysisData.influencerNotes = notes || null;
+
+    const ttl = 60 * 60 * 24 * 30; // 30 days
+
+    // Prepare Redis keys
+    const pendingReviewsKey = `${slug}:pending_reviews`;
+    const approvedKey = `${slug}:approved_analyses`;
+
+    // Also update user-specific key
+    const userId = analysisData.userInfo?.id;
+    const userAnalysisKey = userId ? `user:${userId}:medsky:analysis:${sessionId}` : null;
+
+    const multi = client.multi();
+
+    // Update main analysis data
+    multi.set(analysisKey, JSON.stringify(analysisData), { EX: ttl } as any);
+
+    // Update user-specific data
+    if (userAnalysisKey) {
+      multi.set(userAnalysisKey, JSON.stringify(analysisData), { EX: ttl } as any);
+    }
+
+    // Move from pending to approved set
+    if (action === 'approve') {
+      multi.sRem(pendingReviewsKey, sessionId);
+      multi.sAdd(approvedKey, sessionId);
+    }
+
+    await multi.exec();
+    await client.quit();
+
+    console.log(`✅ Analysis ${sessionId} ${newStatus} by ${approverId}`);
+
+    return {
+      success: true,
+      message: action === 'approve'
+        ? 'Analysis approved successfully'
+        : 'Analysis marked for revision'
+    };
+
+  } catch (error) {
+    console.error('Failed to update analysis approval:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
+  }
 }
