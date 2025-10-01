@@ -293,10 +293,27 @@ export default function InfluencerDashboard() {
         {/* Analysis Results Section */}
         <Card>
           <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
-                분석 결과 ({analysisResults.length})
-              </h2>
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
+                  분석 결과 ({analysisResults.length})
+                </h2>
+                <p className="text-sm text-[var(--color-text-secondary)] flex items-center gap-3">
+                  <span className="inline-flex items-center gap-1">
+                    <span className="text-base">🔒</span>
+                    <span className="text-orange-600 dark:text-orange-400 font-medium">검토 대기</span>
+                    <span className="text-[var(--color-text-tertiary)]">=</span>
+                    <span>학생에게 숨겨짐</span>
+                  </span>
+                  <span className="text-[var(--color-text-tertiary)]">|</span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="text-base">✅</span>
+                    <span className="text-green-600 dark:text-green-400 font-medium">승인 완료</span>
+                    <span className="text-[var(--color-text-tertiary)]">=</span>
+                    <span>학생에게 공개됨</span>
+                  </span>
+                </p>
+              </div>
 
               {/* Filter Tabs */}
               <div className="flex gap-2">
@@ -351,23 +368,54 @@ export default function InfluencerDashboard() {
                   {filteredResults.map((result) => (
                   <div
                     key={result.sessionId}
-                    className="border border-[var(--color-border-primary)] rounded-lg p-6"
+                    className={`border rounded-lg overflow-hidden ${
+                      result.approvalStatus === 'pending_review'
+                        ? 'border-orange-300 bg-orange-50 dark:bg-orange-900/10'
+                        : result.approvalStatus === 'approved'
+                        ? 'border-green-300 bg-green-50 dark:bg-green-900/10'
+                        : 'border-red-300 bg-red-50 dark:bg-red-900/10'
+                    }`}
                   >
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-lg font-medium text-[var(--color-text-primary)]">
-                            {result.userName || '익명 사용자'}
-                          </h3>
-                          {/* Approval Status Badge */}
-                          {result.approvalStatus === 'pending_review' ? (
-                            <Badge variant="warning" size="sm">⏳ 검토 대기</Badge>
-                          ) : result.approvalStatus === 'approved' ? (
-                            <Badge variant="success" size="sm">✓ 승인 완료</Badge>
-                          ) : (
-                            <Badge variant="error" size="sm">❌ 거절됨</Badge>
-                          )}
+                    {/* Prominent Status Banner */}
+                    {result.approvalStatus === 'pending_review' && (
+                      <div className="bg-orange-500 text-white px-6 py-3 flex items-center gap-2">
+                        <span className="text-xl">🔒</span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">학생에게 숨겨짐</p>
+                          <p className="text-xs opacity-90">이 분석은 승인 전까지 학생이 볼 수 없습니다</p>
                         </div>
+                        <Badge variant="warning" className="bg-orange-600 text-white border-0">검토 대기</Badge>
+                      </div>
+                    )}
+                    {result.approvalStatus === 'approved' && (
+                      <div className="bg-green-500 text-white px-6 py-3 flex items-center gap-2">
+                        <span className="text-xl">✅</span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">학생에게 공개됨</p>
+                          <p className="text-xs opacity-90">학생이 이 분석 결과를 확인할 수 있습니다</p>
+                        </div>
+                        <Badge variant="success" className="bg-green-600 text-white border-0">승인 완료</Badge>
+                      </div>
+                    )}
+                    {result.approvalStatus === 'rejected' && (
+                      <div className="bg-red-500 text-white px-6 py-3 flex items-center gap-2">
+                        <span className="text-xl">❌</span>
+                        <div className="flex-1">
+                          <p className="font-semibold text-sm">거절됨</p>
+                          <p className="text-xs opacity-90">이 분석은 승인되지 않았습니다</p>
+                        </div>
+                        <Badge variant="error" className="bg-red-600 text-white border-0">거절됨</Badge>
+                      </div>
+                    )}
+
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex-1">
+                          <div className="mb-2">
+                            <h3 className="text-lg font-medium text-[var(--color-text-primary)]">
+                              {result.userName || '익명 사용자'}
+                            </h3>
+                          </div>
                         <p className="text-sm text-[var(--color-text-secondary)]">
                           분석 완료: {new Date(result.completedAt).toLocaleDateString('ko-KR')}
                         </p>
@@ -403,18 +451,6 @@ export default function InfluencerDashboard() {
                         >
                           학생 관련 질문하기
                         </Button>
-
-                        {/* Approval Button - Only show for pending analyses */}
-                        {result.approvalStatus === 'pending_review' && (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => handleApproveAnalysis(result.sessionId)}
-                            disabled={approvingSessionId === result.sessionId}
-                          >
-                            {approvingSessionId === result.sessionId ? '승인 중...' : '✓ 승인하기'}
-                          </Button>
-                        )}
 
                         {!result.profileGenerated ? (
                           <Button
@@ -482,6 +518,32 @@ export default function InfluencerDashboard() {
                         </div>
                       </div>
                     )}
+
+                    {/* Prominent Approval Section - Only for pending analyses */}
+                    {result.approvalStatus === 'pending_review' && (
+                      <div className="mt-6 pt-4 border-t border-orange-300 bg-orange-100 dark:bg-orange-900/30 -mx-6 -mb-6 px-6 py-4 rounded-b-lg">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-orange-900 dark:text-orange-100 mb-1">
+                              승인 필요
+                            </p>
+                            <p className="text-xs text-orange-700 dark:text-orange-200">
+                              승인하면 학생이 이 분석 결과를 즉시 확인할 수 있습니다
+                            </p>
+                          </div>
+                          <Button
+                            variant="primary"
+                            size="md"
+                            onClick={() => handleApproveAnalysis(result.sessionId)}
+                            disabled={approvingSessionId === result.sessionId}
+                            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 whitespace-nowrap"
+                          >
+                            {approvingSessionId === result.sessionId ? '승인 중...' : '✓ 학생에게 공개하기'}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   </div>
                   ))}
                 </div>

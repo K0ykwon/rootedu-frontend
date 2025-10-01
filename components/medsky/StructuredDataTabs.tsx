@@ -268,13 +268,29 @@ interface AcademicsTabProps {
 
 function AcademicsTab({ academics }: AcademicsTabProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  
+  const [selectedSemester, setSelectedSemester] = useState<string>('all');
+
   const categoryStats = useMemo(() => getAcademicStatsByCategory(academics), [academics]);
   const categories = Object.keys(categoryStats);
-  
-  const filteredAcademics = selectedCategory === 'all' 
-    ? academics 
-    : academics.filter(a => a.category === selectedCategory);
+
+  // Extract unique semesters
+  const semesters = useMemo(() => {
+    const semesterSet = new Set(
+      academics
+        .map(a => a.학기)
+        .filter((s): s is string => s !== null && s !== undefined && s !== '')
+    );
+    return Array.from(semesterSet).sort();
+  }, [academics]);
+
+  // Apply both category and semester filters
+  const filteredAcademics = useMemo(() => {
+    return academics.filter(a => {
+      if (selectedCategory !== 'all' && a.category !== selectedCategory) return false;
+      if (selectedSemester !== 'all' && a.학기 !== selectedSemester) return false;
+      return true;
+    });
+  }, [academics, selectedCategory, selectedSemester]);
 
   if (academics.length === 0) {
     return (
@@ -315,12 +331,41 @@ function AcademicsTab({ academics }: AcademicsTabProps) {
         </div>
       </Card>
 
+      {/* Semester Filter */}
+      {semesters.length > 0 && (
+        <Card className="p-4" glass={false}>
+          <h4 className="text-sm font-semibold text-[var(--color-text-secondary)] mb-3">학기 필터</h4>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={selectedSemester === 'all' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedSemester('all')}
+            >
+              전체
+            </Button>
+            {semesters.map(semester => (
+              <Button
+                key={semester}
+                variant={selectedSemester === semester ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setSelectedSemester(semester)}
+              >
+                {semester}
+              </Button>
+            ))}
+          </div>
+        </Card>
+      )}
+
       {/* Academic Performance Table */}
       <Card className="overflow-hidden" glass={false}>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-[var(--color-border-primary)]">
             <thead className="bg-[var(--color-bg-secondary)]">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
+                  학기
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-[var(--color-text-secondary)] uppercase tracking-wider">
                   과목
                 </th>
@@ -347,6 +392,11 @@ function AcademicsTab({ academics }: AcademicsTabProps) {
             <tbody className="bg-[var(--color-bg-primary)] divide-y divide-[var(--color-border-primary)]">
               {filteredAcademics.map((academic, index) => (
                 <tr key={index} className="hover:bg-[var(--color-bg-secondary)]">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <Badge variant="default" size="sm">
+                      {academic.학기 || '-'}
+                    </Badge>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="font-medium text-[var(--color-text-primary)]">
                       {academic.과목}

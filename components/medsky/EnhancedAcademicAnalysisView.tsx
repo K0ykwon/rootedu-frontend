@@ -136,7 +136,7 @@ export function EnhancedAcademicAnalysisView({ data, editable = false, onSave }:
               <span className="text-white text-lg">🎓</span>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">AI 향상된 학업 분석</h2>
+              <h2 className="text-xl font-bold text-gray-900">심화 학업 성취 분석</h2>
               <p className="text-sm text-gray-600">석차등급과 성취도를 활용한 종합적 학업 성취 분석</p>
             </div>
           </div>
@@ -181,12 +181,12 @@ export function EnhancedAcademicAnalysisView({ data, editable = false, onSave }:
             </div>
             <div className="text-sm text-gray-600 mt-2">성적 추세</div>
           </div>
-          <div className="text-center p-4 border rounded-lg">
+          {/* <div className="text-center p-4 border rounded-lg">
             <div className="text-lg font-semibold text-blue-600">
               {Math.round(displayData.overall_academic_trends.grade_consistency)}
             </div>
             <div className="text-sm text-gray-600 mt-2">성적 일관성</div>
-          </div>
+          </div> */}
           <div className="text-center p-4 border rounded-lg">
             <div className="text-lg font-semibold text-purple-600">
               {displayData.overall_academic_trends.improvement_rate > 0 ? '+' : ''}{displayData.overall_academic_trends.improvement_rate.toFixed(1)}

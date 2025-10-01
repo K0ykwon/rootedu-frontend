@@ -300,6 +300,7 @@ function identifyCompetencyAreas(description: string): string[] {
  * Enhanced academic data for display
  */
 export interface ProcessedAcademic {
+  학기: string | null;  // Keep semester from source data
   과목: string;
   학점수: number;
   score_over_average: string;
@@ -315,9 +316,10 @@ export interface ProcessedAcademic {
  */
 export function processAcademics(extractedData: ExtractedData): ProcessedAcademic[] {
   const academics = extractedData.academicDevelopments?.교과학습발달상황 || [];
-  
+
   return academics.map(academic => ({
     ...academic,
+    학기: academic.학기,  // Explicitly include semester
     category: categorizeSubject(academic.과목),
     performanceLevel: evaluatePerformance(academic.성취도, academic.석차등급),
     numericGrade: extractNumericGrade(academic.score_over_average)

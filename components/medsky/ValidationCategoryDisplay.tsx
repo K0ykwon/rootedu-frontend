@@ -123,7 +123,7 @@ export function ValidationCategoryDisplay({
                     }
                   `} />
                   <p className="text-sm text-gray-700 leading-relaxed">
-                    <span className="font-medium">AI 분석:</span> {feedback.feedback}
+                    <span className="font-medium">전문가 의견:</span> {feedback.feedback}
                   </p>
                 </div>
               </div>

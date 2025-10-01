@@ -51,10 +51,10 @@ export function AnalysisOverview({
     return (
       <Card className="p-8 text-center bg-yellow-50 border-yellow-200" glass={false}>
         <div className="text-yellow-800">
-          <h3 className="text-xl font-bold mb-4">🤖 AI 분석 결과 대기 중</h3>
-          <p className="text-sm mb-2">AI 기반 종합 분석이 아직 완료되지 않았습니다.</p>
+          <h3 className="text-xl font-bold mb-4">📊 전문 분석 진행 중</h3>
+          <p className="text-sm mb-2">종합 평가가 진행 중입니다.</p>
           <p className="text-xs text-yellow-600">
-            세부 점수, 키워드 분석, 학업 분석 탭에서 AI 분석 결과를 확인하실 수 있습니다.
+            세부 점수, 키워드 분석, 학업 분석 탭에서 분석 결과를 확인하실 수 있습니다.
           </p>
         </div>
       </Card>
@@ -70,7 +70,7 @@ export function AnalysisOverview({
         <div className="text-center space-y-6">
           <div className="space-y-3">
             <h3 className="text-2xl font-bold text-[var(--color-text-primary)]">
-              AI 종합 분석 결과
+              종합 평가 결과
             </h3>
 
             <div className="flex items-center justify-center space-x-8">
@@ -341,9 +341,9 @@ export function AnalysisOverview({
       <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200" glass={false}>
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
-            <span className="text-2xl">🤖</span>
+            <span className="text-2xl">📝</span>
             <h3 className="text-lg font-semibold text-blue-900">
-              AI 종합 평가
+              전문가 종합 의견
             </h3>
           </div>
 

@@ -100,7 +100,7 @@ export function CompetencyDistribution({ data, editable, onSave, className }: Co
           <thead>
             <tr className="text-left text-[var(--color-text-tertiary)] border-b border-[var(--color-border-primary)]">
               <th className="py-2 pr-4">역량</th>
-              <th className="py-2 pr-4">AI 점수</th>
+              <th className="py-2 pr-4">분석 점수</th>
               <th className="py-2 pr-4">컨설턴트 점수</th>
               <th className="py-2 pr-4">백분위</th>
               {editable && <th className="py-2 pr-4">메모</th>}

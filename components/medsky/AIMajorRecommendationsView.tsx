@@ -315,7 +315,7 @@ export function AIMajorRecommendationsView({ data, editable = false, onSave }: A
               <span className="text-white text-lg">🚀</span>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">AI 전공 추천</h2>
+              <h2 className="text-xl font-bold text-gray-900">전공 적성 평가</h2>
               <p className="text-sm text-gray-600">학생 프로필 기반 맞춤형 전공 및 진로 추천</p>
             </div>
           </div>

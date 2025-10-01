@@ -183,7 +183,7 @@ async function storeAnalysisForAdmin(sessionId: string, session: ProcessingSessi
     };
 
     // Batch writes to reduce round-trips
-    const ttl = 60 * 60 * 24 * 30;
+    const ttl = 60 * 60 * 24 * 365; // 1 year (effectively permanent)
     const metadata = {
       sessionId,
       productId: session.userInfo!.productId || null,
@@ -326,14 +326,72 @@ function updateSessionStatus(sessionId: string, status: ProcessingStatus): void 
 }
 
 /**
- * Update session result
+ * Update session result and persist to Redis analysis_data key
  */
-function updateSessionResult(sessionId: string, updates: Partial<ProcessingResult>): void {
+async function updateSessionResult(sessionId: string, updates: Partial<ProcessingResult>): Promise<void> {
   const session = sessions.get(sessionId);
-  if (session) {
-    session.result = { ...session.result, ...updates };
-    session.lastUpdate = new Date();
-    void persistSession(session);
+  if (!session) {
+    console.warn(`⚠️ Session ${sessionId} not found for update`);
+    return;
+  }
+
+  // Update in-memory session
+  session.result = { ...session.result, ...updates };
+  session.lastUpdate = new Date();
+
+  // Persist to Redis - write to the SAME key frontend reads from
+  try {
+    const client = await getRedisClient();
+
+    // Determine influencer slug from session
+    const slug = getInfluencerSlug(session);
+
+    // Primary key: influencer's analysis data (what frontend reads)
+    const analysisKey = `${getAnalysisPrefix(slug)}${sessionId}`;
+
+    // Get existing analysis data
+    const existingData = await client.get(analysisKey);
+
+    if (existingData) {
+      const analysisData = JSON.parse(existingData);
+
+      // Update the nested result object with new data
+      analysisData.result = {
+        ...analysisData.result,
+        ...updates
+      };
+
+      // Save back with permanent TTL (1 year)
+      const ttl = 60 * 60 * 24 * 365;
+      await client.set(analysisKey, JSON.stringify(analysisData), { EX: ttl });
+
+      console.log(`✅ Updated analysis key: ${analysisKey}`, {
+        updatedFields: Object.keys(updates)
+      });
+
+      // Also update user-specific key if it exists
+      if (session.userInfo?.id) {
+        const userKey = `user:${session.userInfo.id}:medsky:analysis:${sessionId}`;
+        const userData = await client.get(userKey);
+
+        if (userData) {
+          const userAnalysisData = JSON.parse(userData);
+          userAnalysisData.result = {
+            ...userAnalysisData.result,
+            ...updates
+          };
+          await client.set(userKey, JSON.stringify(userAnalysisData), { EX: ttl });
+          console.log(`✅ Updated user key: ${userKey}`);
+        }
+      }
+    } else {
+      console.warn(`⚠️ Analysis data key not found: ${analysisKey}. This may be a new session.`);
+    }
+
+    await client.quit();
+  } catch (error) {
+    console.error(`❌ Failed to update analysis data for ${sessionId}:`, error);
+    // Don't throw - allow in-memory session to continue
   }
 }
 
@@ -1117,7 +1175,7 @@ export async function updateAISectionScoring(
 ): Promise<ProcessingResult> {
   const now = new Date().toISOString();
 
-  updateSessionResult(sessionId, {
+  await updateSessionResult(sessionId, {
     ai_section_scoring: scoringData,
     ai_analysis_timestamp: now
   });
@@ -1134,7 +1192,7 @@ export async function updateAIKeywordAnalysis(
 ): Promise<ProcessingResult> {
   const now = new Date().toISOString();
 
-  updateSessionResult(sessionId, {
+  await updateSessionResult(sessionId, {
     ai_keyword_analysis: keywordData,
     ai_analysis_timestamp: now
   });
@@ -1151,7 +1209,7 @@ export async function updateEnhancedAcademicAnalysis(
 ): Promise<ProcessingResult> {
   const now = new Date().toISOString();
 
-  updateSessionResult(sessionId, {
+  await updateSessionResult(sessionId, {
     enhanced_academic_analysis: academicData,
     ai_analysis_timestamp: now
   });
@@ -1168,7 +1226,7 @@ export async function updateAIMajorRecommendations(
 ): Promise<ProcessingResult> {
   const now = new Date().toISOString();
 
-  updateSessionResult(sessionId, {
+  await updateSessionResult(sessionId, {
     ai_major_recommendations: majorData,
     ai_analysis_timestamp: now
   });
@@ -1185,7 +1243,7 @@ export async function updateNextSemesterPlan(
 ): Promise<ProcessingResult> {
   const now = new Date().toISOString();
 
-  updateSessionResult(sessionId, {
+  await updateSessionResult(sessionId, {
     next_semester_plan: planData,
     ai_analysis_timestamp: now
   });
@@ -1200,7 +1258,7 @@ export async function updateExtractedData(
   sessionId: string,
   extractedData: any
 ): Promise<ProcessingResult> {
-  updateSessionResult(sessionId, {
+  await updateSessionResult(sessionId, {
     extractedData
   });
 

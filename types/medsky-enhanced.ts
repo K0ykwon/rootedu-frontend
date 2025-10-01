@@ -77,11 +77,109 @@ export const AIScoreAnalysisSchema = z.object({
 });
 
 // ===========================
-// Enhanced Academic Analysis
+// Enhanced Academic Analysis (Semester & Grade Based)
 // ===========================
 
 /**
- * Comprehensive academic performance analysis using full schema
+ * Helper type for grade levels
+ */
+export const GradeLevelSchema = z.enum(["1학년", "2학년", "3학년"]).describe("학년");
+
+/**
+ * Helper type for semesters
+ */
+export const SemesterNumberSchema = z.enum(["1학기", "2학기"]).describe("학기");
+
+/**
+ * Subject analysis for a single semester
+ */
+export const SemesterSubjectAnalysisSchema = z.object({
+  subject: z.string().describe("과목명"),
+  performance_trend: z.enum(["상승", "하락", "유지", "불안정"]).describe("학기 내 성취 추세"),
+  grade_analysis: z.object({
+    raw_score: z.string().describe("원점수/과목평균 분석"),
+    achievement_level: z.string().describe("성취도 (A,B,C,D,E) 분석"),
+    rank_grade: z.string().describe("석차등급 분석"),
+    relative_position: z.enum(["상위권", "중상위권", "중위권", "중하위권", "하위권"])
+      .describe("상대적 위치")
+  }).describe("성적 상세 분석"),
+  strengths: z.array(z.string()).describe("해당 과목의 강점"),
+  improvements_needed: z.array(z.string()).describe("개선이 필요한 부분"),
+  college_readiness: z.number().min(0).max(100).describe("대학 진학 준비도 (0-100)")
+}).describe("학기별 과목 분석");
+
+/**
+ * Single semester academic analysis within a grade
+ */
+export const SemesterAcademicAnalysisSchema = z.object({
+  semester: SemesterNumberSchema.describe("학기 (1학기/2학기)"),
+  subjects: z.array(SemesterSubjectAnalysisSchema).describe("학기별 과목 분석"),
+  semester_summary: z.object({
+    average_readiness: z.number().min(0).max(100).describe("학기 평균 준비도"),
+    strong_subjects: z.array(z.string()).describe("학기 강점 과목"),
+    weak_subjects: z.array(z.string()).describe("학기 약점 과목"),
+    overall_trend: z.enum(["상승", "하락", "유지"]).describe("학기 전체 추세")
+  }).describe("학기 종합 요약")
+}).describe("학기별 학업 분석");
+
+/**
+ * Grade-level academic analysis (contains 1-2 semesters)
+ */
+export const GradeAcademicAnalysisSchema = z.object({
+  grade: GradeLevelSchema.describe("학년"),
+  semesters: z.array(SemesterAcademicAnalysisSchema).describe("학기별 분석 (1-2개)"),
+  grade_summary: z.object({
+    grade_trend: z.enum(["상승", "하락", "유지", "불안정"]).describe("학년 전체 추세"),
+    semester_comparison: z.string().describe("학기 간 비교 분석 (1학기 vs 2학기)"),
+    key_improvements: z.array(z.string()).describe("학년 내 주요 개선사항"),
+    areas_of_concern: z.array(z.string()).describe("학년 내 우려사항"),
+    grade_readiness: z.number().min(0).max(100).describe("학년 평균 준비도")
+  }).describe("학년 종합 분석")
+}).describe("학년별 학업 분석");
+
+/**
+ * Comprehensive multi-year academic analysis (NEW HIERARCHICAL STRUCTURE)
+ */
+export const EnhancedAcademicAnalysisSchemaV2 = z.object({
+  grades: z.array(GradeAcademicAnalysisSchema).describe("학년별 분석 (1-3학년)"),
+
+  multi_year_trends: z.object({
+    overall_progression: z.enum(["지속적 상승", "지속적 하락", "등락", "안정적 유지"])
+      .describe("다년간 전체 추세"),
+    cross_grade_strong_subjects: z.array(z.string()).describe("전 학년 강점 과목"),
+    cross_grade_weak_subjects: z.array(z.string()).describe("전 학년 약점 과목"),
+    grade_transitions: z.array(z.object({
+      from_grade: GradeLevelSchema,
+      to_grade: GradeLevelSchema,
+      transition_analysis: z.string().describe("학년 전환 시 변화 분석")
+    })).describe("학년 간 전환 분석"),
+    consistency_score: z.number().min(0).max(100).describe("전체 성적 일관성 점수")
+  }).describe("다년간 종합 추세 분석"),
+
+  college_entrance_readiness: z.object({
+    overall_readiness: z.number().min(0).max(100).describe("전체 대학 진학 준비도"),
+    readiness_by_grade: z.record(z.string(), z.number()).describe("학년별 준비도"),
+    subject_readiness: z.record(z.string(), z.number()).describe("과목별 준비도"),
+    competitive_position: z.string().describe("경쟁력 위치 분석"),
+    recommendations: z.array(z.string()).describe("성적 향상을 위한 구체적 제안")
+  }).describe("대학 진학 준비도 종합 분석"),
+
+  subject_trajectories: z.array(z.object({
+    subject: z.string().describe("과목명"),
+    progression_pattern: z.enum(["지속 향상", "지속 하락", "등락", "안정"])
+      .describe("과목별 진행 패턴"),
+    grade_performances: z.array(z.object({
+      grade: GradeLevelSchema,
+      semester: SemesterNumberSchema,
+      readiness: z.number().min(0).max(100)
+    })).describe("학년/학기별 성과"),
+    overall_assessment: z.string().describe("과목 전체 평가")
+  })).describe("과목별 다년간 궤적 분석")
+}).describe("학년별·학기별 종합 학업 분석 (신규 구조)");
+
+/**
+ * @deprecated Use EnhancedAcademicAnalysisSchemaV2 for new implementations
+ * Legacy schema for backward compatibility
  */
 export const EnhancedAcademicAnalysisSchema = z.object({
   subject_analysis: z.array(z.object({
@@ -225,6 +323,18 @@ export interface EnhancedProcessingResult {
 // Export types
 export type AIKeywordExtraction = z.infer<typeof AIKeywordExtractionSchema>;
 export type AIScoreAnalysis = z.infer<typeof AIScoreAnalysisSchema>;
+
+// New hierarchical academic analysis types
+export type GradeLevel = z.infer<typeof GradeLevelSchema>;
+export type SemesterNumber = z.infer<typeof SemesterNumberSchema>;
+export type SemesterSubjectAnalysis = z.infer<typeof SemesterSubjectAnalysisSchema>;
+export type SemesterAcademicAnalysis = z.infer<typeof SemesterAcademicAnalysisSchema>;
+export type GradeAcademicAnalysis = z.infer<typeof GradeAcademicAnalysisSchema>;
+export type EnhancedAcademicAnalysisV2 = z.infer<typeof EnhancedAcademicAnalysisSchemaV2>;
+
+// Legacy type for backward compatibility
+/** @deprecated Use EnhancedAcademicAnalysisV2 for new implementations */
 export type EnhancedAcademicAnalysis = z.infer<typeof EnhancedAcademicAnalysisSchema>;
+
 export type AIMajorRecommendations = z.infer<typeof AIMajorRecommendationsSchema>;
 export type NextSemesterPlan = z.infer<typeof NextSemesterPlanSchema>;

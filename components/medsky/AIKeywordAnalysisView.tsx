@@ -166,10 +166,10 @@ export function AIKeywordAnalysisView({ data, editable = false, onSave }: AIKeyw
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
-              <span className="text-white text-lg">🤖</span>
+              <span className="text-white text-lg">🔑</span>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">AI 키워드 분석</h2>
+              <h2 className="text-xl font-bold text-gray-900">키워드 분석</h2>
               <p className="text-sm text-gray-600">문맥을 고려한 지능형 키워드 추출 및 역량 분석</p>
             </div>
           </div>

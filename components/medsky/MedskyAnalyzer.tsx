@@ -248,7 +248,7 @@ export function MedskyAnalyzer({ className, productId, onComplete, onStatusChang
                 로그인이 필요합니다
               </h2>
               <p className="text-[var(--color-text-secondary)]">
-                생활기록부 AI 분석을 이용하려면 먼저 로그인해주세요.
+                생활기록부 전문 분석을 이용하려면 먼저 로그인해주세요.
               </p>
               <Button 
                 onClick={() => signIn()}
@@ -271,10 +271,10 @@ export function MedskyAnalyzer({ className, productId, onComplete, onStatusChang
       {/* Header */}
       <div className="text-center space-y-2">
         <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
-          학생생활기록부 AI 분석
+          학생생활기록부 전문 분석
         </h2>
         <p className="text-[var(--color-text-secondary)]">
-          PDF를 업로드하면 AI가 진로 역량, 구체적 노력, 연계성 등을 분석해드립니다
+          PDF를 업로드하면 전문 분석 시스템이 진로 역량, 구체적 노력, 연계성 등을 분석해드립니다
         </p>
       </div>
 
@@ -408,11 +408,11 @@ export function MedskyAnalyzer({ className, productId, onComplete, onStatusChang
                   <nav className="flex flex-wrap gap-2">
                     {[
                       { id: 'overview', name: '종합 개요', icon: '📊', description: '핵심 통계 및 인사이트' },
-                      { id: 'ai-keywords', name: 'AI 키워드', icon: '🤖', description: 'AI 문맥 키워드 추출', category: 'ai' },
-                      { id: 'ai-scoring', name: 'AI 점수', icon: '⚡', description: 'AI 다기준 섹션 채점', category: 'ai' },
-                      { id: 'ai-academic', name: 'AI 학업분석', icon: '🎓', description: 'AI 향상된 학업 분석', category: 'ai' },
-                      { id: 'ai-majors', name: 'AI 전공추천', icon: '🚀', description: 'AI 기반 전공 추천', category: 'ai' },
-                      { id: 'ai-study-plan', name: 'AI 학습계획', icon: '📋', description: 'AI 차학기 학습 계획', category: 'ai' },
+                      { id: 'ai-keywords', name: '키워드 분석', icon: '🔑', description: '문맥 키워드 추출 및 분류', category: 'ai' },
+                      { id: 'ai-scoring', name: '세부 점수', icon: '⚡', description: '다기준 섹션별 채점', category: 'ai' },
+                      { id: 'ai-academic', name: '학업 분석', icon: '🎓', description: '심화 학업 성취 분석', category: 'ai' },
+                      { id: 'ai-majors', name: '전공 추천', icon: '🚀', description: '전공 적성 평가', category: 'ai' },
+                      { id: 'ai-study-plan', name: '학습 계획', icon: '📋', description: '차학기 학습 계획', category: 'ai' },
                       { id: 'trends', name: '성적 추이', icon: '📈', description: '학기별 성적 변화' },
                       { id: 'competency', name: '역량 점수화', icon: '🎯', description: '역량별 점수와 백분위' },
                       { id: 'major', name: '전공 연계', icon: '🎓', description: '필수/권장 과목 충족도' },
@@ -498,8 +498,8 @@ export function MedskyAnalyzer({ className, productId, onComplete, onStatusChang
                       ) : (
                         <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
                           <div className="text-purple-600">
-                            <h3 className="text-lg font-semibold mb-2">AI 키워드 분석 결과가 없습니다</h3>
-                            <p className="text-sm">AI 키워드 추출이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                            <h3 className="text-lg font-semibold mb-2">키워드 분석 결과가 없습니다</h3>
+                            <p className="text-sm">키워드 추출이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
                           </div>
                         </Card>
                       )}
@@ -528,8 +528,8 @@ export function MedskyAnalyzer({ className, productId, onComplete, onStatusChang
                       ) : (
                         <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
                           <div className="text-purple-600">
-                            <h3 className="text-lg font-semibold mb-2">AI 학업 분석 결과가 없습니다</h3>
-                            <p className="text-sm">AI 향상된 학업 분석이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                            <h3 className="text-lg font-semibold mb-2">학업 분석 결과가 없습니다</h3>
+                            <p className="text-sm">심화 학업 분석이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
                           </div>
                         </Card>
                       )}
@@ -543,8 +543,8 @@ export function MedskyAnalyzer({ className, productId, onComplete, onStatusChang
                       ) : (
                         <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
                           <div className="text-purple-600">
-                            <h3 className="text-lg font-semibold mb-2">AI 전공 추천 결과가 없습니다</h3>
-                            <p className="text-sm">AI 전공 추천이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                            <h3 className="text-lg font-semibold mb-2">전공 추천 결과가 없습니다</h3>
+                            <p className="text-sm">전공 적성 평가가 아직 완료되지 않았거나 오류가 발생했습니다.</p>
                           </div>
                         </Card>
                       )}
@@ -558,8 +558,8 @@ export function MedskyAnalyzer({ className, productId, onComplete, onStatusChang
                       ) : (
                         <Card className="p-8 text-center border-purple-200 bg-purple-50" glass={false}>
                           <div className="text-purple-600">
-                            <h3 className="text-lg font-semibold mb-2">AI 학습 계획 결과가 없습니다</h3>
-                            <p className="text-sm">AI 차학기 학습 계획이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
+                            <h3 className="text-lg font-semibold mb-2">학습 계획 결과가 없습니다</h3>
+                            <p className="text-sm">차학기 학습 계획이 아직 완료되지 않았거나 오류가 발생했습니다.</p>
                           </div>
                         </Card>
                       )}

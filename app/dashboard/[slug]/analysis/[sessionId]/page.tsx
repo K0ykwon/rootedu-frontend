@@ -40,13 +40,14 @@ export default function AnalysisDetailPage() {
   const [loading, setLoading] = useState(true);
   const [hasLoadedResult, setHasLoadedResult] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const [activeResultsTab, setActiveResultsTab] = useState<
     'overview' | 'keywords' | 'scoring' | 'academic' | 'majors' | 'study-plan' | 'structured' | 'detailed' | 'summary'
   >('overview');
 
   const patchAnalysis = async (endpoint: string, payload: unknown, successMessage: string) => {
     try {
-      const response = await fetch(`/api/medsky/analysis/${sessionId}/${endpoint}`, {
+      const response = await fetch(`/api/dashboard/${slug}/analysis/${sessionId}/${endpoint}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -92,6 +93,46 @@ export default function AnalysisDetailPage() {
 
   const handleSaveStudyPlan = async (data: any) => {
     await patchAnalysis('ai-study-plan', { data }, '학습 계획이 저장되었습니다.');
+  };
+
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      const response = await fetch(`/api/dashboard/${slug}/analysis/${sessionId}/export-pdf`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'PDF 생성 실패');
+      }
+
+      // Convert response to blob
+      const blob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+
+      // Generate filename
+      const dateStr = new Date().toISOString().split('T')[0];
+      const fileName = `생활기록부분석_${analysisResult?.userName || '학생'}_${dateStr}.pdf`;
+      a.download = fileName;
+
+      // Trigger download
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success('PDF가 성공적으로 다운로드되었습니다');
+    } catch (error) {
+      console.error('PDF export error:', error);
+      toast.error(error instanceof Error ? error.message : 'PDF 생성 중 오류가 발생했습니다');
+    } finally {
+      setExporting(false);
+    }
   };
 
   // Check if user has access to this analysis
@@ -216,8 +257,25 @@ export default function AnalysisDetailPage() {
             >
               ← 대시보드로 돌아가기
             </Button>
+
+            <Button
+              variant="primary"
+              onClick={handleExportPDF}
+              disabled={exporting}
+            >
+              {exporting ? (
+                <>
+                  <span className="inline-block animate-spin mr-2">⏳</span>
+                  생성 중...
+                </>
+              ) : (
+                <>
+                  📄 PDF로 내보내기
+                </>
+              )}
+            </Button>
           </div>
-          
+
           <h1 className="text-3xl font-bold text-[var(--color-text-primary)] mb-2">
             생활기록부 분석 결과
           </h1>
