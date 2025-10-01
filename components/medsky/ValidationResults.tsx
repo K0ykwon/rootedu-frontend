@@ -2,10 +2,10 @@
 
 /**
  * Validation Results Component
- * 
- * Displays the 3 extracted text sections with highlighted feedback
- * based on validation analysis results. Each sentence is highlighted
- * according to its validation category (blue highlight, red line, etc.)
+ *
+ * Displays the extracted sections with highlighted feedback
+ * based on validation analysis results. Uses structured data
+ * to render individual subject and activity cards.
  */
 
 import React, { useState, useMemo } from 'react';
@@ -13,60 +13,15 @@ import { ValidationType, ValidationResultsProps, TextSections, ValidationAnalysi
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-
-const VALIDATION_CONFIG = {
-  blue_highlight: {
-    name: '진로 역량 강조',
-    description: '진로와 직접 연결된 구체적 활동과 탐구',
-    textClass: 'bg-blue-200 text-blue-900 dark:bg-blue-800 dark:text-blue-100',
-    borderClass: 'border-l-4 border-blue-500 dark:border-blue-400',
-    icon: '🎯',
-    priority: 1
-  },
-  red_line: {
-    name: '구체적 노력·깊이',
-    description: '과정과 방법이 구체적으로 드러난 노력',
-    textClass: 'border-b-2 border-red-500 dark:border-red-400 bg-red-50 dark:bg-red-900/20 text-red-900 dark:text-red-100',
-    borderClass: 'border-l-4 border-red-500 dark:border-red-400',
-    icon: '🔥',
-    priority: 2
-  },
-  blue_line: {
-    name: '연계·후속 탐구',
-    description: '활동 간 연결성과 지속적 탐구',
-    textClass: 'border-b-2 border-indigo-500 dark:border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-900 dark:text-indigo-100',
-    borderClass: 'border-l-4 border-indigo-500 dark:border-indigo-400',
-    icon: '🔗',
-    priority: 3
-  },
-  black_line: {
-    name: '구체성 부족',
-    description: '활동 내용이나 과정이 불분명한 서술',
-    textClass: 'border-b-2 border-gray-700 dark:border-gray-300 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100',
-    borderClass: 'border-l-4 border-gray-700 dark:border-gray-300',
-    icon: '⚠️',
-    priority: 4
-  },
-  red_check: {
-    name: '평가 불가',
-    description: '정보 부족으로 평가가 어려운 내용',
-    textClass: 'bg-orange-200 text-orange-900 dark:bg-orange-800 dark:text-orange-100',
-    borderClass: 'border-l-4 border-orange-500 dark:border-orange-400',
-    icon: '❌',
-    priority: 5
-  }
-} as const;
+import { SubjectCard } from './SubjectCard';
+import { ActivityCard } from './ActivityCard';
+import { VALIDATION_CONFIG } from '@/lib/medsky/textHighlighter';
 
 const SECTION_CONFIG = {
   creativeActivities: {
     title: '창의적 체험활동상황',
     icon: '🎨',
     description: '창의적 체험활동 관련 내용'
-  },
-  academicDevelopment: {
-    title: '교과학습발달상황',
-    icon: '📚',
-    description: '교과학습 발달 관련 내용'
   },
   detailedAbilities: {
     title: '세부능력 및 특기사항',
@@ -137,164 +92,6 @@ export function ValidationResults({
     
     return map;
   }, [validationAnalysis]);
-
-  /**
-   * Render text with highlighted feedback
-   */
-  const renderHighlightedText = (text: string, sectionKey: keyof typeof SECTION_CONFIG) => {
-    if (!text.trim()) {
-      return (
-        <div className="text-center py-8 text-[var(--color-text-tertiary)]">
-          <p>이 섹션에 추출된 텍스트가 없습니다.</p>
-        </div>
-      );
-    }
-
-    // Render the text as a continuous block with inline highlighting
-    const renderTextWithHighlights = (text: string) => {
-      // Get all feedback sentences that should be highlighted
-      const feedbackSentences = Array.from(feedbackMap.keys())
-        .filter(sentence => {
-          const matchingFeedbacks = feedbackMap.get(sentence) || [];
-          return matchingFeedbacks.some(fb => currentFilters.includes(fb.type));
-        })
-        .sort((a, b) => b.length - a.length); // Sort by length desc to match longer sentences first
-
-      if (feedbackSentences.length === 0) {
-        // No highlights needed, render as plain text
-        return (
-          <div className="text-[var(--color-text-primary)] leading-relaxed whitespace-pre-wrap">
-            {text}
-          </div>
-        );
-      }
-
-      // Build highlighted text
-      let highlightedText = text;
-      const highlights: Array<{
-        start: number;
-        end: number;
-        sentence: string;
-        config: any;
-        feedbacks: any[];
-      }> = [];
-
-      // Find all positions of sentences that need highlighting
-      feedbackSentences.forEach(sentence => {
-        let searchStart = 0;
-        let pos;
-        while ((pos = highlightedText.indexOf(sentence, searchStart)) !== -1) {
-          const matchingFeedbacks = feedbackMap.get(sentence) || [];
-          const activeFeedbacks = matchingFeedbacks.filter(fb => 
-            currentFilters.includes(fb.type)
-          );
-          
-          if (activeFeedbacks.length > 0) {
-            const primaryFeedback = activeFeedbacks.sort((a, b) => 
-              VALIDATION_CONFIG[a.type].priority - VALIDATION_CONFIG[b.type].priority
-            )[0];
-            const config = VALIDATION_CONFIG[primaryFeedback.type];
-
-            highlights.push({
-              start: pos,
-              end: pos + sentence.length,
-              sentence,
-              config,
-              feedbacks: activeFeedbacks
-            });
-          }
-          searchStart = pos + 1;
-        }
-      });
-
-      // Sort highlights by start position and merge overlapping ones
-      highlights.sort((a, b) => a.start - b.start);
-      
-      // Render text with highlights
-      if (highlights.length === 0) {
-        return (
-          <div className="text-[var(--color-text-primary)] leading-relaxed whitespace-pre-wrap">
-            {text}
-          </div>
-        );
-      }
-
-      const parts = [];
-      let lastEnd = 0;
-
-      highlights.forEach((highlight, index) => {
-        // Add text before highlight
-        if (highlight.start > lastEnd) {
-          parts.push(
-            <span key={`text-${index}`}>
-              {text.slice(lastEnd, highlight.start)}
-            </span>
-          );
-        }
-
-        // Add highlighted text
-        parts.push(
-          <span
-            key={`highlight-${index}`}
-            className={`
-              ${highlight.config.textClass} px-1 rounded cursor-help
-              transition-all duration-200 hover:shadow-sm relative group
-            `}
-            title={highlight.feedbacks.map(fb => `${VALIDATION_CONFIG[fb.type as keyof typeof VALIDATION_CONFIG]?.name || fb.type}: ${fb.feedback}`).join('\n')}
-          >
-            {highlight.sentence}
-            
-            {/* Tooltip */}
-            <div className="
-              absolute z-10 invisible group-hover:visible opacity-0 group-hover:opacity-100
-              bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-lg p-3 shadow-lg
-              top-full left-0 mt-2 w-80 transition-all duration-200
-            ">
-              <div className="space-y-2">
-                {highlight.feedbacks.map((fb, fbIndex) => {
-                  const fbConfig = VALIDATION_CONFIG[fb.type as keyof typeof VALIDATION_CONFIG];
-                  return (
-                    <div key={fbIndex} className="flex items-start space-x-2">
-                      <span className="text-lg">{fbConfig.icon}</span>
-                      <div className="flex-1">
-                        <div className="font-medium text-xs text-gray-300">
-                          {fbConfig.name}
-                        </div>
-                        <div className="text-sm">{fb.feedback}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </span>
-        );
-
-        lastEnd = highlight.end;
-      });
-
-      // Add remaining text
-      if (lastEnd < text.length) {
-        parts.push(
-          <span key="text-end">
-            {text.slice(lastEnd)}
-          </span>
-        );
-      }
-
-      return (
-        <div className="text-[var(--color-text-primary)] leading-relaxed whitespace-pre-wrap">
-          {parts}
-        </div>
-      );
-    };
-
-    return (
-      <div className="space-y-0">
-        {renderTextWithHighlights(text)}
-      </div>
-    );
-  };
 
   return (
     <div className={`validation-results space-y-6 ${className || ''}`}>
@@ -386,25 +183,70 @@ export function ValidationResults({
       </div>
 
       {/* Section Content */}
-      <Card className="p-6" glass={false}>
-        <div className="space-y-4">
-          <div className="flex items-center space-x-3">
-            <span className="text-2xl">{SECTION_CONFIG[selectedSection].icon}</span>
-            <div>
-              <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
-                {SECTION_CONFIG[selectedSection].title}
-              </h3>
-              <p className="text-sm text-[var(--color-text-secondary)]">
-                {SECTION_CONFIG[selectedSection].description}
-              </p>
-            </div>
-          </div>
-          
-          <div className="border-t border-[var(--color-border-primary)] pt-4">
-            {renderHighlightedText(textSections[selectedSection], selectedSection)}
+      <div className="space-y-4">
+        <div className="flex items-center space-x-3 px-2">
+          <span className="text-2xl">{SECTION_CONFIG[selectedSection].icon}</span>
+          <div>
+            <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+              {SECTION_CONFIG[selectedSection].title}
+            </h3>
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              {SECTION_CONFIG[selectedSection].description}
+            </p>
           </div>
         </div>
-      </Card>
+
+        <div className="space-y-3">
+          {selectedSection === 'detailedAbilities' && (
+            <>
+              {extractedData?.detailedAbilities?.세부특기사항 && extractedData.detailedAbilities.세부특기사항.length > 0 ? (
+                extractedData.detailedAbilities.세부특기사항.map((item, index) => (
+                  <SubjectCard
+                    key={index}
+                    subject={item.과목}
+                    content={item.특기사항}
+                    feedbackMap={feedbackMap}
+                    activeFilters={currentFilters}
+                    defaultExpanded={index === 0}
+                  />
+                ))
+              ) : (
+                <Card className="p-8 text-center border-gray-200 bg-gray-50" glass={false}>
+                  <div className="text-gray-600">
+                    <h4 className="font-medium mb-2">세부능력 및 특기사항 데이터가 없습니다</h4>
+                    <p className="text-sm">추출된 데이터를 찾을 수 없습니다.</p>
+                  </div>
+                </Card>
+              )}
+            </>
+          )}
+
+          {selectedSection === 'creativeActivities' && (
+            <>
+              {extractedData?.creativeActivities?.창의적체험활동상황 && extractedData.creativeActivities.창의적체험활동상황.length > 0 ? (
+                extractedData.creativeActivities.창의적체험활동상황.map((item, index) => (
+                  <ActivityCard
+                    key={index}
+                    domain={item.영역}
+                    hours={item.시간}
+                    content={item.특기사항}
+                    feedbackMap={feedbackMap}
+                    activeFilters={currentFilters}
+                    defaultExpanded={index === 0}
+                  />
+                ))
+              ) : (
+                <Card className="p-8 text-center border-gray-200 bg-gray-50" glass={false}>
+                  <div className="text-gray-600">
+                    <h4 className="font-medium mb-2">창의적 체험활동 데이터가 없습니다</h4>
+                    <p className="text-sm">추출된 데이터를 찾을 수 없습니다.</p>
+                  </div>
+                </Card>
+              )}
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Legend */}
       <Card className="p-4 bg-[var(--color-bg-tertiary)]" glass={false}>
