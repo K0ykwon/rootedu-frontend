@@ -28,22 +28,44 @@ export function FeedbackPopover({ feedbacks, children, highlightedText }: Feedba
   const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
   const triggerRef = useRef<HTMLSpanElement>(null);
 
+  // Debug: Log feedbacks to ensure they're being passed
+  useEffect(() => {
+    if (feedbacks && feedbacks.length > 0) {
+      console.log('FeedbackPopover initialized with feedbacks:', feedbacks.length, 'for text:', highlightedText.substring(0, 30));
+    }
+  }, [feedbacks, highlightedText]);
+
   useEffect(() => {
     if (isOpen && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      setPosition({
-        top: rect.bottom + window.scrollY + 8,
-        left: rect.left + window.scrollX,
-        width: Math.max(rect.width, 300)
-      });
+      const updatePosition = () => {
+        const rect = triggerRef.current!.getBoundingClientRect();
+        setPosition({
+          top: rect.bottom + window.scrollY + 8,
+          left: rect.left + window.scrollX,
+          width: Math.max(rect.width, 300)
+        });
+      };
+
+      updatePosition();
+
+      // Update position on scroll or resize
+      window.addEventListener('scroll', updatePosition);
+      window.addEventListener('resize', updatePosition);
+
+      return () => {
+        window.removeEventListener('scroll', updatePosition);
+        window.removeEventListener('resize', updatePosition);
+      };
     }
   }, [isOpen]);
 
   const handleMouseEnter = () => {
+    console.log('FeedbackPopover: Mouse entered, opening popover', { highlightedText: highlightedText.substring(0, 50) });
     setIsOpen(true);
   };
 
   const handleMouseLeave = () => {
+    console.log('FeedbackPopover: Mouse left, closing popover');
     setIsOpen(false);
   };
 
@@ -60,24 +82,25 @@ export function FeedbackPopover({ feedbacks, children, highlightedText }: Feedba
       </span>
 
       {/* Portal for feedback display */}
-      {typeof window !== 'undefined' && isOpen && createPortal(
+      {typeof window !== 'undefined' && createPortal(
         <AnimatePresence>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="fixed z-[9999]"
-            style={{
-              top: `${position.top}px`,
-              left: `${position.left}px`,
-              minWidth: '300px',
-              maxWidth: '600px',
-              width: `${position.width}px`
-            }}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-          >
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -5 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -5 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="fixed z-[99999] pointer-events-auto"
+              style={{
+                top: `${position.top}px`,
+                left: `${position.left}px`,
+                minWidth: '300px',
+                maxWidth: '600px',
+                width: `${position.width}px`
+              }}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+            >
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl border-2 border-gray-200 dark:border-gray-700">
               {/* Arrow */}
               <div className="absolute -top-2 left-4 w-4 h-4 bg-white dark:bg-gray-800 border-l-2 border-t-2 border-gray-200 dark:border-gray-700 rotate-45" />
@@ -128,6 +151,7 @@ export function FeedbackPopover({ feedbacks, children, highlightedText }: Feedba
               </div>
             </div>
           </motion.div>
+          )}
         </AnimatePresence>,
         document.body
       )}
