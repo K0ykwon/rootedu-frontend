@@ -6,7 +6,7 @@
  * Displays validation feedback in a portal positioned below the highlighted text
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ValidationType } from '@/types/medsky';
@@ -23,10 +23,25 @@ interface FeedbackPopoverProps {
   highlightedText: string;
 }
 
+type PopoverPlacement = 'top' | 'bottom';
+
+interface PopoverPosition {
+  top: number;
+  left: number;
+  width: number;
+  placement: PopoverPlacement;
+}
+
 export function FeedbackPopover({ feedbacks, children, highlightedText }: FeedbackPopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [position, setPosition] = useState<PopoverPosition>({
+    top: 0,
+    left: 0,
+    width: 320,
+    placement: 'bottom'
+  });
   const triggerRef = useRef<HTMLSpanElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   // Debug: Log feedbacks to ensure they're being passed
   useEffect(() => {
@@ -35,31 +50,81 @@ export function FeedbackPopover({ feedbacks, children, highlightedText }: Feedba
     }
   }, [feedbacks, highlightedText]);
 
-  useEffect(() => {
-    if (isOpen && triggerRef.current) {
-      const updatePosition = () => {
-        const rect = triggerRef.current!.getBoundingClientRect();
-        setPosition({
-          top: rect.bottom + window.scrollY + 8,
-          left: rect.left + window.scrollX,
-          width: Math.max(rect.width, 300)
-        });
-      };
+  const updatePosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
 
-      updatePosition();
+    const rect = trigger.getBoundingClientRect();
+    const safeMargin = 16;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const maxWidth = Math.min(600, viewportWidth - safeMargin * 2);
+    const nextWidth = Math.min(Math.max(rect.width, 300), maxWidth);
 
-      // Update position on scroll or resize
-      window.addEventListener('scroll', updatePosition);
-      window.addEventListener('resize', updatePosition);
-
-      return () => {
-        window.removeEventListener('scroll', updatePosition);
-        window.removeEventListener('resize', updatePosition);
-      };
+    let left = rect.left + rect.width / 2 - nextWidth / 2;
+    if (left < safeMargin) {
+      left = safeMargin;
     }
-  }, [isOpen]);
+    if (left + nextWidth > viewportWidth - safeMargin) {
+      left = viewportWidth - nextWidth - safeMargin;
+    }
+
+    let top = rect.bottom + 8;
+    let placement: PopoverPlacement = 'bottom';
+
+    const popoverHeight = popoverRef.current?.offsetHeight ?? 0;
+    const wouldOverflowBottom = top + popoverHeight > viewportHeight - safeMargin;
+    if (popoverHeight && wouldOverflowBottom) {
+      const spaceAbove = rect.top - safeMargin;
+      const desiredTopAbove = rect.top - popoverHeight - 8;
+      if (desiredTopAbove >= safeMargin || spaceAbove > popoverHeight) {
+        top = Math.max(desiredTopAbove, safeMargin);
+        placement = 'top';
+      } else {
+        top = Math.max(safeMargin, viewportHeight - popoverHeight - safeMargin);
+      }
+    }
+
+    setPosition(prev => {
+      if (
+        prev.top === top &&
+        prev.left === left &&
+        prev.width === nextWidth &&
+        prev.placement === placement
+      ) {
+        return prev;
+      }
+      return { top, left, width: nextWidth, placement };
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    updatePosition();
+
+    const handleReposition = () => updatePosition();
+    window.addEventListener('scroll', handleReposition, true);
+    window.addEventListener('resize', handleReposition);
+
+    return () => {
+      window.removeEventListener('scroll', handleReposition, true);
+      window.removeEventListener('resize', handleReposition);
+    };
+  }, [isOpen, updatePosition]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const raf = requestAnimationFrame(() => {
+      updatePosition();
+    });
+
+    return () => cancelAnimationFrame(raf);
+  }, [isOpen, feedbacks.length, updatePosition]);
 
   const handleMouseEnter = () => {
+    updatePosition();
     console.log('FeedbackPopover: Mouse entered, opening popover', { highlightedText: highlightedText.substring(0, 50) });
     setIsOpen(true);
   };
@@ -69,13 +134,32 @@ export function FeedbackPopover({ feedbacks, children, highlightedText }: Feedba
     setIsOpen(false);
   };
 
+  const handleClick = () => {
+    if (!isOpen) {
+      updatePosition();
+    }
+    setIsOpen(prev => !prev);
+  };
+
+  const arrowPositionStyle =
+    position.placement === 'top'
+      ? { bottom: '-0.5rem' }
+      : { top: '-0.5rem' };
+
+  const arrowBorderClass =
+    position.placement === 'top'
+      ? 'border-r-2 border-b-2'
+      : 'border-l-2 border-t-2';
+
+  const animationOffset = position.placement === 'top' ? 5 : -5;
+
   return (
     <>
       <span
         ref={triggerRef}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleClick}
         className="cursor-pointer inline-block relative"
       >
         {children}
@@ -86,24 +170,26 @@ export function FeedbackPopover({ feedbacks, children, highlightedText }: Feedba
         <AnimatePresence>
           {isOpen && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -5 }}
+              ref={popoverRef}
+              initial={{ opacity: 0, scale: 0.95, y: animationOffset }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -5 }}
+              exit={{ opacity: 0, scale: 0.95, y: animationOffset }}
               transition={{ duration: 0.15, ease: 'easeOut' }}
               className="fixed z-[99999] pointer-events-auto"
               style={{
-                top: `${position.top}px`,
-                left: `${position.left}px`,
-                minWidth: '300px',
-                maxWidth: '600px',
-                width: `${position.width}px`
+                top: position.top,
+                left: position.left,
+                width: position.width
               }}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
             >
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl border-2 border-gray-200 dark:border-gray-700">
               {/* Arrow */}
-              <div className="absolute -top-2 left-4 w-4 h-4 bg-white dark:bg-gray-800 border-l-2 border-t-2 border-gray-200 dark:border-gray-700 rotate-45" />
+              <div
+                className={`absolute left-6 w-4 h-4 bg-white dark:bg-gray-800 ${arrowBorderClass} border-gray-200 dark:border-gray-700 rotate-45`}
+                style={arrowPositionStyle}
+              />
 
               {/* Header */}
               <div className="relative bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 px-3 py-2 border-b border-gray-200 dark:border-gray-600 rounded-t-lg">
