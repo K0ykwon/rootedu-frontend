@@ -1,14 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { EnhancedAcademicAnalysis } from '@/types/medsky-enhanced';
+import { ValidationAnalysis, ValidationType } from '@/types/medsky';
 import { ArrayEditor } from './ArrayEditor';
 import { CollapsibleSection } from './CollapsibleSection';
+import { renderHighlightedText, FeedbackMap } from '@/lib/medsky/textHighlighter';
 
 interface EnhancedAcademicAnalysisViewProps {
   data: EnhancedAcademicAnalysis;
+  validationAnalysis?: ValidationAnalysis;
+  activeFilters?: ValidationType[];
   editable?: boolean;
   onSave?: (data: EnhancedAcademicAnalysis) => Promise<void>;
 }
@@ -16,10 +20,36 @@ interface EnhancedAcademicAnalysisViewProps {
 const TREND_OPTIONS = ['상승', '하락', '유지', '불안정'] as const;
 const POSITION_OPTIONS = ['상위권', '중상위권', '중위권', '중하위권', '하위권'] as const;
 
-export function EnhancedAcademicAnalysisView({ data, editable = false, onSave }: EnhancedAcademicAnalysisViewProps) {
+export function EnhancedAcademicAnalysisView({
+  data,
+  validationAnalysis,
+  activeFilters = ['blue_highlight', 'red_line', 'blue_line', 'black_line', 'red_check'],
+  editable = false,
+  onSave
+}: EnhancedAcademicAnalysisViewProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState(data);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Create feedback map for highlighting
+  const feedbackMap = useMemo(() => {
+    if (!validationAnalysis) return new Map();
+
+    const map: FeedbackMap = new Map();
+    Object.entries(validationAnalysis).forEach(([type, result]) => {
+      result.Feedbacks.forEach((fb: { sentence: string; feedback: string }) => {
+        const sentence = fb.sentence.trim();
+        if (!map.has(sentence)) {
+          map.set(sentence, []);
+        }
+        map.get(sentence)!.push({
+          type: type as ValidationType,
+          feedback: fb.feedback
+        });
+      });
+    });
+    return map;
+  }, [validationAnalysis]);
 
   const getTrendColor = (trend: string) => {
     const colors: Record<string, string> = {
@@ -285,9 +315,13 @@ export function EnhancedAcademicAnalysisView({ data, editable = false, onSave }:
                 rows={3}
               />
             ) : (
-              <p className="text-sm text-gray-700 bg-blue-50 p-3 rounded">
-                {displayData.college_entrance_readiness.competitive_position}
-              </p>
+              <div className="text-sm text-gray-700 bg-blue-50 p-3 rounded">
+                {validationAnalysis ? (
+                  renderHighlightedText(displayData.college_entrance_readiness.competitive_position, feedbackMap, activeFilters)
+                ) : (
+                  <span>{displayData.college_entrance_readiness.competitive_position}</span>
+                )}
+              </div>
             )}
           </div>
           <div>
@@ -308,11 +342,17 @@ export function EnhancedAcademicAnalysisView({ data, editable = false, onSave }:
                 addButtonText="+ 제안 추가"
               />
             ) : (
-              <ul className="space-y-1">
+              <ul className="space-y-2">
                 {displayData.college_entrance_readiness.recommendations.map((recommendation, index) => (
                   <li key={index} className="text-sm text-gray-700 flex items-start">
                     <span className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
-                    {recommendation}
+                    <div className="flex-1">
+                      {validationAnalysis ? (
+                        renderHighlightedText(recommendation, feedbackMap, activeFilters)
+                      ) : (
+                        <span>{recommendation}</span>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -519,11 +559,17 @@ export function EnhancedAcademicAnalysisView({ data, editable = false, onSave }:
                         <span className="mr-1">✅</span>
                         강점
                       </h5>
-                      <ul className="space-y-1">
+                      <ul className="space-y-2">
                         {subject.strengths.map((strength, idx) => (
                           <li key={idx} className="text-sm text-gray-700 flex items-start">
                             <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
-                            {strength}
+                            <div className="flex-1">
+                              {validationAnalysis ? (
+                                renderHighlightedText(strength, feedbackMap, activeFilters)
+                              ) : (
+                                <span>{strength}</span>
+                              )}
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -533,11 +579,17 @@ export function EnhancedAcademicAnalysisView({ data, editable = false, onSave }:
                         <span className="mr-1">⚠️</span>
                         개선 필요
                       </h5>
-                      <ul className="space-y-1">
+                      <ul className="space-y-2">
                         {subject.improvements_needed.map((improvement, idx) => (
                           <li key={idx} className="text-sm text-gray-700 flex items-start">
                             <span className="w-1.5 h-1.5 bg-orange-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
-                            {improvement}
+                            <div className="flex-1">
+                              {validationAnalysis ? (
+                                renderHighlightedText(improvement, feedbackMap, activeFilters)
+                              ) : (
+                                <span>{improvement}</span>
+                              )}
+                            </div>
                           </li>
                         ))}
                       </ul>

@@ -393,6 +393,7 @@ export default function AnalysisDetailPage() {
                       {analysisResult.analysisData?.enhanced_academic_analysis ? (
                         <EnhancedAcademicAnalysisView
                           data={analysisResult.analysisData.enhanced_academic_analysis}
+                          validationAnalysis={analysisResult.analysisData.validationAnalysis}
                           editable
                           onSave={handleSaveAcademic}
                         />

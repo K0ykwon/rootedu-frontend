@@ -13,7 +13,7 @@ import { generatePDFTemplate } from '@/lib/medsky/pdfTemplate';
 import redis from '@/lib/redis';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60; // 60 seconds timeout for PDF generation
+export const maxDuration = 300; // 5 minutes timeout for PDF generation (includes cold starts)
 
 /**
  * GET /api/dashboard/[slug]/analysis/[sessionId]/export-pdf
