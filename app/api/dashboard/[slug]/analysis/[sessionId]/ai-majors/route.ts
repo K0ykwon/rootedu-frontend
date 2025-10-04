@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import redis from '@/lib/redis';
+import { getRedisClient } from '@/lib/redis';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +26,7 @@ export async function PATCH(
       return NextResponse.json({ error: '데이터가 필요합니다' }, { status: 400 });
     }
 
+    const redis = await getRedisClient();
     const analysisKey = `${slug}:analysis_data:${sessionId}`;
     const currentAnalysis = await redis.get(analysisKey);
 

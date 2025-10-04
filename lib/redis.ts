@@ -1,14 +1,20 @@
 import { createClient } from 'redis';
 
+type RedisClient = ReturnType<typeof createClient>;
+
 declare global {
-  var __redis: ReturnType<typeof createClient> | undefined;
-  var __redisPromise: Promise<ReturnType<typeof createClient>> | undefined;
+  // Shared Redis client instance reused across hot reloads / lambda invocations
+  // eslint-disable-next-line no-var
+  var __redis: RedisClient | undefined;
+  // In-flight connection promise to avoid duplicate connects
+  // eslint-disable-next-line no-var
+  var __redisPromise: Promise<RedisClient> | undefined;
 }
 
 const REDIS_URL = process.env.REDIS_URL || process.env.DATABASE_URL || 'redis://localhost:6379';
 
-// Create a singleton Redis client with connection pooling
-function createRedisClient() {
+// Create a singleton Redis client with pooled connection handling
+function createRedisClient(): RedisClient {
   const client = createClient({
     url: REDIS_URL,
     database: 0,
@@ -35,46 +41,94 @@ function createRedisClient() {
     console.log('Redis client ready');
   });
 
+  client.on('end', () => {
+    console.warn('Redis client connection ended. It will be reinitialized on next use.');
+  });
+
   return client;
 }
 
-// Initialize the global client if it doesn't exist
+// Ensure a shared client exists so legacy default import still references an object
 if (!globalThis.__redis) {
   globalThis.__redis = createRedisClient();
 }
 
-const client = globalThis.__redis;
+/**
+ * Establishes a usable Redis connection, recreating the client if it was closed.
+ */
+async function ensureConnection(): Promise<RedisClient> {
+  while (true) {
+    if (!globalThis.__redis) {
+      globalThis.__redis = createRedisClient();
+    }
 
-// Singleton connection promise to prevent multiple simultaneous connections
-async function ensureConnection() {
-  if (!globalThis.__redisPromise) {
-    globalThis.__redisPromise = (async () => {
-      if (!client.isOpen) {
-        await client.connect();
-      }
+    const client = globalThis.__redis;
+
+    if (client.isOpen) {
       return client;
-    })();
+    }
+
+    if (!globalThis.__redisPromise) {
+      const currentClient = client;
+      globalThis.__redisPromise = (async () => {
+        try {
+          await currentClient.connect();
+          return currentClient;
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          if (message.toLowerCase().includes('client is closed') || message.toLowerCase().includes('the client is closed')) {
+            console.warn('Redis client was closed. Reinitializing shared connection...');
+            try {
+              currentClient.removeAllListeners();
+              await currentClient.disconnect();
+            } catch (disconnectError) {
+              console.error('Failed to cleanly disconnect closed Redis client:', disconnectError);
+            }
+            globalThis.__redis = createRedisClient();
+          }
+          throw error;
+        } finally {
+          globalThis.__redisPromise = undefined;
+        }
+      })();
+    }
+
+    try {
+      const connectedClient = await globalThis.__redisPromise;
+      if (connectedClient.isOpen) {
+        // Ensure the global pointer stays in sync with the connected instance
+        globalThis.__redis = connectedClient;
+        return connectedClient;
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.toLowerCase().includes('client is closed') || message.toLowerCase().includes('the client is closed')) {
+        // Loop again to instantiate a fresh client
+        continue;
+      }
+      throw error;
+    }
   }
-  return globalThis.__redisPromise;
 }
 
-// Get the singleton Redis client (ensures connection)
+// Get the singleton Redis client (ensures connection) with safe guards against closing it
 export async function getRedisClient() {
   const connectedClient = await ensureConnection();
-  
-  // Return a proxy that prevents closing the shared connection
-  return new Proxy(connectedClient, {
-    get(target, prop) {
-      // Prevent quit/disconnect on the shared client
+
+  return new Proxy<RedisClient>(connectedClient, {
+    get(target, prop, receiver) {
       if (prop === 'quit' || prop === 'disconnect') {
-        return async () => {};
+        return async () => {
+          console.warn('Ignoring attempt to close shared Redis client. Use createClient for isolated connections.');
+        };
       }
-      return target[prop as keyof typeof target];
+      return Reflect.get(target, prop, receiver);
     }
   });
 }
 
-export default client;
+// Legacy default export retains reference for backwards compatibility
+export default globalThis.__redis!;
 
 // 데이터 모델 타입 정의
 export interface User {

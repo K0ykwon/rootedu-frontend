@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import redis from '@/lib/redis';
+import { getRedisClient } from '@/lib/redis';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +29,7 @@ export async function PATCH(
     }
 
     // Get current analysis from Redis
+    const redis = await getRedisClient();
     const analysisKey = `${slug}:analysis_data:${sessionId}`;
     const currentAnalysis = await redis.get(analysisKey);
 

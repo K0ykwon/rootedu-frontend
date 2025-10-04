@@ -21,8 +21,8 @@ const Card: React.FC<CardProps> = ({
     ? 'glass-card rounded-xl transition-all duration-200' 
     : 'bg-[var(--color-bg-tertiary)] border border-[var(--color-border-primary)] rounded-xl transition-all duration-200';
   const paddingClasses = compact ? 'p-4' : 'p-6';
-  const hoverClasses = hover ? 'hover:border-[var(--color-primary-400)] hover:shadow-[0_8px_24px_rgba(86,186,125,0.12)] hover:bg-[var(--color-bg-quaternary)]' : '';
-  const elevatedClasses = elevated ? 'shadow-[0_4px_12px_rgba(0,0,0,0.15)]' : '';
+  const hoverClasses = hover ? 'hover:border-[var(--color-primary-400)] hover:shadow-[var(--glow-green-subtle)] hover:bg-[var(--color-bg-quaternary)] hover-lift' : '';
+  const elevatedClasses = elevated ? 'shadow-lg' : '';
 
   return (
     <div

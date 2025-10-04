@@ -10,7 +10,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { generateAnalysisPDF } from '@/lib/medsky/pdfGenerator';
 import { generatePDFTemplate } from '@/lib/medsky/pdfTemplate';
-import redis from '@/lib/redis';
+import { getRedisClient } from '@/lib/redis';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes timeout for PDF generation (includes cold starts)
@@ -43,6 +43,7 @@ export async function GET(
     const analysisKey = `${slug}:analysis_data:${sessionId}`;
     console.log(`🔍 Looking up Redis key: ${analysisKey}`);
 
+    const redis = await getRedisClient();
     const analysisResult = await redis.get(analysisKey);
 
     if (!analysisResult) {

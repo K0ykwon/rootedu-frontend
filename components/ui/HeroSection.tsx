@@ -52,11 +52,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 }) => {
   const getHeightClass = () => {
     switch (height) {
-      case 'small': return 'min-h-[400px]';
-      case 'medium': return 'min-h-[500px]';
-      case 'large': return 'min-h-[600px]';
+      case 'small': return 'min-h-[300px] sm:min-h-[350px] md:min-h-[400px]';
+      case 'medium': return 'min-h-[400px] sm:min-h-[450px] md:min-h-[500px]';
+      case 'large': return 'min-h-[500px] sm:min-h-[550px] md:min-h-[600px]';
       case 'full': return 'min-h-screen';
-      default: return 'min-h-[600px]';
+      default: return 'min-h-[500px] sm:min-h-[550px] md:min-h-[600px]';
     }
   };
 
@@ -141,20 +141,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       )}
 
       {/* Content Container */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 md:px-8">
-        <div className={`flex flex-col ${getTextAlignClass()} py-12`}>
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        <div className={`flex flex-col ${getTextAlignClass()} py-8 sm:py-10 md:py-12`}>
           {/* Subtitle */}
           {subtitle && (
-            <p className="text-sm md:text-base font-medium text-orange-600 mb-4 uppercase tracking-wide">
+            <p className="text-sm sm:text-base font-medium text-[var(--color-primary-500)] mb-3 sm:mb-4 uppercase tracking-wide">
               {subtitle}
             </p>
           )}
 
           {/* Title */}
           <h1 className={`
-            font-bold mb-6 leading-tight
+            font-bold mb-4 sm:mb-6 leading-tight
             ${backgroundImage || backgroundVideo ? 'text-white' : 'text-[var(--color-text-primary)]'}
-            text-3xl md:text-5xl lg:text-6xl
+            text-[clamp(1.875rem,5vw,3.75rem)]
           `}>
             {title}
           </h1>
@@ -162,7 +162,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           {/* Description */}
           {description && (
             <p className={`
-              text-lg md:text-xl mb-8 max-w-3xl leading-relaxed
+              text-[clamp(1rem,2.5vw,1.25rem)] mb-6 sm:mb-8 max-w-3xl leading-relaxed
               ${backgroundImage || backgroundVideo ? 'text-gray-200' : 'text-[var(--color-text-secondary)]'}
             `}>
               {description}
@@ -190,14 +190,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
           {/* CTA Buttons */}
           {ctaButtons && (
-            <div className={`flex flex-col sm:flex-row gap-4 mb-12 ${textAlign === 'center' ? 'justify-center' : textAlign === 'right' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`flex flex-col sm:flex-row gap-3 sm:gap-4 mb-8 sm:mb-12 ${textAlign === 'center' ? 'justify-center' : textAlign === 'right' ? 'justify-end' : 'justify-start'}`}>
               {ctaButtons.primary && (
                 ctaButtons.primary.href ? (
-                  <Link href={ctaButtons.primary.href}>
+                  <Link href={ctaButtons.primary.href} className="w-full sm:w-auto">
                     <Button
                       size="lg"
                       variant="primary"
-                      className="px-8 py-4 text-lg font-semibold"
+                      className="w-full sm:w-auto px-6 sm:px-8 text-base sm:text-lg font-semibold"
                     >
                       {ctaButtons.primary.text}
                     </Button>
@@ -207,7 +207,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     size="lg"
                     variant="primary"
                     onClick={ctaButtons.primary.onClick}
-                    className="px-8 py-4 text-lg font-semibold"
+                    className="w-full sm:w-auto px-6 sm:px-8 text-base sm:text-lg font-semibold"
                   >
                     {ctaButtons.primary.text}
                   </Button>
@@ -215,14 +215,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               )}
               {ctaButtons.secondary && (
                 ctaButtons.secondary.href ? (
-                  <Link href={ctaButtons.secondary.href}>
+                  <Link href={ctaButtons.secondary.href} className="w-full sm:w-auto">
                     <Button
                       size="lg"
                       variant={backgroundImage || backgroundVideo ? "outline" : "secondary"}
                       className={`
-                        px-8 py-4 text-lg font-semibold
-                        ${backgroundImage || backgroundVideo 
-                          ? 'border-white text-white hover:bg-white hover:text-gray-900' 
+                        w-full sm:w-auto px-6 sm:px-8 text-base sm:text-lg font-semibold
+                        ${backgroundImage || backgroundVideo
+                          ? 'border-white text-white hover:bg-white hover:text-gray-900'
                           : ''
                         }
                       `}
@@ -236,9 +236,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     variant={backgroundImage || backgroundVideo ? "outline" : "secondary"}
                     onClick={ctaButtons.secondary.onClick}
                     className={`
-                      px-8 py-4 text-lg font-semibold
-                      ${backgroundImage || backgroundVideo 
-                        ? 'border-white text-white hover:bg-white hover:text-gray-900' 
+                      w-full sm:w-auto px-6 sm:px-8 text-base sm:text-lg font-semibold
+                      ${backgroundImage || backgroundVideo
+                        ? 'border-white text-white hover:bg-white hover:text-gray-900'
                         : ''
                       }
                     `}
