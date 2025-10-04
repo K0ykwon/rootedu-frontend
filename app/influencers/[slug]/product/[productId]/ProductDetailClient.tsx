@@ -1,9 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
-import { ArrowLeft, Clock, Users, Star, Calendar, BookOpen, Award, MessageCircle, Sparkles, GraduationCap, ChevronRight, Zap, Shield, Target, TrendingUp } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ArrowLeft, Clock, Users, Star, Calendar, BookOpen, Award, MessageCircle, Sparkles, GraduationCap, ChevronRight, Zap, Shield, Target, TrendingUp, Play } from 'lucide-react'
 import { motion } from 'framer-motion'
+import VideoPlayer from '@/components/video/VideoPlayer'
+import toast from 'react-hot-toast'
 
 interface Product {
   id: string
@@ -16,6 +20,10 @@ interface Product {
   duration?: string
   format?: string
   features?: string[]
+  // Video fields
+  hasVideo?: boolean
+  videoUrl?: string
+  videoType?: 'youtube'
   description?: {
     overview?: string
     timeline?: Array<{
@@ -67,7 +75,76 @@ interface ProductDetailClientProps {
 }
 
 export default function ProductDetailClient({ product, influencerSlug }: ProductDetailClientProps) {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [hoveredPhase, setHoveredPhase] = useState<number | null>(null)
+  const [hasAccess, setHasAccess] = useState(false)
+  const [isCheckingAccess, setIsCheckingAccess] = useState(true)
+  const [isPurchasing, setIsPurchasing] = useState(false)
+
+  // Check if user has access to video content
+  useEffect(() => {
+    if (!product.hasVideo) {
+      setIsCheckingAccess(false)
+      return
+    }
+
+    if (status === 'loading') return
+
+    if (status === 'unauthenticated') {
+      setIsCheckingAccess(false)
+      setHasAccess(false)
+      return
+    }
+
+    // Check access for authenticated users
+    async function checkAccess() {
+      try {
+        const response = await fetch(`/api/products/${product.id}/access`)
+        const data = await response.json()
+        setHasAccess(data.hasAccess || false)
+      } catch (error) {
+        console.error('Failed to check access:', error)
+        setHasAccess(false)
+      } finally {
+        setIsCheckingAccess(false)
+      }
+    }
+
+    checkAccess()
+  }, [product.id, product.hasVideo, status])
+
+  // Handle purchase
+  const handlePurchase = async () => {
+    if (status === 'unauthenticated') {
+      toast.error('로그인이 필요합니다')
+      router.push('/auth/login')
+      return
+    }
+
+    setIsPurchasing(true)
+
+    try {
+      const response = await fetch(`/api/products/${product.id}/purchase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        toast.success('구매가 완료되었습니다!')
+        setHasAccess(true)
+      } else {
+        toast.error(data.error || '구매에 실패했습니다')
+      }
+    } catch (error) {
+      console.error('Purchase error:', error)
+      toast.error('구매 중 오류가 발생했습니다')
+    } finally {
+      setIsPurchasing(false)
+    }
+  }
 
   // Dynamic service type detection
   const isQuickDiagnostic = product.price < 100000
@@ -189,6 +266,77 @@ export default function ProductDetailClient({ product, influencerSlug }: Product
           </div>
         </motion.div>
       </div>
+
+      {/* Video Section - Conditional Access Control */}
+      {product.hasVideo && (
+        <section className="relative py-16 sm:py-24 md:py-32">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              {/* Video Title */}
+              <div className="text-center mb-8 sm:mb-12">
+                <div className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-full mb-4">
+                  <Play className="w-4 h-4 text-[var(--color-primary-500)]" />
+                  <span className="text-xs font-semibold tracking-[0.2em] text-[var(--color-primary-500)] uppercase">Video Content</span>
+                </div>
+                <h2 className="text-[clamp(1.75rem,5vw,2.5rem)] font-bold text-white mb-3">
+                  강의 영상
+                </h2>
+                <p className="text-white/60 text-sm sm:text-base">
+                  {hasAccess ? '구매해주셔서 감사합니다! 강의를 시청하세요.' : '구매 후 강의 영상을 시청할 수 있습니다.'}
+                </p>
+              </div>
+
+              {/* Access States */}
+              {isCheckingAccess ? (
+                <div className="glass-card rounded-2xl p-12 sm:p-16 text-center">
+                  <div className="w-12 h-12 border-4 border-[var(--color-primary-500)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-white/60">Checking access...</p>
+                </div>
+              ) : hasAccess && product.videoUrl ? (
+                <VideoPlayer videoUrl={product.videoUrl} title={product.title} />
+              ) : status === 'unauthenticated' ? (
+                <div className="glass-card rounded-2xl p-8 sm:p-12 text-center">
+                  <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-white/5 flex items-center justify-center">
+                    <Play className="w-8 h-8 text-white/40" />
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-semibold text-white mb-3">로그인이 필요합니다</h3>
+                  <p className="text-white/60 mb-6 text-sm sm:text-base">
+                    강의 영상을 시청하려면 먼저 로그인해주세요
+                  </p>
+                  <Link
+                    href="/auth/login"
+                    className="inline-block px-8 py-3 bg-gradient-to-r from-[var(--color-primary-500)] to-[var(--color-primary-600)] text-white rounded-full font-semibold hover:shadow-[var(--glow-green)] transition-all"
+                  >
+                    로그인하기
+                  </Link>
+                </div>
+              ) : (
+                <div className="glass-card rounded-2xl p-8 sm:p-12 text-center">
+                  <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-white/5 flex items-center justify-center">
+                    <Play className="w-8 h-8 text-white/40" />
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-semibold text-white mb-3">강의 구매가 필요합니다</h3>
+                  <p className="text-white/60 mb-6 text-sm sm:text-base">
+                    이 강의 영상을 시청하려면 상품을 구매해주세요
+                  </p>
+                  <button
+                    onClick={handlePurchase}
+                    disabled={isPurchasing}
+                    className="inline-block px-8 py-3 bg-gradient-to-r from-[var(--color-primary-500)] to-[var(--color-primary-600)] text-white rounded-full font-semibold hover:shadow-[var(--glow-green)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isPurchasing ? '처리 중...' : `₩${formatPrice(product.price)} 구매하기`}
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        </section>
+      )}
 
       {/* Features Grid - Glass Morphism */}
       <section className="relative py-32">

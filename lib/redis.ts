@@ -170,6 +170,10 @@ export interface Product {
   summary: string;
   description?: string;
   createdAt: number;
+  // Video capability fields (MVP - YouTube integration)
+  videoUrl?: string;              // YouTube URL (unlisted/private)
+  videoType?: 'youtube';          // Extensible for future platforms (vimeo, cloudflare, etc.)
+  hasVideo?: boolean;             // Quick flag for filtering products with video content
 }
 
 export type CommunityType = 
@@ -201,4 +205,129 @@ export interface Comment {
   authorId: string;
   body: string;
   createdAt: number;
+}
+
+// ============================================================================
+// USER PRODUCT ACCESS SYSTEM (Video Access Control)
+// ============================================================================
+
+export interface UserProduct {
+  userId: string;
+  productId: string;
+  purchasedAt: number;
+  accessStatus: 'active' | 'expired' | 'revoked';
+  expiresAt?: number;  // Optional: for subscription-based products
+}
+
+/**
+ * Grant product access to a user (after purchase)
+ * Creates relationship in both directions for efficient queries
+ */
+export async function grantProductAccess(userId: string, productId: string): Promise<void> {
+  const redis = await ensureConnection();
+
+  const userProduct: UserProduct = {
+    userId,
+    productId,
+    purchasedAt: Date.now(),
+    accessStatus: 'active'
+  };
+
+  // Store the purchase record
+  await redis.json.set(`purchase:${userId}:${productId}`, '$', userProduct as any);
+
+  // Add to user's product set (for getUserProducts query)
+  await redis.sAdd(`user:products:${userId}`, productId);
+
+  // Add to product's user set (for analytics - who has access)
+  await redis.sAdd(`product:users:${productId}`, userId);
+}
+
+/**
+ * Check if a user has access to a specific product
+ * Used before showing video content
+ */
+export async function checkProductAccess(userId: string, productId: string): Promise<boolean> {
+  const redis = await ensureConnection();
+
+  const purchaseData = await redis.json.get(`purchase:${userId}:${productId}`);
+
+  if (!purchaseData) {
+    return false;
+  }
+
+  const userProduct = purchaseData as unknown as UserProduct;
+
+  // Check if access is active
+  if (userProduct.accessStatus !== 'active') {
+    return false;
+  }
+
+  // Check if access has expired (for subscription products)
+  if (userProduct.expiresAt && userProduct.expiresAt < Date.now()) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Get all products a user has purchased
+ * Returns full product details with video access info
+ */
+export async function getUserProducts(userId: string): Promise<Product[]> {
+  const redis = await ensureConnection();
+
+  // Get all product IDs user has access to
+  const productIds = await redis.sMembers(`user:products:${userId}`);
+
+  if (productIds.length === 0) {
+    return [];
+  }
+
+  // Fetch full product details for each
+  const products: Product[] = [];
+
+  for (const productId of productIds) {
+    const productData = await redis.hGetAll(`product:${productId}`);
+
+    if (productData && Object.keys(productData).length > 0) {
+      products.push({
+        id: productData.id,
+        influencerSlug: productData.influencerSlug,
+        title: productData.title,
+        price: Number(productData.price),
+        level: productData.level as 'beginner' | 'intermediate' | 'advanced',
+        thumbnail: productData.thumbnail,
+        summary: productData.summary,
+        description: productData.description,
+        createdAt: Number(productData.createdAt),
+        videoUrl: productData.videoUrl,
+        videoType: productData.videoType as 'youtube' | undefined,
+        hasVideo: productData.hasVideo === 'true'
+      });
+    }
+  }
+
+  return products;
+}
+
+/**
+ * Revoke product access (for refunds or subscription cancellations)
+ */
+export async function revokeProductAccess(userId: string, productId: string): Promise<void> {
+  const redis = await ensureConnection();
+
+  // Update purchase status to revoked (keep record for audit)
+  const purchaseData = await redis.json.get(`purchase:${userId}:${productId}`);
+
+  if (purchaseData) {
+    const userProduct = purchaseData as unknown as UserProduct;
+    userProduct.accessStatus = 'revoked';
+    await redis.json.set(`purchase:${userId}:${productId}`, '$', userProduct as any);
+  }
+
+  // Remove from active access sets
+  await redis.sRem(`user:products:${userId}`, productId);
+  await redis.sRem(`product:users:${productId}`, userId);
 }
