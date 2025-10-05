@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { checkProductAccess } from '@/lib/redis';
+import { checkProductAccess, ProductVideo } from '@/lib/redis';
 import { createClient } from 'redis';
 
 interface Props {
@@ -26,8 +26,9 @@ export async function GET(request: NextRequest, { params }: Props) {
     // 2. Check if user has access to this product
     const hasAccess = await checkProductAccess(userId, productId);
 
-    // 3. If user has access, fetch video URL from product
-    let videoUrl: string | undefined;
+    // 3. If user has access, fetch videos from product
+    let videos: ProductVideo[] | undefined;
+    let videoUrl: string | undefined; // Legacy support
 
     if (hasAccess) {
       const REDIS_URL = process.env.REDIS_URL || process.env.DATABASE_URL;
@@ -35,6 +36,17 @@ export async function GET(request: NextRequest, { params }: Props) {
       await redis.connect();
 
       const productData = await redis.hGetAll(`product:${productId}`);
+
+      // Support both new (videos array) and legacy (single videoUrl) formats
+      if (productData.videos) {
+        try {
+          videos = JSON.parse(productData.videos as string) as ProductVideo[];
+        } catch (e) {
+          console.error('Failed to parse videos JSON:', e);
+        }
+      }
+
+      // Backward compatibility: include legacy videoUrl if it exists
       videoUrl = productData.videoUrl;
 
       await redis.disconnect();
@@ -42,7 +54,8 @@ export async function GET(request: NextRequest, { params }: Props) {
 
     return NextResponse.json({
       hasAccess,
-      videoUrl: hasAccess ? videoUrl : undefined,
+      videos: hasAccess ? videos : undefined,
+      videoUrl: hasAccess ? videoUrl : undefined, // Legacy field for backward compatibility
       productId
     }, { status: 200 });
 

@@ -3,11 +3,26 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { ArrowLeft, Clock, Users, Star, Calendar, BookOpen, Award, MessageCircle, Sparkles, GraduationCap, ChevronRight, Zap, Shield, Target, TrendingUp, Play } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { ArrowLeft, Clock, Users, Star, Calendar, BookOpen, Award, MessageCircle, Sparkles, GraduationCap, ChevronRight, Zap, Shield, Target, TrendingUp, Play, SkipBack, SkipForward } from 'lucide-react'
 import { motion } from 'framer-motion'
 import VideoPlayer from '@/components/video/VideoPlayer'
+import VideoList from '@/components/video/VideoList'
 import toast from 'react-hot-toast'
+
+interface ProductVideo {
+  id: string
+  url: string
+  type: 'youtube'
+  title: string
+  description?: string
+  order: number
+  duration?: string
+  chapter?: string
+  thumbnail?: string
+  tags?: string[]
+  createdAt?: number
+}
 
 interface Product {
   id: string
@@ -22,7 +37,8 @@ interface Product {
   features?: string[]
   // Video fields
   hasVideo?: boolean
-  videoUrl?: string
+  videos?: ProductVideo[]  // New: supports multiple videos
+  videoUrl?: string        // Legacy: single video support
   videoType?: 'youtube'
   description?: {
     overview?: string
@@ -77,12 +93,16 @@ interface ProductDetailClientProps {
 export default function ProductDetailClient({ product, influencerSlug }: ProductDetailClientProps) {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [hoveredPhase, setHoveredPhase] = useState<number | null>(null)
   const [hasAccess, setHasAccess] = useState(false)
   const [isCheckingAccess, setIsCheckingAccess] = useState(true)
   const [isPurchasing, setIsPurchasing] = useState(false)
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
+  const [videos, setVideos] = useState<ProductVideo[]>([])
+  const [showVideoList, setShowVideoList] = useState(false)
 
-  // Check if user has access to video content
+  // Check if user has access to video content and fetch videos
   useEffect(() => {
     if (!product.hasVideo) {
       setIsCheckingAccess(false)
@@ -97,12 +117,38 @@ export default function ProductDetailClient({ product, influencerSlug }: Product
       return
     }
 
-    // Check access for authenticated users
-    async function checkAccess() {
+    // Check access for authenticated users and fetch videos
+    async function checkAccessAndFetchVideos() {
       try {
         const response = await fetch(`/api/products/${product.id}/access`)
         const data = await response.json()
         setHasAccess(data.hasAccess || false)
+
+        // Fetch videos if user has access
+        if (data.hasAccess) {
+          // Support both new videos array and legacy videoUrl
+          if (data.videos && data.videos.length > 0) {
+            setVideos(data.videos)
+          } else if (data.videoUrl) {
+            // Legacy single video support
+            setVideos([{
+              id: `${product.id}_legacy`,
+              url: data.videoUrl,
+              type: 'youtube',
+              title: product.title || 'Video',
+              order: 0
+            }])
+          }
+
+          // Check URL param for specific video
+          const videoParam = searchParams.get('video')
+          if (videoParam && data.videos) {
+            const videoIndex = data.videos.findIndex((v: ProductVideo) => v.id === videoParam)
+            if (videoIndex >= 0) {
+              setCurrentVideoIndex(videoIndex)
+            }
+          }
+        }
       } catch (error) {
         console.error('Failed to check access:', error)
         setHasAccess(false)
@@ -111,8 +157,8 @@ export default function ProductDetailClient({ product, influencerSlug }: Product
       }
     }
 
-    checkAccess()
-  }, [product.id, product.hasVideo, status])
+    checkAccessAndFetchVideos()
+  }, [product.id, product.hasVideo, status, searchParams])
 
   // Handle purchase
   const handlePurchase = async () => {
@@ -270,7 +316,7 @@ export default function ProductDetailClient({ product, influencerSlug }: Product
       {/* Video Section - Conditional Access Control */}
       {product.hasVideo && (
         <section className="relative py-16 sm:py-24 md:py-32">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -287,7 +333,7 @@ export default function ProductDetailClient({ product, influencerSlug }: Product
                   강의 영상
                 </h2>
                 <p className="text-white/60 text-sm sm:text-base">
-                  {hasAccess ? '구매해주셔서 감사합니다! 강의를 시청하세요.' : '구매 후 강의 영상을 시청할 수 있습니다.'}
+                  {hasAccess ? `구매해주셔서 감사합니다! ${videos.length > 0 ? `총 ${videos.length}개의 영상` : '강의'}을 시청하세요.` : '구매 후 강의 영상을 시청할 수 있습니다.'}
                 </p>
               </div>
 
@@ -297,8 +343,108 @@ export default function ProductDetailClient({ product, influencerSlug }: Product
                   <div className="w-12 h-12 border-4 border-[var(--color-primary-500)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                   <p className="text-white/60">Checking access...</p>
                 </div>
-              ) : hasAccess && product.videoUrl ? (
-                <VideoPlayer videoUrl={product.videoUrl} title={product.title} />
+              ) : hasAccess && videos.length > 0 ? (
+                <div className="space-y-6">
+                  {/* Current Video Player */}
+                  <div>
+                    <VideoPlayer
+                      videoUrl={videos[currentVideoIndex].url}
+                      title={videos[currentVideoIndex].title}
+                    />
+
+                    {/* Video Info & Navigation */}
+                    <div className="glass-card rounded-xl p-4 mt-4">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-white mb-1">
+                            {videos[currentVideoIndex].title}
+                          </h3>
+                          {videos[currentVideoIndex].description && (
+                            <p className="text-sm text-white/60">
+                              {videos[currentVideoIndex].description}
+                            </p>
+                          )}
+                        </div>
+                        {videos[currentVideoIndex].duration && (
+                          <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-white/10 ml-4">
+                            <Clock className="w-4 h-4 text-white/60" />
+                            <span className="text-sm text-white/80">{videos[currentVideoIndex].duration}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Navigation Controls */}
+                      {videos.length > 1 && (
+                        <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                          <button
+                            onClick={() => setCurrentVideoIndex(Math.max(0, currentVideoIndex - 1))}
+                            disabled={currentVideoIndex === 0}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <SkipBack className="w-4 h-4 text-white" />
+                            <span className="text-sm text-white">이전</span>
+                          </button>
+
+                          <span className="text-sm text-white/60">
+                            {currentVideoIndex + 1} / {videos.length}
+                          </span>
+
+                          <button
+                            onClick={() => setCurrentVideoIndex(Math.min(videos.length - 1, currentVideoIndex + 1))}
+                            disabled={currentVideoIndex === videos.length - 1}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <span className="text-sm text-white">다음</span>
+                            <SkipForward className="w-4 h-4 text-white" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Video List (Expandable) */}
+                  {videos.length > 1 && (
+                    <div>
+                      <button
+                        onClick={() => setShowVideoList(!showVideoList)}
+                        className="w-full glass-card rounded-xl p-4 hover:border-[var(--color-primary-400)] transition-all text-left"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="w-5 h-5 text-[var(--color-primary-500)]" />
+                            <span className="font-semibold text-white">전체 영상 목록</span>
+                            <span className="text-sm text-white/60">({videos.length}개)</span>
+                          </div>
+                          <ChevronRight
+                            className={`w-5 h-5 text-white/60 transition-transform ${showVideoList ? 'rotate-90' : ''}`}
+                          />
+                        </div>
+                      </button>
+
+                      {showVideoList && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-4"
+                        >
+                          <VideoList
+                            videos={videos}
+                            onVideoSelect={(video) => {
+                              const index = videos.findIndex(v => v.id === video.id)
+                              if (index >= 0) {
+                                setCurrentVideoIndex(index)
+                                setShowVideoList(false)
+                                window.scrollTo({ top: 0, behavior: 'smooth' })
+                              }
+                            }}
+                            groupByChapter={videos.some(v => v.chapter)}
+                          />
+                        </motion.div>
+                      )}
+                    </div>
+                  )}
+                </div>
               ) : status === 'unauthenticated' ? (
                 <div className="glass-card rounded-2xl p-8 sm:p-12 text-center">
                   <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-white/5 flex items-center justify-center">

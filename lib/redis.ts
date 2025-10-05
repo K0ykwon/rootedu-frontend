@@ -160,6 +160,17 @@ export interface Influencer {
   };
 }
 
+export interface ProductVideo {
+  id: string;                     // Unique video ID within product
+  url: string;                    // YouTube URL (unlisted/private)
+  type: 'youtube';                // Extensible for future platforms (vimeo, cloudflare, etc.)
+  title: string;                  // Video title (e.g., "Chapter 1: Introduction")
+  description?: string;           // Optional video description
+  order: number;                  // Display order (0-based index)
+  duration?: string;              // Optional duration (e.g., "15:30")
+  createdAt?: number;             // When video was added
+}
+
 export interface Product {
   id: string;
   influencerSlug: string;
@@ -171,9 +182,12 @@ export interface Product {
   description?: string;
   createdAt: number;
   // Video capability fields (MVP - YouTube integration)
-  videoUrl?: string;              // YouTube URL (unlisted/private)
-  videoType?: 'youtube';          // Extensible for future platforms (vimeo, cloudflare, etc.)
+  videos?: ProductVideo[];        // Array of videos (supports multiple videos per product)
   hasVideo?: boolean;             // Quick flag for filtering products with video content
+
+  // BACKWARD COMPATIBILITY: Legacy single video fields (deprecated, use videos[] instead)
+  videoUrl?: string;              // @deprecated Use videos[] instead
+  videoType?: 'youtube';          // @deprecated Use videos[] instead
 }
 
 export type CommunityType = 

@@ -10,7 +10,8 @@
     "seed": "npx tsx scripts/seed.ts",
     "setup-vector-db": "npx tsx scripts/setup-vector-db.ts",
     "update-product": "npx tsx scripts/update-product-p1.ts",
-    "add-videos": "npx tsx scripts/add-videos-to-products.ts"
+    "add-videos": "npx tsx scripts/add-videos-to-products.ts",
+    "add-videos:multiple": "npx tsx scripts/add-multiple-videos-to-product.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
