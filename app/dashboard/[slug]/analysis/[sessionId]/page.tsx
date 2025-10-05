@@ -144,7 +144,7 @@ export default function AnalysisDetailPage() {
   // Check if user has access to this analysis
   useEffect(() => {
     if (status === 'loading') return;
-    
+
     if (!session) {
       router.push('/auth/login');
       return;
@@ -155,16 +155,53 @@ export default function AnalysisDetailPage() {
     const userType = (session.user as any)?.userType;
     const userId = (session.user as any)?.userId;
     const influencerSlug = (session.user as any)?.influencerSlug;
-    
+
     // Allow access if admin or if influencer accessing their own dashboard
     const isInfluencer = userType === 'influencer' && (influencerSlug === slug || userId === slug);
-    
-    if (userRole !== 'admin' && !isInfluencer) {
-      router.push('/');
+    const isAdmin = userRole === 'admin';
+
+    // For non-admin and non-influencer users, we need to check if they own this approved analysis
+    if (!isAdmin && !isInfluencer) {
+      // Fetch analysis to check ownership and approval status
+      const checkAccess = async () => {
+        try {
+          const response = await fetch(`/api/dashboard/${slug}/analysis-results`);
+          if (response.ok) {
+            const data = await response.json();
+            const analysis = data.results?.find((r: AnalysisResult) => r.sessionId === sessionId);
+
+            // Check if user owns this analysis AND it's approved
+            const isStudentOwner = analysis &&
+                                  analysis.userId === userId &&
+                                  analysis.approvalStatus === 'approved';
+
+            if (!isStudentOwner) {
+              // Student doesn't own this analysis or it's not approved
+              console.log('⛔ Access denied: Student does not own this approved analysis');
+              router.push('/');
+              return;
+            }
+
+            // Student owns this approved analysis - allow access
+            console.log('✅ Access granted: Student owns this approved analysis');
+            if (!hasLoadedResult) {
+              setHasLoadedResult(true);
+              loadAnalysisResult();
+            }
+          } else {
+            router.push('/');
+          }
+        } catch (error) {
+          console.error('Access check error:', error);
+          router.push('/');
+        }
+      };
+
+      checkAccess();
       return;
     }
 
-    // Only load result once
+    // Admin or influencer - allow access immediately
     if (!hasLoadedResult) {
       setHasLoadedResult(true);
       loadAnalysisResult();
