@@ -17,6 +17,7 @@ import { AISectionScoringView } from '../../../../../components/medsky/AISection
 import { EnhancedAcademicAnalysisView } from '../../../../../components/medsky/EnhancedAcademicAnalysisView';
 import { AIMajorRecommendationsView } from '../../../../../components/medsky/AIMajorRecommendationsView';
 import { NextSemesterPlanView } from '../../../../../components/medsky/NextSemesterPlanView';
+import ApprovalActions from '../../../../../components/medsky/ApprovalActions';
 
 interface AnalysisResult {
   sessionId: string;
@@ -27,6 +28,11 @@ interface AnalysisResult {
   generatedProfile?: string;
   createdAt: string;
   completedAt: string;
+  // Approval fields
+  approvalStatus?: 'pending_review' | 'approved' | 'rejected';
+  approvedAt?: string;
+  approvedBy?: string;
+  influencerNotes?: string;
 }
 
 export default function AnalysisDetailPage() {
@@ -285,6 +291,17 @@ export default function AnalysisDetailPage() {
             <p><strong>세션 ID:</strong> {analysisResult.sessionId}</p>
           </div>
         </div>
+
+        {/* Approval Actions */}
+        <ApprovalActions
+          sessionId={analysisResult.sessionId}
+          influencerSlug={slug}
+          currentStatus={analysisResult.approvalStatus === 'approved' ? 'approved' : analysisResult.approvalStatus === 'rejected' ? 'rejected' : 'pending'}
+          approvedBy={analysisResult.approvedBy}
+          approvedAt={analysisResult.approvedAt}
+          influencerNotes={analysisResult.influencerNotes}
+          onApprovalChange={loadAnalysisResult}
+        />
 
         {/* Analysis Results */}
         <Card>
