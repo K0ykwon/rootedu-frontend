@@ -18,6 +18,7 @@ import { ChristineAILearningTool } from '../../../components/christine/Christine
 import GilpumKoreanAIFeatures from '../../../components/kor.artis/free_features';
 import ChatWidget from '../../../components/ChatWidget';
 import ParentsNoteAI from '../../../components/parents_note/ParentsNoteAI';
+import SoozipPlanner from '../../../components/sooziptime/SoozipPlanner';
 
 interface Influencer {
   id: string;
@@ -540,6 +541,11 @@ export default function InfluencerDetailPage() {
               {activeTab === 'ai_features' && influencer.slug === 'parantsnote' && (
                 <ParentsNoteAI />
               )}  
+
+              {/* AI Features Tab - Soozip Time */}
+              {activeTab === 'ai_features' && influencer.slug === 'soo.zip.time' && (
+                <SoozipPlanner />
+              )}
 
               {/* AI Features Tab - Coming Soon for other influencers */}
               {activeTab === 'ai_features' && influencer.slug !== 'terry' && influencer.slug !== 'christine' && influencer.slug !== 'kor.artis' && influencer.slug !== 'parantsnote' && (

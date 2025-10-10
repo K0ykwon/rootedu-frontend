@@ -72,6 +72,14 @@ const influencerAccounts: InfluencerAccount[] = [
     defaultPassword: 'christine2024!',
     studentPhoneNumber: '010-1007-1007',
     parentPhoneNumber: '010-1007-0007'
+  },
+  {
+    slug: 'soo.zip.time',
+    name: '수집가',
+    username: 'soo.zip.time',
+    defaultPassword: 'soo.zip.time2024!',
+    studentPhoneNumber: '010-1008-1008',
+    parentPhoneNumber: '010-1008-0008'
   }
 ];
 
